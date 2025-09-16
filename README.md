@@ -10,14 +10,10 @@ print(f"Привет, {name}! Через год тебе будет {age + 1}.")
 
 ### Задание 2
 ```python
-# a: 3,5
-# b: 4.25
-# sum=7.75; avg=3.88
-
 a = float(input("A: ").replace(",", "."))
 b = float(input("B: ").replace(",", "."))
 
-print(f"sum={a + b}; avg={(a + b) / 2}")
+print(f"sum={a + b}; avg={(a + b) / 2:.2f}")
 ```
 ![Картинка 2](./images/lab01/02_sum_avg.png)
 
