@@ -1,31 +1,36 @@
 def format_record(rec: tuple[str, str, float]) -> str:
     """
-    Formats student record into a readable string.
+    Форматирует запись о студенте в удобочитаемую строку.
 
-    Args:
-        rec (tuple[str, str, float]): A tuple containing three elements:
-            - rec[0]: Full name (surname, name, and optionally patronymic),
-                      given as a single string with possible extra spaces.
-            - rec[1]: Group identifier (string).
-            - rec[2]: GPA (float or convertible to float).
+    Аргументы:
+        rec (tuple[str, str, float]): Кортеж из трёх элементов:
+            - rec[0]: ФИО (фамилия, имя и, при наличии, отчество) в виде строки,
+                      допускается наличие лишних пробелов.
+            - rec[1]: Обозначение группы (строка).
+            - rec[2]: Средний балл (GPA) — число с плавающей точкой
+                      или значение, приводимое к float.
 
-    Returns:
-        str: A formatted string in the form:
-             "Surname Name.P. , гр. Group, GPA X.XX"
+    Возвращает:
+        str: Отформатированную строку вида:
+             "Фамилия И.О., гр. ГРУППА, GPA X.XX"
 
-             Examples:
+             Примеры:
              - ("иванов иван иванович", "ABB-01", 4.55)
-               → "Ivanov I.I., гр. ABB-01, GPA 4.55"
+               → "Иванов И.И., гр. ABB-01, GPA 4.55"
              - ("сидорова анна", "CS-22", 3.9)
-               → "Sidorova A., гр. CS-22, GPA 3.90"
+               → "Сидорова A., гр. CS-22, GPA 3.90"
 
-    Raises:
-        ValueError: If full name or group is missing/invalid,
-                    or GPA cannot be converted to float.
+    Исключения:
+        ValueError:
+            Если некорректно указано ФИО или группа.
 
-    Notes:
-        - Supports names with 1, 2, or 3 parts (surname, surname+name, surname+name+patronymic).
-        - Excess spaces in the name and group fields are ignored.
+        TypeError:
+            Если средний балл невозможно преобразовать в дробное число.
+
+    Примечания:
+        - Поддерживаются имена, состоящие из 1, 2 или 3 частей
+          (фамилия; фамилия + имя; фамилия + имя + отчество).
+        - Лишние пробелы в строках ФИО и группы игнорируются.
     """
 
     name_data = rec[0].strip().split()
@@ -49,7 +54,7 @@ def format_record(rec: tuple[str, str, float]) -> str:
     try:
         gpa = float(rec[2])
     except Exception as _:
-        return ValueError
+        return TypeError
 
     return f"{name_string_data}, гр. {group}, GPA {gpa:.2f}"
 
