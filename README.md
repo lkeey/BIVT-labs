@@ -87,7 +87,108 @@ print("".join(correct_letter) + ".")
 
 ## Лабораторная работа 2
 
-### Задание 1
+### Задание 1.1
+```python
+def min_max(nums: list[float | int]) -> tuple[float | int, float | int]:
+    if len(nums) == 0:
+        return ValueError
+
+    mi = 9e6
+    ma = -9e6
+
+    for i in range(len(nums)):
+        if nums[i] < mi:
+            mi = nums[i]
+        if nums[i] > ma:
+            ma = nums[i]
+
+    return tuple([mi, ma])
+```
+![Картинка 3](./images/lab02/arrays_min_max.png)
+
+### Задание 1.2
+```python
+def unique_sorted(nums: list[float | int]) -> list[float | int]:
+    return sorted(set(nums))
+```
+![Картинка 4](./images/lab02/arrays_unique_sort.png)
+
+### Задание 1.3
+```python
+def flatten(mat: list[list | tuple]) -> list:
+    array = list()
+    for arr in mat:
+        if not (isinstance(arr, tuple) or isinstance(arr, list)):
+            return TypeError
+        for member in arr:
+            array.append(member)
+    return array
+```
+![Картинка 5](./images/lab02/arrays_flatten.png)
+
+### Задание B.1
+```python
+def check_is_valid(mat: list[list[float | int]]) -> bool:
+    if any(len(mat[0]) != len(mat[i]) for i in range(len(mat))):
+        return False
+    return True
+
+
+def transpose(mat: list[list[float | int]]) -> list[list]:
+    if len(mat) == 0:
+        return []
+
+    if not check_is_valid(mat=mat):
+        return ValueError
+
+    new_matrix = [[0 for j in range(len(mat))] for i in range(len(mat[0]))]
+
+    for i in range(len(mat)):
+        for j in range(len(mat[i])):
+            new_matrix[j][i] = mat[i][j]
+
+    return new_matrix
+```
+![Картинка 6](./images/lab02/matrix_transpose.png)
+
+### Задание B.2
+```python
+def check_is_valid(mat: list[list[float | int]]) -> bool:
+    if any(len(mat[0]) != len(mat[i]) for i in range(len(mat))):
+        return False
+    return True
+
+def row_sums(mat: list[list[float | int]]) -> list[float]:
+    if not check_is_valid(mat=mat):
+        return ValueError
+
+    array = list()
+    for arr in mat:
+        array.append(sum(arr))
+    return array
+```
+![Картинка 7](./images/lab02/matrix_row_sums.png)
+
+### Задание B.3
+```python
+def check_is_valid(mat: list[list[float | int]]) -> bool:
+    if any(len(mat[0]) != len(mat[i]) for i in range(len(mat))):
+        return False
+    return True
+    
+def col_sums(mat: list[list[float | int]]) -> list[float]:
+    if not check_is_valid(mat=mat):
+        return ValueError
+
+    array = list(0 for i in range(len(mat[0])))
+    for i in range(len(mat)):
+        for j in range(len(mat[i])):
+            array[j] += mat[i][j]
+    return array
+```
+![Картинка 8](./images/lab02/matrix_col_sums.png)
+
+### Задание C
 ```python
 def format_record(rec: tuple[str, str, float]) -> str:
     """
@@ -151,94 +252,3 @@ def format_record(rec: tuple[str, str, float]) -> str:
 ```
 ![Картинка 1](./images/lab02/tuples_format_record_success.png)
 ![Картинка 2](./images/lab02/tuples_format_record_error.png)
-
-### Задание 2
-```python
-def min_max(nums: list[float | int]) -> tuple[float | int, float | int]:
-    if len(nums) == 0:
-        return ValueError
-
-    mi = 9e6
-    ma = -9e6
-
-    for i in range(len(nums)):
-        if nums[i] < mi:
-            mi = nums[i]
-        if nums[i] > ma:
-            ma = nums[i]
-
-    return tuple([mi, ma])
-```
-![Картинка 3](./images/lab02/arrays_min_max.png)
-
-### Задание 3
-```python
-def unique_sorted(nums: list[float | int]) -> list[float | int]:
-    return sorted(set(nums))
-```
-![Картинка 4](./images/lab02/arrays_unique_sort.png)
-
-### Задание 4
-```python
-def flatten(mat: list[list | tuple]) -> list:
-    array = list()
-    for arr in mat:
-        if not (isinstance(arr, tuple) or isinstance(arr, list)):
-            return TypeError
-        for member in arr:
-            array.append(member)
-    return array
-```
-![Картинка 5](./images/lab02/arrays_flatten.png)
-
-### Задание 5
-```python
-def check_is_valid(mat: list[list[float | int]]) -> bool:
-    if any(len(mat[0]) != len(mat[i]) for i in range(len(mat))):
-        return False
-    return True
-
-
-def transpose(mat: list[list[float | int]]) -> list[list]:
-    if len(mat) == 0:
-        return []
-
-    if not check_is_valid(mat=mat):
-        return ValueError
-
-    new_matrix = [[0 for j in range(len(mat))] for i in range(len(mat[0]))]
-
-    for i in range(len(mat)):
-        for j in range(len(mat[i])):
-            new_matrix[j][i] = mat[i][j]
-
-    return new_matrix
-```
-![Картинка 6](./images/lab02/matrix_transpose.png)
-
-### Задание 6
-```python
-def row_sums(mat: list[list[float | int]]) -> list[float]:
-    if not check_is_valid(mat=mat):
-        return ValueError
-
-    array = list()
-    for arr in mat:
-        array.append(sum(arr))
-    return array
-```
-![Картинка 7](./images/lab02/matrix_row_sums.png)
-
-### Задание 7
-```python
-def col_sums(mat: list[list[float | int]]) -> list[float]:
-    if not check_is_valid(mat=mat):
-        return ValueError
-
-    array = list(0 for i in range(len(mat[0])))
-    for i in range(len(mat)):
-        for j in range(len(mat[i])):
-            array[j] += mat[i][j]
-    return array
-```
-![Картинка 8](./images/lab02/matrix_col_sums.png)
