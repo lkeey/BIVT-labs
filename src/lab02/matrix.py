@@ -24,4 +24,15 @@ def row_sums(mat: list[list[float | int]]) -> list[float]:
     return array
 
 
-print(row_sums([[1, 2, 3], [4, 5, 6]]))
+def col_sums(mat: list[list[float | int]]) -> list[float]:
+    if any(len(mat[0]) != len(mat[i]) for i in range(len(mat))):
+        return ValueError
+
+    array = list(0 for i in range(len(mat[0])))
+    for i in range(len(mat)):
+        for j in range(len(mat[i])):
+            array[j] += mat[i][j]
+    return array
+
+
+print(col_sums([[1, 2, 3], [4, 5, 6]]))
