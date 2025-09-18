@@ -1,3 +1,9 @@
+def check_is_valid(mat: list[list[float | int]]) -> bool:
+    if any(len(mat[0]) != len(mat[i]) for i in range(len(mat))):
+        return False
+    return True
+
+
 def transpose(mat: list[list[float | int]]) -> list[list]:
     if len(mat) == 0:
         return []
@@ -15,7 +21,7 @@ def transpose(mat: list[list[float | int]]) -> list[list]:
 
 
 def row_sums(mat: list[list[float | int]]) -> list[float]:
-    if any(len(mat[0]) != len(mat[i]) for i in range(len(mat))):
+    if not check_is_valid(mat=mat):
         return ValueError
 
     array = list()
@@ -25,7 +31,7 @@ def row_sums(mat: list[list[float | int]]) -> list[float]:
 
 
 def col_sums(mat: list[list[float | int]]) -> list[float]:
-    if any(len(mat[0]) != len(mat[i]) for i in range(len(mat))):
+    if not check_is_valid(mat=mat):
         return ValueError
 
     array = list(0 for i in range(len(mat[0])))
