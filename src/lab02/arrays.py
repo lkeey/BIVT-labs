@@ -26,6 +26,3 @@ def flatten(mat: list[list | tuple]) -> list:
         for member in arr:
             array.append(member)
     return array
-
-
-print(flatten([[1, 2], "ab"]))
