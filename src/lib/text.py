@@ -1,3 +1,6 @@
+import re
+
+
 def normalize(text: str, *, casefold: bool = True, yo2e: bool = True) -> str:
     if casefold:
         text = text.casefold()
@@ -10,3 +13,7 @@ def normalize(text: str, *, casefold: bool = True, yo2e: bool = True) -> str:
         text = text.replace(" " * 2, " ")
 
     return text.strip()
+
+
+def tokenize(text: str) -> list[str]:
+    return re.findall(r"\w+(?:-\w+)*", text, flags=re.UNICODE)
