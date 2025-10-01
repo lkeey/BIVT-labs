@@ -1,5 +1,6 @@
 import sys
 from src.lib.text import normalize, tokenize, count_freq, top_n
+from src.lib.table import table
 
 """
 text_stats.py — скрипт для анализа текста.
@@ -38,13 +39,7 @@ print(f"Уникальных слов: {len(set(tokens))}")
 print("Топ-5:")
 
 if IS_TABLE:
-    max_word_length = max([len(i[0]) for i in top]) + 1
-
-    print(f"cлово{(max_word_length - 5) * ' '}| частота")
-    print("-" * (max_word_length + 2 + max_word_length))
-    for i in top:
-        word, count = i
-        print(f"{word}{(max_word_length - len(word)) * ' '}| {count}")
+    table(title="cлово", description="частота", top=top)
 else:
     for i in top:
         print(f"{i[0]}:{i[1]}")
