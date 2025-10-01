@@ -98,7 +98,7 @@ def top_n(freq: dict[str, int], n: int = 5) -> list[tuple[str, int]]:
     freq = sorted(freq.items(), key=lambda item: [-item[1], item[0]])
     top_n = []
 
-    for i in range(n):
+    for i in range(min(n, len(freq))):
         top_n.append((freq[i][0], freq[i][1]))
 
     return top_n
