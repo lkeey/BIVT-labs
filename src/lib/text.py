@@ -55,8 +55,6 @@ def tokenize(text: str) -> list[str]:
 
     return [i.group() for i in tokens]
 
-    # return findall(r"\w+(?:-\w+)*", text)
-
 
 def count_freq(tokens: list[str]) -> dict[str, int]:
     """

@@ -362,3 +362,57 @@ def top_n(freq: dict[str, int], n: int = 5) -> list[tuple[str, int]]:
     return top_n
 ```
 ![Картинка 3.3](./images/lab03/A_top_n.png)
+
+### Задание B
+```python
+
+def table(title: str, description: str, top: list[tuple[str, int]]) -> None:
+    max_word_length = max([len(i[0]) for i in top]) + 1
+
+    print(f"{title}{(max_word_length - 5) * ' '}| {description}")
+    print("-" * (max_word_length + 2 + max_word_length))
+    for i in top:
+        word, count = i
+        print(f"{word}{(max_word_length - len(word)) * ' '}| {count}")
+
+"""
+Функции:
+    - Считает общее количество слов
+    - Считает количество уникальных слов
+    - Находит топ-5 наиболее частых слов
+
+Токенизация и нормализация текста выполняются с помощью функций из src.lib.text:
+    - normalize() — нормализует текст (нижний регистр, убирает лишние пробелы и заменяет 'ё' на 'е')
+    - tokenize() — разбивает текст на слова/числа
+    - count_freq() — считает частоты слов
+    - top_n() — возвращает топ-N наиболее частых слов
+
+Запуск:
+    Из корня проекта:
+        python3 -m src.lab03.text_stats < src/lab03/input.txt
+
+Переменные:
+    IS_TABLE — если True, выводится красивая таблица; иначе простая печать токен:частота
+"""
+
+IS_TABLE = True
+
+text = sys.stdin.read()
+
+text = normalize(text=text)
+
+tokens = tokenize(text=text)
+
+top = top_n(count_freq(tokens=tokens), n=5)
+
+print(f"Всего слов: {len(tokens)}")
+print(f"Уникальных слов: {len(set(tokens))}")
+print("Топ-5:")
+
+if IS_TABLE:
+    table(title="cлово", description="частота", top=top)
+else:
+    for i in top:
+        print(f"{i[0]}:{i[1]}")
+```
+![Картинка 3.3](./images/lab03/B.png)

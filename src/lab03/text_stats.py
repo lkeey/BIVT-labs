@@ -3,8 +3,6 @@ from src.lib.text import normalize, tokenize, count_freq, top_n
 from src.lib.table import table
 
 """
-text_stats.py — скрипт для анализа текста.
-
 Функции:
     - Считает общее количество слов
     - Считает количество уникальных слов
