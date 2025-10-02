@@ -1,6 +1,6 @@
 import sys
-from src.lib.text import normalize, tokenize, count_freq, top_n
-from src.lib.table import table
+from src.lib.text import normalize, tokenize
+from src.lib.table import print_summary
 
 """
 Функции:
@@ -24,20 +24,8 @@ from src.lib.table import table
 
 IS_TABLE = True
 
-text = sys.stdin.read()
-
-text = normalize(text=text)
+text = normalize(text=sys.stdin.read())
 
 tokens = tokenize(text=text)
 
-top = top_n(count_freq(tokens=tokens), n=5)
-
-print(f"Всего слов: {len(tokens)}")
-print(f"Уникальных слов: {len(set(tokens))}")
-print("Топ-5:")
-
-if IS_TABLE:
-    table(title="cлово", description="частота", top=top)
-else:
-    for i in top:
-        print(f"{i[0]}:{i[1]}")
+print_summary(tokens=tokens, is_table=IS_TABLE)
