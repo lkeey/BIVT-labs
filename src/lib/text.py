@@ -51,7 +51,7 @@ def tokenize(text: str) -> list[str]:
         "emoji 😀 не слово" → ["emoji", "не", "слово"]
     """
 
-    tokens = finditer(pattern=r"\w+(-\w+)*", string=text)
+    tokens = finditer(pattern=r"\w+(?:-\w+)*", string=text)
 
     return [i.group() for i in tokens]
 
