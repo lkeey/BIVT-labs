@@ -1,4 +1,4 @@
-from src.lib.text import count_freq, top_n
+from src.lib.text import count_freq, top_n, normalize, tokenize
 
 
 def table(title: str, description: str, top: list[tuple[str, int]]) -> None:
@@ -11,10 +11,12 @@ def table(title: str, description: str, top: list[tuple[str, int]]) -> None:
         print(f"{word}{(max_word_length - len(word)) * ' '}| {count}")
 
 
-def print_summary(tokens: list[str], is_table: bool, n: int = 5) -> None:
+def print_summary(text: str, is_table: bool, n: int = 5) -> None:
     """Печатает статистику по токенам: всего, уникальные, топ-5."""
 
+    tokens = tokenize(text=normalize(text=text))
     top = top_n(count_freq(tokens), n=n)
+
     print(f"Всего слов: {len(tokens)}")
     print(f"Уникальных слов: {len(set(tokens))}")
 

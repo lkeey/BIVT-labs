@@ -2,30 +2,32 @@ import sys
 from src.lib.text import normalize, tokenize
 from src.lib.table import print_summary
 
-"""
-Функции:
-    - Считает общее количество слов
-    - Считает количество уникальных слов
-    - Находит топ-5 наиболее частых слов
 
-Токенизация и нормализация текста выполняются с помощью функций из src.lib.text:
-    - normalize() — нормализует текст (нижний регистр, убирает лишние пробелы и заменяет 'ё' на 'е')
-    - tokenize() — разбивает текст на слова/числа
-    - count_freq() — считает частоты слов
-    - top_n() — возвращает топ-N наиболее частых слов
+def main():
+    """
+    Функции:
+        - Считает общее количество слов
+        - Считает количество уникальных слов
+        - Находит топ-5 наиболее частых слов
 
-Запуск:
-    Из корня проекта:
-        python3 -m src.lab03.text_stats < src/lab03/input.txt
+    Токенизация и нормализация текста выполняются с помощью функций из src.lib.text:
+        - normalize() — нормализует текст (нижний регистр, убирает лишние пробелы и заменяет 'ё' на 'е')
+        - tokenize() — разбивает текст на слова/числа
+        - count_freq() — считает частоты слов
+        - top_n() — возвращает топ-N наиболее частых слов
 
-Переменные:
-    IS_TABLE — если True, выводится красивая таблица; иначе простая печать токен:частота
-"""
+    Запуск:
+        Из корня проекта:
+            python3 -m src.lab03.text_stats < src/lab03/input.txt
 
-IS_TABLE = True
+    Переменные:
+        IS_TABLE — если True, выводится красивая таблица; иначе простая печать токен:частота
+    """
 
-text = normalize(text=sys.stdin.read())
+    IS_TABLE = True
 
-tokens = tokenize(text=text)
+    print_summary(text=sys.stdin.read(), is_table=IS_TABLE)
 
-print_summary(tokens=tokens, is_table=IS_TABLE)
+
+if __name__ == "__main__":
+    main()
