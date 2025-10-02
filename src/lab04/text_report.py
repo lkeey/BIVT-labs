@@ -9,6 +9,11 @@ from src.lib.table import print_summary
 
 
 def main():
+    """
+    Запуск:
+        python3 -m src.lab04.text_report --in data/lab04/b.txt --out data/report.csv
+    """
+
     parser = argparse.ArgumentParser(description="Анализ текста и отчёт в CSV")
     parser.add_argument("--in", dest="input", default="data/input.txt")
     parser.add_argument("--out", dest="output", default="data/report.csv")
