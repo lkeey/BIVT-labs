@@ -252,3 +252,38 @@ def format_record(rec: tuple[str, str, float]) -> str:
 ```
 ![Картинка 1](./images/lab02/tuples_format_record_success.png)
 ![Картинка 2](./images/lab02/tuples_format_record_error.png)
+
+
+## Лабораторная работа 3
+
+### Задание A
+```python
+def normalize(text: str, *, casefold: bool = True, yo2e: bool = True) -> str:
+    """
+    Нормализация текста:
+        - приводит к нижнему регистру (если casefold=True)
+        - заменяет 'ё' → 'е' и 'Ё' → 'Е' (если yo2e=True)
+        - заменяет символы табуляции, перевода строки и возврата каретки на пробел
+        - сжимает последовательности пробелов до одного
+        - удаляет пробелы в начале и конце строки
+
+    Примеры:
+        - "ПрИвЕт\nМИр\t" → "привет мир" (casefold + схлопнуть пробелы)
+        - "ёжик, Ёлка" (yo2e=True) → "ежик, елка"
+        - "Hello\r\nWorld" → "hello world"
+        - "  двойные   пробелы  " → "двойные пробелы"
+    """
+
+    if casefold:
+        text = text.casefold()
+    if yo2e:
+        text = text.replace("ё", "е").replace("Ё", "Е")
+
+    text = text.replace("\t", " ").replace("\r", " ").replace("\n", " ")
+
+    while "  " in text:
+        text = text.replace(" " * 2, " ")
+
+    return text.strip()
+```
+![Картинка 3.1](./images/lab03/A_normalize.png)
