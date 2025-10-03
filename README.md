@@ -541,13 +541,15 @@ def sorted_word_counts(freq: dict[str, int]) -> list[tuple[str, int]]:
 
     return sorted(freq.items(), key=lambda kv: (-kv[1], kv[0]))
 ```
-![Картинка 4.1](./images/lab04/images/lab04/A_empty_header.png)
+![Картинка 4.1](./images/lab04/A_empty_header.png)
 
-![Картинка 4.2](./images/lab04/images/lab04/A_empty_input.png)
+![Картинка 4.2](./images/lab04/A_empty_input.png)
 
-![Картинка 4.3](./images/lab04/images/lab04/A_test.png)
+![Картинка 4.3](./images/lab04/A_test.png)
 
-![Картинка 4.4](./images/lab04/images/lab04/A_top.png)
+![Картинка 4.4](./images/lab04/A_top.png)
+
+### Задание B
 
 ```python
 from src.lab04.io_txt_csv import (
