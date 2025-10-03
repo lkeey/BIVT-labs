@@ -618,3 +618,8 @@ def main():
 
 main()
 ```
+![Картинка 4.5](./images/lab04/B_empty_parser.png)
+
+![Картинка 4.6](./images/lab04/B_encoding.png)
+
+![Картинка 4.7](./images/lab04/B_in&out.png)
