@@ -1,4 +1,4 @@
-from src.lab04.io_txt_csv import (
+from src.lib.io_txt_csv import (
     read_text,
     write_csv,
     frequencies_from_text,

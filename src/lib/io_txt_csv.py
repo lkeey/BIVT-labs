@@ -27,6 +27,18 @@ from src.lib.text import normalize, tokenize
 """
 
 
+def ensure_parent_dir(path: str | Path) -> None:
+    """
+    Создать родительские директории для указанного пути, если их ещё нет.
+
+    Args:
+        path: путь к файлу (строка или pathlib.Path).
+    """
+    p = Path(path)
+    if p.parent and not p.parent.exists():
+        p.parent.mkdir(parents=True, exist_ok=True)
+
+
 def read_text(path: str | Path, encoding: str = "utf-8") -> str:
     """
     Открыть текстовый файл и вернуть его содержимое как одну строку.
@@ -48,18 +60,6 @@ def read_text(path: str | Path, encoding: str = "utf-8") -> str:
     return p.read_text(encoding=encoding)
 
 
-def ensure_parent_dir(path: str | Path) -> None:
-    """
-    Создать родительские директории для указанного пути, если их ещё нет.
-
-    Args:
-        path: путь к файлу (строка или pathlib.Path).
-    """
-    p = Path(path)
-    if p.parent and not p.parent.exists():
-        p.parent.mkdir(parents=True, exist_ok=True)
-
-
 def write_csv(
     rows: Iterable[Sequence], path: str | Path, header: tuple[str, ...] | None = None
 ) -> None:
@@ -70,9 +70,6 @@ def write_csv(
         rows: последовательность строк (каждая строка — tuple или list).
         path: путь к CSV-файлу (строка или pathlib.Path).
         header: необязательный заголовок (tuple[str,...]), будет записан первой строкой.
-
-    Падает с ошибкой:
-        ValueError: если строки имеют разную длину.
     """
 
     p = Path(path)
