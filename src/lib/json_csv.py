@@ -58,5 +58,6 @@ def csv_to_json(
         data_csv = [row for row in reader]
 
     json_path = Path(json_path)
+    ensure_parent_dir(json_path)
     with json_path.open("w", encoding=encoding) as json_file:
         json.dump(data_csv, json_file, indent=2)
