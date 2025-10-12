@@ -628,9 +628,7 @@ main()
 
 ### Задание 1
 
-```
-python
-
+```python
 def json_to_csv(
     json_path: str | Path, csv_path: str | Path, encoding: str = "utf-8"
 ) -> None:
@@ -683,7 +681,6 @@ def json_to_csv(
 ![Картинка 5.1.1](./images/lab05/json_to_csv.png)
 
 ```python
-
 def csv_to_json(
     csv_path: str | Path, json_path: str | Path, encoding: str = "utf-8"
 ) -> None:
@@ -726,14 +723,13 @@ def csv_to_json(
         json.dump(data_csv, json_file, indent=2)
 ```
 
-![Картинка 5.1.1](./images/lab05/csv_to_json1.png)
+![Картинка 5.1.1](./images/lab05/csv_to_json_1.png)
 
-![Картинка 5.1.1](./images/lab05/csv_to_json2.png)
+![Картинка 5.1.2](./images/lab05/csv_to_json_2.png)
 
 ### Задание 2
 
 ```python
-
 from pathlib import Path
 from src.lib.io_txt_csv import ensure_parent_dir, write_csv
 import csv
