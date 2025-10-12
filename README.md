@@ -682,8 +682,7 @@ def json_to_csv(
 
 ![Картинка 5.1.1](./images/lab05/json_to_csv.png)
 
-```
-python
+```python
 
 def csv_to_json(
     csv_path: str | Path, json_path: str | Path, encoding: str = "utf-8"
@@ -733,8 +732,7 @@ def csv_to_json(
 
 ### Задание 2
 
-```
-python
+```python
 
 from pathlib import Path
 from src.lib.io_txt_csv import ensure_parent_dir, write_csv
