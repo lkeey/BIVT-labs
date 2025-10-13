@@ -10,8 +10,6 @@ import argparse
 from pathlib import Path
 from src.lib.text import tokenize, count_freq, top_n
 
-# python -m src.lab06.cli_convert json2csv --in data/samples/people.json --out data/out/people.csv
-
 
 def main():
     parser = argparse.ArgumentParser(description="CLI‑утилиты лабораторной №6")
