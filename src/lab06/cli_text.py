@@ -8,6 +8,7 @@
 
 import argparse
 from pathlib import Path
+from src.lib.text import tokenize, count_freq, top_n
 
 # python -m src.lab06.cli_convert json2csv --in data/samples/people.json --out data/out/people.csv
 
@@ -28,13 +29,13 @@ def main():
 
     args = parser.parse_args()
 
+    filepath = Path(args.input)
+
+    if not filepath.exists():
+        raise FileNotFoundError(f"Файл {filepath} не найден")
+
     if args.command == "cat":
         # python3 -m src.lab06.cli_text cat --input data/samples/cities.csv -n
-
-        filepath = Path(args.input)
-
-        if not filepath.exists():
-            raise FileNotFoundError(f"Файл {filepath} не найден")
 
         with filepath.open("r", encoding="utf-8") as f:
             num = 1
@@ -47,7 +48,17 @@ def main():
                     print(line)
 
     elif args.command == "stats":
-        """ Реализация команды stats """
+        # python3 -m src.lab06.cli_text stats --input data/samples/input.txt --top 3
+
+        content = [i for i in filepath.open("r", encoding="utf-8")]
+        tokens = tokenize(text="".join(content))
+        freq = count_freq(tokens=tokens)
+        top = top_n(freq=freq, n=args.top)
+
+        num = 1
+        for q, w in top:
+            print(f"{num}. {q} - {w}")
+            num += 1
 
 
 if __name__ == "__main__":
