@@ -1114,7 +1114,7 @@ def test_missing_file_raises():
         csv_to_json("nope.csv", "out.json")
 ```
 
-`[text](pyproject.toml)`
+### pyproject.toml
 ```toml
 [tool.black]
 line-length = 88
@@ -1138,16 +1138,16 @@ select = ["E", "F", "I"]
 ignore = ["E501"]
 ```
 
-`[text](pytest.ini)`
+### pytest.ini
 ```ini
 [pytest]
 addopts = -q
 testpaths = tests
 ```
 
-###Результат работы:
+## Результат работы:
 
-## Black
+### Black
 
 ```
 black --check .
@@ -1155,7 +1155,7 @@ black --check .
 
 ![Картинка 5.2.1](./images/lab07/black_check.png)
 
-## Ruff
+### Ruff
 
 ```
 ruff check .
@@ -1164,9 +1164,5 @@ ruff check .
 ![Картинка 5.2.1](./images/lab07/ruff_check.png)
 
 ## Tests Report
-
-```
-ruff check .
-```
 
 ![Картинка 5.2.1](./images/lab07/test_report.png)
