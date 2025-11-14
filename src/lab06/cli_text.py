@@ -1,6 +1,7 @@
 import argparse
 from pathlib import Path
-from src.lib.text import tokenize, count_freq, top_n
+
+from src.lib.text import count_freq, tokenize, top_n
 
 
 def main():

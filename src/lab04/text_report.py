@@ -1,10 +1,11 @@
-from src.lib.io_txt_csv import (
-    read_text,
-    write_csv,
-    frequencies_from_text,
-    sorted_word_counts,
-)
 import argparse
+
+from src.lib.io_txt_csv import (
+    frequencies_from_text,
+    read_text,
+    sorted_word_counts,
+    write_csv,
+)
 from src.lib.table import print_summary
 
 

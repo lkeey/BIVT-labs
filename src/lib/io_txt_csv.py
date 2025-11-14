@@ -1,7 +1,8 @@
-from pathlib import Path
 import csv
-from typing import Iterable, Sequence
 from collections import Counter
+from pathlib import Path
+from typing import Iterable, Sequence
+
 from src.lib.text import normalize, tokenize
 
 """

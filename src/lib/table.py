@@ -1,4 +1,4 @@
-from src.lib.text import count_freq, top_n, normalize, tokenize
+from src.lib.text import count_freq, normalize, tokenize, top_n
 
 
 def table(title: str, description: str, top: list[tuple[str, int]]) -> None:

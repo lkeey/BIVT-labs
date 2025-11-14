@@ -1,4 +1,5 @@
 import sys
+
 from src.lib.table import print_summary
 
 
