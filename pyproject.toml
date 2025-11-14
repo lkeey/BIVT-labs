@@ -14,5 +14,7 @@ exclude = """
 line-length = 88
 target-version = "py311"
 extend-exclude = ["venv", ".venv", "data", "images"]
+
+[tool.ruff.lint]
 select = ["E", "F", "I"]
 ignore = ["E501"]
