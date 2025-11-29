@@ -86,6 +86,43 @@ def benchmark_linked_list(n=10000):
     print()
 
 
+def benchmark_python_list(n=10000):
+    """Бенчмарк для обычного списка Python."""
+    print(f"=== Benchmark Python List (n={n}) ===")
+    
+    # Тест вставки в конец (как стек)
+    lst = []
+    start = time.time()
+    for i in range(n):
+        lst.append(i)
+    append_time = time.time() - start
+    
+    # Тест извлечения с конца (как стек)
+    start = time.time()
+    while len(lst) > 0:
+        lst.pop()
+    pop_time = time.time() - start
+    
+    # Тест вставки в начало
+    lst2 = []
+    start = time.time()
+    for i in range(n):
+        lst2.insert(0, i)
+    insert_begin_time = time.time() - start
+    
+    # Тест извлечения с начала
+    start = time.time()
+    while len(lst2) > 0:
+        lst2.pop(0)
+    pop_begin_time = time.time() - start
+    
+    print(f"Вставка {n} элементов в конец: {append_time:.6f} сек")
+    print(f"Извлечение {n} элементов с конца: {pop_time:.6f} сек")
+    print(f"Вставка {n} элементов в начало: {insert_begin_time:.6f} сек")
+    print(f"Извлечение {n} элементов с начала: {pop_begin_time:.6f} сек")
+    print()
+
+
 def compare_structures():
     """Сравнение структур данных."""
     print("=== Сравнение структур данных ===")
@@ -135,11 +172,38 @@ def compare_structures():
         ll2.remove_at(0)
     ll_remove_time = time.time() - start
     
-    print(f"{'Операция':<25} {'Stack':<12} {'Queue':<12} {'LinkedList':<12}")
-    print("-" * 60)
-    print(f"{'Вставка (push/enqueue)':<25} {stack_push_time:<12.6f} {queue_enqueue_time:<12.6f} {ll_append_time:<12.6f}")
-    print(f"{'Извлечение (pop/dequeue)':<25} {stack_pop_time:<12.6f} {queue_dequeue_time:<12.6f} {ll_remove_time:<12.6f}")
-    print(f"{'Вставка в начало':<25} {'-':<12} {'-':<12} {ll_prepend_time:<12.6f}")
+    # Python List (как стек)
+    lst = []
+    start = time.time()
+    for i in range(n):
+        lst.append(i)
+    list_append_time = time.time() - start
+    
+    start = time.time()
+    for _ in range(n):
+        if len(lst) > 0:
+            lst.pop()
+    list_pop_time = time.time() - start
+    
+    # Python List (как очередь - неэффективно)
+    lst_queue = []
+    start = time.time()
+    for i in range(n):
+        lst_queue.append(i)
+    list_queue_enqueue_time = time.time() - start
+    
+    start = time.time()
+    for _ in range(n):
+        if len(lst_queue) > 0:
+            lst_queue.pop(0)  # Неэффективная операция!
+    list_queue_dequeue_time = time.time() - start
+    
+    print(f"{'Операция':<30} {'Stack':<12} {'Queue':<12} {'LinkedList':<12} {'Python List':<12}")
+    print("-" * 75)
+    print(f"{'Вставка (push/enqueue/append)':<30} {stack_push_time:<12.6f} {queue_enqueue_time:<12.6f} {ll_append_time:<12.6f} {list_append_time:<12.6f}")
+    print(f"{'Извлечение (pop/dequeue/pop)':<30} {stack_pop_time:<12.6f} {queue_dequeue_time:<12.6f} {ll_remove_time:<12.6f} {list_pop_time:<12.6f}")
+    print(f"{'Вставка в начало':<30} {'-':<12} {'-':<12} {ll_prepend_time:<12.6f} {'Очень медл.':<12}")
+    print(f"{'Очередь (pop(0) - неэфф.)':<30} {'-':<12} {'-':<12} {'-':<12} {list_queue_dequeue_time:<12.6f}")
     print()
 
 
@@ -148,4 +212,5 @@ if __name__ == "__main__":
     benchmark_stack(n)
     benchmark_queue(n)
     benchmark_linked_list(n)
+    benchmark_python_list(n)
     compare_structures()

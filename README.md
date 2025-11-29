@@ -12,6 +12,8 @@ This repository contains laboratory works for Python programming course.
 - [Laboratory Work 6](src/lab06/README.md) - Command-line interface tools
 - [Laboratory Work 7](src/lab07/README.md) - Testing with pytest
 - [Laboratory Work 8](src/lab08/README.md) - Object-oriented programming with dataclasses and serialization
+- [Laboratory Work 9](src/lab09/README.md) - Working with classes and data management
+- [Laboratory Work 10](src/lab10/README.md) - Data structures: Stack, Queue, Linked List and benchmarks
 
 ## Project Structure
 
@@ -27,7 +29,9 @@ python_labs/
 │   ├─ lab05/                       # Lab 5: JSON and CSV conversion
 │   ├─ lab06/                       # Lab 6: CLI tools
 │   ├─ lab07/                       # Lab 7: Testing
-│   └─ lab08/                       # Lab 8: OOP with dataclasses
+│   ├─ lab08/                       # Lab 8: OOP with dataclasses
+│   ├─ lab09/                       # Lab 9: Classes and data management
+│   └─ lab10/                       # Lab 10: Data structures
 ├─ data/                            # Data files for labs
 ├─ images/                          # Screenshots and images
 └─ tests/                           # Test files
