@@ -1,6 +1,7 @@
 [tool.black]
 line-length = 88
 target-version = ["py311"]
+<<<<<<< HEAD
 exclude = """
 (
     /venv
@@ -9,12 +10,20 @@ exclude = """
   | /images
 )
 """
+=======
+exclude = ["venv", ".venv", "data", "images"]
+>>>>>>> a83e1b3 (create 8th lab)
 
 [tool.ruff]
 line-length = 88
 target-version = "py311"
 extend-exclude = ["venv", ".venv", "data", "images"]
+<<<<<<< HEAD
 
 [tool.ruff.lint]
 select = ["E", "F", "I"]
 ignore = ["E501"]
+=======
+select = ["E", "F", "I"]
+ignore = ["E501"]
+>>>>>>> a83e1b3 (create 8th lab)
