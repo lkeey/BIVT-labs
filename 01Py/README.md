@@ -2,6 +2,9 @@
 
 This repository contains laboratory works for Python programming course.
 
+**Автор:** Кирюшин Алексей  
+**Группа:** БИВТ-25-1
+
 ## Laboratory Works
 
 - [Laboratory Work 1](src/lab01/README.md) - Basic Python syntax and input/output operations
