@@ -1,0 +1,15 @@
+/Users/lkeey/Programming/BIVT-labs/02C#/lab01/Level1/bin/Debug/net8.0/Level1
+/Users/lkeey/Programming/BIVT-labs/02C#/lab01/Level1/bin/Debug/net8.0/Level1.deps.json
+/Users/lkeey/Programming/BIVT-labs/02C#/lab01/Level1/bin/Debug/net8.0/Level1.runtimeconfig.json
+/Users/lkeey/Programming/BIVT-labs/02C#/lab01/Level1/bin/Debug/net8.0/Level1.dll
+/Users/lkeey/Programming/BIVT-labs/02C#/lab01/Level1/bin/Debug/net8.0/Level1.pdb
+/Users/lkeey/Programming/BIVT-labs/02C#/lab01/Level1/obj/Debug/net8.0/Level1.GeneratedMSBuildEditorConfig.editorconfig
+/Users/lkeey/Programming/BIVT-labs/02C#/lab01/Level1/obj/Debug/net8.0/Level1.AssemblyInfoInputs.cache
+/Users/lkeey/Programming/BIVT-labs/02C#/lab01/Level1/obj/Debug/net8.0/Level1.AssemblyInfo.cs
+/Users/lkeey/Programming/BIVT-labs/02C#/lab01/Level1/obj/Debug/net8.0/Level1.csproj.CoreCompileInputs.cache
+/Users/lkeey/Programming/BIVT-labs/02C#/lab01/Level1/obj/Debug/net8.0/Level1.sourcelink.json
+/Users/lkeey/Programming/BIVT-labs/02C#/lab01/Level1/obj/Debug/net8.0/Level1.dll
+/Users/lkeey/Programming/BIVT-labs/02C#/lab01/Level1/obj/Debug/net8.0/refint/Level1.dll
+/Users/lkeey/Programming/BIVT-labs/02C#/lab01/Level1/obj/Debug/net8.0/Level1.pdb
+/Users/lkeey/Programming/BIVT-labs/02C#/lab01/Level1/obj/Debug/net8.0/Level1.genruntimeconfig.cache
+/Users/lkeey/Programming/BIVT-labs/02C#/lab01/Level1/obj/Debug/net8.0/ref/Level1.dll
