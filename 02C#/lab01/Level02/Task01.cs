@@ -7,9 +7,7 @@ namespace Level2;
 public static class Task01
 {
     public static void Execute()
-    {
-        Console.WriteLine("=== Задача 1: Сумма ряда с точностью ε = 0.0001 ===\n");
-        
+    {        
         Console.Write("Введите значение x: ");
         double x = double.Parse(Console.ReadLine() ?? "1.0");
         
@@ -22,7 +20,6 @@ public static class Task01
         {
             term = Math.Cos(n * x) / (n * n);
             sum += term;
-            Console.WriteLine($"n={n,3}: cos({n}x)/{n}² = {term,10:f6}, сумма = {sum:f6}");
             n++;
         }
         while (Math.Abs(term) >= eps);

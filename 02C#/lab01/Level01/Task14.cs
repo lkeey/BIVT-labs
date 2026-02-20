@@ -7,9 +7,7 @@ namespace Level1;
 public static class Task14
 {
     public static void Execute()
-    {
-        Console.WriteLine("=== Задача 14: Числа Фибоначчи (первые 8 членов) ===\n");
-        
+    {        
         int fib1 = 1, fib2 = 1;
         
         Console.Write($"{fib1} {fib2} ");

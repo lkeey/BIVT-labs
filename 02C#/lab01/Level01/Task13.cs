@@ -11,10 +11,6 @@ public static class Task13
 {
     public static void Execute()
     {
-        Console.WriteLine("=== Задача 13: Табулирование кусочно-заданной функции ===\n");
-        Console.WriteLine("x\t\ty");
-        Console.WriteLine("─────────────────");
-        
         for (double x = -1.5; x <= 1.5 + 0.0001; x += 0.1)
         {
             double y;

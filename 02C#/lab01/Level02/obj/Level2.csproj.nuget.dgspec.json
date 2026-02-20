@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "/Users/lkeey/Programming/BIVT-labs/02C#/lab01/Level2/Level2.csproj": {}
+    "/Users/lkeey/Programming/BIVT-labs/02C#/lab01/Level02/Level2.csproj": {}
   },
   "projects": {
-    "/Users/lkeey/Programming/BIVT-labs/02C#/lab01/Level2/Level2.csproj": {
+    "/Users/lkeey/Programming/BIVT-labs/02C#/lab01/Level02/Level2.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/Users/lkeey/Programming/BIVT-labs/02C#/lab01/Level2/Level2.csproj",
+        "projectUniqueName": "/Users/lkeey/Programming/BIVT-labs/02C#/lab01/Level02/Level2.csproj",
         "projectName": "Level2",
-        "projectPath": "/Users/lkeey/Programming/BIVT-labs/02C#/lab01/Level2/Level2.csproj",
+        "projectPath": "/Users/lkeey/Programming/BIVT-labs/02C#/lab01/Level02/Level2.csproj",
         "packagesPath": "/Users/lkeey/.nuget/packages/",
-        "outputPath": "/Users/lkeey/Programming/BIVT-labs/02C#/lab01/Level2/obj/",
+        "outputPath": "/Users/lkeey/Programming/BIVT-labs/02C#/lab01/Level02/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "/Users/lkeey/.nuget/NuGet/NuGet.Config"

@@ -9,7 +9,6 @@ public static class Task11
 {
     public static void Execute()
     {
-        Console.WriteLine("=== Задача 11: Печать последовательностей ===\n");
         
         Console.Write("а) ");
         for (int i = 1; i <= 6; i++)

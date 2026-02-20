@@ -823,21 +823,30 @@ for (double x = a; x <= b; x += h)
 
 ```
 lab01_csharp/
-├── Lab01_CyclicStructures.sln
-├── README.md
-├── Level1/
+├── README.md                          # Данный файл с полным описанием работы
+├── WORD_REPORT_CONTENT.md             # Содержание для Word отчета
+├── Lab01_Report_Kiryushin.docx        # Готовый отчет в формате DOCX
+├── Level01/                           # Уровень I: Базовые циклы
 │   ├── Level1.csproj
 │   ├── Program.cs
-│   ├── Task01.cs ... Task18.cs
-├── Level2/
+│   └── Task01.cs ... Task18.cs
+├── Level02/                           # Уровень II: Циклы по условию
 │   ├── Level2.csproj
 │   ├── Program.cs
-│   ├── Task01.cs ... Task10.cs
-└── Level3/
+│   └── Task01.cs ... Task10.cs
+└── Level03/                           # Уровень III: Вложенные циклы
     ├── Level3.csproj
     ├── Program.cs
     └── Task01.cs ... Task09.cs
 ```
+
+---
+
+## Документация
+
+- **README.md** - подробное описание всех задач с теорией и решениями
+- **Lab01_Report_Kiryushin.docx** - официальный отчет по лабораторной работе
+- **WORD_REPORT_CONTENT.md** - исходное содержание для создания отчета
 
 ---
 

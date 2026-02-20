@@ -8,9 +8,7 @@ namespace Level3;
 public static class Task01
 {
     public static void Execute()
-    {
-        Console.WriteLine("=== Задача 1: Ряд для cos(x) ===\n");
-        
+    {        
         const double a = 0.1, b = 1.0, h = 0.1;
         const double eps = 0.0001;
         

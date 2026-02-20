@@ -7,9 +7,7 @@ namespace Level2;
 public static class Task03
 {
     public static void Execute()
-    {
-        Console.WriteLine("=== Задача 3: Количество членов прогрессии до заданной суммы ===\n");
-        
+    {        
         Console.Write("Введите начальное значение a: ");
         double a = double.Parse(Console.ReadLine() ?? "2.0");
         
@@ -29,7 +27,6 @@ public static class Task03
         {
             member = a + n * h;
             sum += member;
-            Console.WriteLine($"n={n}: член={member,6:f2}, сумма={sum,8:f2}");
             n++;
         }
         while (sum <= p);
