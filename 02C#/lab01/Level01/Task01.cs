@@ -1,8 +1,6 @@
 namespace Level1;
 
-/// <summary>
-/// Задача 1: Вычислить s = 2 + 5 + 8 + ... + 35 (арифметическая прогрессия)
-/// </summary>
+
 public static class Task01
 {
     public static void Execute()
