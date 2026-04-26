@@ -1,0 +1,15 @@
+/Users/lkeey/BIVT-labs/02C#/lab04/BankAccount/bin/Debug/net10.0/BankAccount
+/Users/lkeey/BIVT-labs/02C#/lab04/BankAccount/bin/Debug/net10.0/BankAccount.deps.json
+/Users/lkeey/BIVT-labs/02C#/lab04/BankAccount/bin/Debug/net10.0/BankAccount.runtimeconfig.json
+/Users/lkeey/BIVT-labs/02C#/lab04/BankAccount/bin/Debug/net10.0/BankAccount.dll
+/Users/lkeey/BIVT-labs/02C#/lab04/BankAccount/bin/Debug/net10.0/BankAccount.pdb
+/Users/lkeey/BIVT-labs/02C#/lab04/BankAccount/obj/Debug/net10.0/BankAccount.GeneratedMSBuildEditorConfig.editorconfig
+/Users/lkeey/BIVT-labs/02C#/lab04/BankAccount/obj/Debug/net10.0/BankAccount.AssemblyInfoInputs.cache
+/Users/lkeey/BIVT-labs/02C#/lab04/BankAccount/obj/Debug/net10.0/BankAccount.AssemblyInfo.cs
+/Users/lkeey/BIVT-labs/02C#/lab04/BankAccount/obj/Debug/net10.0/BankAccount.csproj.CoreCompileInputs.cache
+/Users/lkeey/BIVT-labs/02C#/lab04/BankAccount/obj/Debug/net10.0/BankAccount.sourcelink.json
+/Users/lkeey/BIVT-labs/02C#/lab04/BankAccount/obj/Debug/net10.0/BankAccount.dll
+/Users/lkeey/BIVT-labs/02C#/lab04/BankAccount/obj/Debug/net10.0/refint/BankAccount.dll
+/Users/lkeey/BIVT-labs/02C#/lab04/BankAccount/obj/Debug/net10.0/BankAccount.pdb
+/Users/lkeey/BIVT-labs/02C#/lab04/BankAccount/obj/Debug/net10.0/BankAccount.genruntimeconfig.cache
+/Users/lkeey/BIVT-labs/02C#/lab04/BankAccount/obj/Debug/net10.0/ref/BankAccount.dll
