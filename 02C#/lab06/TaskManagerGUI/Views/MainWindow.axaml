@@ -1,0 +1,91 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="TaskManagerGUI.Views.MainWindow"
+        Title="Менеджер задач - ЛР6"
+        Width="900" Height="600">
+
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Панель добавления -->
+        <Border Grid.Row="0" BorderBrush="Gray" BorderThickness="1" Padding="10" Margin="0,0,0,10">
+            <StackPanel Orientation="Horizontal" Spacing="10">
+                <TextBlock Text="Название:" VerticalAlignment="Center"/>
+                <TextBox Name="textBoxName" Width="250"/>
+                <TextBlock Text="Приоритет:" VerticalAlignment="Center"/>
+                <NumericUpDown Name="numericPriority" 
+                              Minimum="1" Maximum="5" Value="3" Width="100"
+                              FormatString="0"
+                              ShowButtonSpinner="True"
+                              AllowSpin="True"
+                              ButtonSpinnerLocation="Right"/>
+                <Button Name="buttonAdd" Content="Добавить" Click="OnAddClick" Width="100"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Основная область -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="2*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Левая панель: задачи -->
+            <Border Grid.Column="0" BorderBrush="Gray" BorderThickness="1" Padding="10" Margin="0,0,5,0">
+                <StackPanel>
+                    <TextBlock Text="Список задач" FontSize="16" FontWeight="Bold" Margin="0,0,0,10"/>
+                    <ComboBox Name="comboBoxFilter" 
+                             SelectedIndex="0"
+                             SelectionChanged="OnFilterChanged"
+                             Margin="0,0,0,10">
+                        <ComboBoxItem Content="Все задачи"/>
+                        <ComboBoxItem Content="Выполненные"/>
+                        <ComboBoxItem Content="Невыполненные"/>
+                        <ComboBoxItem Content="Высокий приоритет (4-5)"/>
+                    </ComboBox>
+                    <ListBox Name="listBoxTasks" Height="300" Margin="0,0,0,10"/>
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <Button Name="buttonDone" 
+                               Content="Выполнено/Вернуть" 
+                               Click="OnDoneClick" 
+                               Width="150"/>
+                        <Button Name="buttonDelete" 
+                               Content="Удалить" 
+                               Click="OnDeleteClick" 
+                               Width="100"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- Правая панель: журнал -->
+            <Border Grid.Column="1" BorderBrush="Gray" BorderThickness="1" Padding="10" Margin="5,0,0,0">
+                <StackPanel>
+                    <TextBlock Text="Журнал событий" FontSize="16" FontWeight="Bold" Margin="0,0,0,10"/>
+                    <ListBox Name="listBoxLog" Height="300" Margin="0,0,0,10"/>
+                    <CheckBox Name="checkBoxNotify" 
+                             Content="Включить уведомления"
+                             IsChecked="True"
+                             IsCheckedChanged="OnNotifyCheckedChanged"/>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- Нижняя панель: статистика -->
+        <Border Grid.Row="2" BorderBrush="Gray" BorderThickness="1" Padding="10" Margin="0,10,0,0">
+            <StackPanel>
+                <TextBlock Name="labelStats" 
+                          FontSize="12" 
+                          FontWeight="Bold"
+                          Margin="0,0,0,5"/>
+                <TextBlock Name="labelStatus" 
+                          FontSize="11" 
+                          Foreground="DarkBlue"/>
+            </StackPanel>
+        </Border>
+    </Grid>
+
+</Window>

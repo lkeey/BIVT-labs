@@ -1,0 +1,10 @@
+Square|461|386|34|Cyan
+Square|405|152|67|Pink
+Circle|247|150|95|Cyan
+Triangle|498|284|71|Cyan
+Square|463|369|48|Green
+Circle|435|546|72|Cyan
+Triangle|164|592|99|Purple
+Square|348|123|96|Brown
+Triangle|495|101|96|Cyan
+Square|427|457|57|Purple

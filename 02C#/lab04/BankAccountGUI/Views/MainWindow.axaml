@@ -1,0 +1,60 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="BankAccountGUI.Views.MainWindow"
+        Title="Банковский счет - ЛР4"
+        Width="600" Height="500">
+
+    <StackPanel Margin="20">
+        
+        <!-- Зона "Состояние счета" -->
+        <Border BorderBrush="Gray" BorderThickness="2" Padding="15" Margin="0,0,0,20">
+            <StackPanel>
+                <TextBlock Text="Состояние счета" FontSize="18" FontWeight="Bold" Margin="0,0,0,10"/>
+                <TextBlock Name="BalanceLabel" FontSize="20" Margin="0,0,0,10"
+                          Text="Текущий баланс: 0.00 RUR"/>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="Валюта отображения:" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                    <ComboBox Name="DisplayCurrencyCombo" Width="120" SelectedIndex="0"
+                             SelectionChanged="OnDisplayCurrencyChanged">
+                        <ComboBoxItem Content="RUR"/>
+                        <ComboBoxItem Content="INR"/>
+                        <ComboBoxItem Content="USD"/>
+                    </ComboBox>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <!-- Зона "Транзакция" -->
+        <Border BorderBrush="Gray" BorderThickness="2" Padding="15">
+            <StackPanel>
+                <TextBlock Text="Транзакция" FontSize="18" FontWeight="Bold" Margin="0,0,0,10"/>
+                
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                    <TextBlock Text="Сумма:" Width="150" VerticalAlignment="Center"/>
+                    <TextBox Name="AmountTextBox" Width="200"/>
+                </StackPanel>
+                
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,15">
+                    <TextBlock Text="Валюта транзакции:" Width="150" VerticalAlignment="Center"/>
+                    <ComboBox Name="TransactionCurrencyCombo" Width="120" SelectedIndex="0">
+                        <ComboBoxItem Content="RUR"/>
+                        <ComboBoxItem Content="INR"/>
+                        <ComboBoxItem Content="USD"/>
+                    </ComboBox>
+                </StackPanel>
+                
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                    <Button Name="DepositButton" Content="Зачислить" Width="120" Margin="0,0,20,0"
+                           Click="OnDepositClick"/>
+                    <Button Name="WithdrawButton" Content="Снять" Width="120"
+                           Click="OnWithdrawClick"/>
+                </StackPanel>
+                
+                <TextBlock Name="MessageLabel" Margin="0,15,0,0" FontSize="14" 
+                          Foreground="DarkBlue" TextWrapping="Wrap"/>
+            </StackPanel>
+        </Border>
+        
+    </StackPanel>
+
+</Window>

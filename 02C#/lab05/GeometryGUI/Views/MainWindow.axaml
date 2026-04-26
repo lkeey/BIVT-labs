@@ -1,0 +1,69 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="GeometryGUI.Views.MainWindow"
+        Title="Геометрические фигуры - ЛР5"
+        Width="900" Height="700">
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="250"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- Левая панель управления -->
+        <Border Grid.Column="0" BorderBrush="Gray" BorderThickness="0,0,2,0" Padding="10">
+            <StackPanel>
+                <TextBlock Text="Управление фигурами" FontSize="18" FontWeight="Bold" Margin="0,0,0,15"/>
+                
+                <Button Name="CreateRandomButton" Content="Создать случайную фигуру" 
+                       Width="220" Margin="0,0,0,10" Click="OnCreateRandomClick"/>
+                
+                <Button Name="ClearAllButton" Content="Очистить холст" 
+                       Width="220" Margin="0,0,0,20" Click="OnClearAllClick"/>
+                
+                <TextBlock Text="Информация о фигуре" FontSize="16" FontWeight="Bold" Margin="0,0,0,10"/>
+                
+                <Border BorderBrush="LightGray" BorderThickness="1" Padding="10" Margin="0,0,0,10">
+                    <StackPanel>
+                        <TextBlock Name="ShapeInfoLabel" Text="Выберите фигуру на холсте" 
+                                  TextWrapping="Wrap" FontSize="12"/>
+                    </StackPanel>
+                </Border>
+                
+                <TextBlock Text="Проверка точки" FontSize="16" FontWeight="Bold" Margin="0,10,0,10"/>
+                
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                    <TextBlock Text="X:" Width="30" VerticalAlignment="Center"/>
+                    <TextBox Name="PointXTextBox" Width="80"/>
+                </StackPanel>
+                
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                    <TextBlock Text="Y:" Width="30" VerticalAlignment="Center"/>
+                    <TextBox Name="PointYTextBox" Width="80"/>
+                </StackPanel>
+                
+                <Button Name="CheckPointButton" Content="Проверить точку" 
+                       Width="220" Margin="0,0,0,10" Click="OnCheckPointClick"/>
+                
+                <TextBlock Name="PointResultLabel" Text="" TextWrapping="Wrap" 
+                          FontSize="12" Foreground="DarkBlue" Margin="0,5,0,15"/>
+                
+                <Button Name="SaveButton" Content="Сохранить в файл" 
+                       Width="220" Margin="0,0,0,10" Click="OnSaveClick"/>
+                
+                <Button Name="LoadButton" Content="Загрузить из файла" 
+                       Width="220" Click="OnLoadClick"/>
+                
+                <TextBlock Name="StatusLabel" Text="" TextWrapping="Wrap" 
+                          FontSize="11" Foreground="Green" Margin="0,10,0,0"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Правая панель с Canvas -->
+        <Border Grid.Column="1" Background="White">
+            <Canvas Name="DrawingCanvas" Background="White" 
+                   PointerPressed="OnCanvasPointerPressed"/>
+        </Border>
+    </Grid>
+
+</Window>

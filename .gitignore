@@ -1,0 +1,16 @@
+# Zip archives
+*.zip
+
+# macOS
+.DS_Store
+
+# Build artifacts
+**/bin/
+**/obj/
+
+# IDE
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
