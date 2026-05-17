@@ -1,0 +1,61 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:HotelBookingApp.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
+        x:Class="HotelBookingApp.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Title="Лабораторная работа №11 - REST API Клиент"
+        Width="900" Height="600">
+
+    <Design.DataContext>
+        <vm:MainWindowViewModel/>
+    </Design.DataContext>
+
+    <Grid RowDefinitions="Auto, *, Auto" Margin="10">
+        <!-- Верхняя панель: Авторизация и Управление -->
+        <Border Grid.Row="0" BorderBrush="LightGray" BorderThickness="1" Padding="10" Margin="0,0,0,10" CornerRadius="5">
+            <Grid ColumnDefinitions="Auto, Auto, Auto, Auto, *, Auto, Auto, Auto, Auto">
+                <TextBlock Text="Логин:" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                <TextBox Grid.Column="1" Text="{Binding Username}" Width="100" Margin="0,0,15,0" IsEnabled="{Binding !IsAuthenticated}"/>
+                
+                <TextBlock Grid.Column="2" Text="Пароль:" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                <TextBox Grid.Column="3" Text="{Binding Password}" PasswordChar="*" Width="100" Margin="0,0,15,0" IsEnabled="{Binding !IsAuthenticated}"/>
+                
+                <Button Grid.Column="4" Content="Войти" Command="{Binding LoginCommand}" IsEnabled="{Binding !IsAuthenticated}" HorizontalAlignment="Left"/>
+
+                <!-- Кнопки CRUD -->
+                <Button Grid.Column="5" Content="Загрузить (10 шт)" Command="{Binding LoadBookingsCommand}" IsEnabled="{Binding CanLoad}" Margin="0,0,10,0"/>
+                <Button Grid.Column="6" Content="Добавить" Command="{Binding AddBookingCommand}" IsEnabled="{Binding CanAdd}" Margin="0,0,10,0"/>
+                <Button Grid.Column="7" Content="Редактировать" Command="{Binding EditBookingCommand}" IsEnabled="{Binding CanEditOrDelete}" Margin="0,0,10,0"/>
+                <Button Grid.Column="8" Content="Удалить" Command="{Binding DeleteBookingCommand}" IsEnabled="{Binding CanEditOrDelete}" Background="#FFE57373"/>
+            </Grid>
+        </Border>
+
+        <!-- Центральная часть: Таблица данных -->
+        <DataGrid Grid.Row="1" 
+                  ItemsSource="{Binding Bookings}" 
+                  SelectedItem="{Binding SelectedBooking}"
+                  AutoGenerateColumns="False" 
+                  IsReadOnly="True"
+                  GridLinesVisibility="All"
+                  BorderThickness="1" BorderBrush="Gray">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="ID" Binding="{Binding Id}" />
+                <DataGridTextColumn Header="Имя" Binding="{Binding FirstName}" />
+                <DataGridTextColumn Header="Фамилия" Binding="{Binding LastName}" />
+                <DataGridTextColumn Header="Цена" Binding="{Binding TotalPrice}" />
+                <DataGridTextColumn Header="Депозит" Binding="{Binding DepositPaid}" />
+                <DataGridTextColumn Header="Заезд" Binding="{Binding CheckIn}" />
+                <DataGridTextColumn Header="Выезд" Binding="{Binding CheckOut}" />
+                <DataGridTextColumn Header="Пожелания" Binding="{Binding AdditionalNeeds}" Width="*" />
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <!-- Нижняя панель: Статус -->
+        <Border Grid.Row="2" Background="#FFF0F0F0" BorderBrush="LightGray" BorderThickness="1" Padding="5" Margin="0,10,0,0" CornerRadius="3">
+            <TextBlock Text="{Binding StatusMessage}" FontWeight="SemiBold"/>
+        </Border>
+    </Grid>
+</Window>

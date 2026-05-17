@@ -1,0 +1,39 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="450"
+        x:Class="HotelBookingApp.Views.BookingDialog"
+        Title="Бронирование"
+        Width="400" Height="450"
+        WindowStartupLocation="CenterOwner">
+
+    <Grid RowDefinitions="*, Auto" Margin="20">
+        <StackPanel Grid.Row="0" Spacing="10">
+            <TextBlock Text="Имя:" />
+            <TextBox Name="FirstNameBox" />
+
+            <TextBlock Text="Фамилия:" />
+            <TextBox Name="LastNameBox" />
+
+            <TextBlock Text="Цена:" />
+            <TextBox Name="PriceBox" />
+
+            <CheckBox Name="DepositBox" Content="Депозит оплачен" />
+
+            <TextBlock Text="Дата заезда (YYYY-MM-DD):" />
+            <TextBox Name="CheckInBox" />
+
+            <TextBlock Text="Дата выезда (YYYY-MM-DD):" />
+            <TextBox Name="CheckOutBox" />
+
+            <TextBlock Text="Дополнительные пожелания:" />
+            <TextBox Name="NeedsBox" />
+        </StackPanel>
+
+        <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10" Margin="0,20,0,0">
+            <Button Content="Отмена" Click="Cancel_Click" />
+            <Button Content="Сохранить" Click="Save_Click" Background="#FF4CAF50" Foreground="White" />
+        </StackPanel>
+    </Grid>
+</Window>
