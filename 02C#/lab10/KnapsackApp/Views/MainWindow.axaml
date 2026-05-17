@@ -1,0 +1,40 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:KnapsackApp.ViewModels"
+        xmlns:sp="clr-namespace:ScottPlot.Avalonia;assembly=ScottPlot.Avalonia"
+        x:Class="KnapsackApp.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Title="Лабораторная работа №10 - Задача о рюкзаке"
+        Width="1000" Height="700">
+
+    <Design.DataContext>
+        <vm:MainWindowViewModel/>
+    </Design.DataContext>
+
+    <Grid ColumnDefinitions="300, *" Margin="10">
+        <!-- Левая панель: Управление и Логи -->
+        <Grid Grid.Column="0" RowDefinitions="Auto, *">
+            <Button Grid.Row="0" 
+                    Content="Запустить бенчмарк" 
+                    Command="{Binding StartBenchmarkCommand}"
+                    IsEnabled="{Binding !IsBusy}"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Center"
+                    Margin="0,0,10,10"
+                    Height="40"/>
+            
+            <TextBox Grid.Row="1"
+                     Text="{Binding Logs}"
+                     IsReadOnly="True"
+                     AcceptsReturn="True"
+                     TextWrapping="Wrap"
+                     Margin="0,0,10,0"
+                     FontFamily="Consolas, Courier New, monospace"/>
+        </Grid>
+
+        <!-- Правая панель: График -->
+        <Border Grid.Column="1" BorderBrush="Gray" BorderThickness="1">
+            <sp:AvaPlot Name="AvaPlot1" />
+        </Border>
+    </Grid>
+</Window>

@@ -1,5 +1,6 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:models="clr-namespace:RssReaderApp.Models"
         x:Class="RssReaderApp.Views.MainWindow"
         Title="RSS Reader - Лабораторная работа №8"
         Width="1200" Height="900">
@@ -17,7 +18,7 @@
         <!-- Адрес RSS -->
         <StackPanel Grid.Row="0" Margin="0,0,0,10">
             <TextBlock Text="Адрес RSS-ленты:" FontWeight="Bold" Margin="0,0,0,5"/>
-            <TextBox Name="RssUrlTextBox" Text="https://lenta.ru/rss/news" Watermark="Введите URL RSS-ленты"/>
+            <TextBox Name="RssUrlTextBox" Text="https://lenta.ru/rss/news" PlaceholderText="Введите URL RSS-ленты"/>
         </StackPanel>
         
         <!-- Кнопки управления RSS -->
@@ -81,7 +82,7 @@
                 
                 <ListBox Grid.Row="1" Name="ParsedNewsListBox" Padding="5">
                     <ListBox.ItemTemplate>
-                        <DataTemplate>
+                        <DataTemplate DataType="models:NewsItem">
                             <Border BorderBrush="#E0E0E0" 
                                     BorderThickness="0,0,0,1" 
                                     Padding="10" 

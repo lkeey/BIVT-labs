@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>11110 — в тетрадь</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 0; background: #eef1f4; color: #111; line-height: 1.55; }
+    .bar { background: #14324d; color: #fff; padding: 0.9rem 1.2rem; }
+    .bar h1 { margin: 0; font-size: 1.15rem; font-weight: 600; }
+    .bar p { margin: 0.4rem 0 0; font-size: 0.88rem; opacity: 0.95; }
+    main { max-width: 46rem; margin: 1rem auto 3rem; padding: 1.2rem 1.4rem 2rem; background: #fff;
+            border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,.07); font-size: 0.97rem; }
+    h2 { font-size: 1.05rem; margin: 1.25rem 0 0.5rem; color: #14324d; border-bottom: 1px solid #dbe4ec; padding-bottom: 0.25rem; }
+    h2:first-child { margin-top: 0; }
+    h3 { font-size: 0.95rem; margin: 1rem 0 0.4rem; }
+    p { margin: 0.4rem 0; }
+    hr { border: 0; border-top: 1px solid #dbe4ec; margin: 1.25rem 0; }
+    .pic { background: #e8f4fc; border: 2px dashed #2a7ab0; padding: 0.75rem 1rem; margin: 0.6rem 0 1rem;
+            border-radius: 6px; font-weight: 600; color: #0d3d5c; }
+    table { border-collapse: collapse; width: 100%; margin: 0.6rem 0; font-size: 0.9rem; }
+    .table-scroll { overflow-x: auto; margin: 0.6rem 0; }
+    th, td { border: 1px solid #c8d4e0; padding: 0.35rem 0.5rem; text-align: left; }
+    th { background: #f0f4f8; }
+  </style>
+  <script>
+    MathJax = {
+      loader: { load: ["[tex]/ams"] },
+      tex: {
+        packages: { "[+]": ["ams"] },
+        inlineMath: [["\\(","\\)"]],
+        displayMath: [["\\[","\\]"]],
+        processEscapes: true,
+      },
+      options: { skipHtmlTags: ["script", "noscript", "style", "textarea", "code"] },
+    };
+  </script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+  <div class="bar">
+    <h1>Вариант 11110 — в тетрадь (условия + выкладки + ответы)</h1>
+    <p><strong>Площадь \(S\):</strong> под интегралом пишем <strong>единицу</strong> — это плотность «1 на единицу площади»: \(S=\iint_D 1\,\mathrm{d}A\). Запись \(\int\!\int \mathrm{d}y\,\mathrm{d}x\) без «функции» — то же самое: подынтегральная функция равна \(1\). Десятичные ≈ — три знака.</p>
+  </div>
+
+  <main>
+    <h2>Обозначения §5.3 (пластина \(D\), плотность \(\Gamma(x,y)\))</h2>
+    <p>
+      \[
+      m=\iint_D \Gamma\;\mathrm{d}A,\quad M_y=\iint_D x\,\Gamma\;\mathrm{d}A,\quad M_x=\iint_D y\,\Gamma\;\mathrm{d}A,\quad \bar x=\frac{M_y}{m},\quad \bar y=\frac{M_x}{m}.
+      \]
+      \[
+      S=\iint_D 1\;\mathrm{d}A=\iint_D \mathrm{d}A \quad\text{(площадь; подынтегральная функция }1\text{)}.
+      \]
+    </p>
+
+    <h2>Обозначения §5.4 (область \(G\), плотность \(\Gamma(x,y,z)\))</h2>
+    <p>
+      \[
+      m=\iiint_G \Gamma\;\mathrm{d}V,\;
+      M_{yz}=\iiint_G x\,\Gamma\;\mathrm{d}V,\;
+      M_{xz}=\iiint_G y\,\Gamma\;\mathrm{d}V,\;
+      M_{xy}=\iiint_G z\,\Gamma\;\mathrm{d}V.
+      \]
+      \[
+      x_c=\frac{M_{yz}}{m},\quad y_c=\frac{M_{xz}}{m},\quad z_c=\frac{M_{xy}}{m},\quad
+      I_z=\iiint_G (x^2+y^2)\,\Gamma\;\mathrm{d}V.
+      \]
+    </p>
+
+    <hr />
+
+    <h2>§5.3 — Задача 1</h2>
+    <p><strong>Условие:</strong> \(y=x^3\), \(y=4x\), \(x\ge 0\); \(\Gamma(x,y)=6y\) (\(A=1,\;B=4,\;C=6\)).</p>
+    <div class="pic">РИС. 1 — скрин GeoGebra (2D): кривые \(y=x^3\) и \(y=4x\), заштриховать область \(D\). Команды: y = x^3 ; y = 4 x</div>
+    <p><strong>Пределы:</strong> пересечение \(x^3=4x\) при \(x\ge 0\) даёт \(x=2\); на \([0,2]\) выше кривая \(y=4x\), ниже \(y=x^3\). Итого \(x\in[0,2]\), \(y\in[x^3,\,4x]\).</p>
+    <p><strong>Площадь \(S\).</strong> Подынтегральная функция — <strong>\(1\)</strong> (суммируем «кусочки площади»):</p>
+    <p>
+      \[
+      S=\int_{0}^{2}\Bigl(\int_{x^3}^{4x} 1\;\mathrm{d}y\Bigr)\;\mathrm{d}x
+      =\int_0^2 (4x-x^3)\;\mathrm{d}x
+      =\Bigl[2x^2-\frac{x^4}{4}\Bigr]_0^2
+      =8-4=4.
+      \]
+      Численно: \(S\approx 4.000\).
+    </p>
+    <p><strong>Масса \(m\).</strong> \(\Gamma(x,y)=6y\):</p>
+    <p>
+      \[
+      m=\int_0^2\int_{x^3}^{4x} 6y\;\mathrm{d}y\;\mathrm{d}x
+      =\int_0^2 \bigl[3y^2\bigr]_{y=x^3}^{y=4x}\;\mathrm{d}x
+      =\int_0^2 3(16x^2-x^6)\;\mathrm{d}x
+      =\Bigl[16x^3-\frac{3x^7}{7}\Bigr]_0^2=\frac{512}{7}\approx 73.143.
+      \]
+    </p>
+    <p><strong>Момент \(M_y\)</strong> (под интегралом \(x\cdot 6y\)):</p>
+    <p>
+      \[
+      M_y=\int_0^2\int_{x^3}^{4x} x\cdot 6y\;\mathrm{d}y\;\mathrm{d}x
+      =\int_0^2 3x(16x^2-x^6)\;\mathrm{d}x
+      =\Bigl[12x^4-\frac{3x^8}{8}\Bigr]_0^2=96.
+      \]
+    </p>
+    <p><strong>Момент \(M_x\)</strong> (под интегралом \(y\cdot 6y=6y^2\)):</p>
+    <p>
+      \[
+      M_x=\int_0^2\int_{x^3}^{4x} 6y^2\;\mathrm{d}y\;\mathrm{d}x
+      =\int_0^2\bigl[2y^3\bigr]_{x^3}^{4x}\;\mathrm{d}x
+      =\int_0^2(128x^3-2x^9)\;\mathrm{d}x
+      =\Bigl[32x^4-\frac{x^{10}}{5}\Bigr]_0^2=\frac{1536}{5}=307.2.
+      \]
+    </p>
+    <p><strong>Центр масс:</strong></p>
+    <p>
+      \[
+      \bar x=\frac{M_y}{m}=\frac{96}{512/7}=\frac{21}{16}\approx 1.313,\qquad
+      \bar y=\frac{M_x}{m}=\frac{1536/5}{512/7}=\frac{21}{5}=4.200.
+      \]
+    </p>
+
+    <hr />
+
+    <h2>§5.3 — Задача 2</h2>
+    <p><strong>Условие:</strong> \(x^2+y^2=4x\); \(y=x\), \(y=4x\); \(x\le y\le 4x\); \(\Gamma=6\) (постоянная плотность).</p>
+    <div class="pic">РИС. 2 — скрин GeoGebra (2D): окружность \(x^2+y^2=4x\), прямые \(y=x\) и \(y=4x\), клин внутри круга. Команды: x^2 + y^2 = 4 x ; y = x ; y = 4 x</div>
+    <p><strong>Полярные координаты (полюс \(O\)):</strong> \(x=r\cos\varphi\), \(y=r\sin\varphi\). Окружность \(x^2+y^2=4x\) \(\Rightarrow\) \(r^2=4r\cos\varphi\) \(\Rightarrow\) при \(\cos\varphi>0\): \(r=4\cos\varphi\). Условие \(1\le\tan\varphi\le 4\) при \(x>0\): \(\varphi\in[\pi/4,\,\varphi_0]\), \(\varphi_0=\arctan 4\). \(\mathrm{d}A=r\,\mathrm{d}r\,\mathrm{d}\varphi\).</p>
+    <p><strong>Площадь \(S\).</strong> Подынтегральная функция для площади — снова <strong>\(1\)</strong>; в полярных координатах появляется якорь \(r\):</p>
+    <p>
+      \[
+      S=\int_{\pi/4}^{\varphi_0}\int_0^{4\cos\varphi} \underbrace{1}_{\text{плотность площади}}\cdot r\;\mathrm{d}r\;\mathrm{d}\varphi
+      =\int_{\pi/4}^{\varphi_0}\frac{(4\cos\varphi)^2}{2}\;\mathrm{d}\varphi
+      =\int_{\pi/4}^{\varphi_0}8\cos^2\varphi\;\mathrm{d}\varphi.
+      \]
+      Упрощая (\(\cos^2\varphi=(1+\cos2\varphi)/2\)) и подставляя \(\sin2\varphi_0=\dfrac{2\tan\varphi_0}{1+\tan^2\varphi_0}=\dfrac{8}{17}\):
+      \[
+      S=4\varphi_0+2\sin2\varphi_0-\pi-2
+      =4\arctan 4+\frac{16}{17}-\pi-2 \approx 1.103.
+      \]
+    </p>
+    <p><strong>Масса:</strong> \(m=\iint_D 6\;\mathrm{d}A=6S\):</p>
+    <p>
+      \[
+      m=24\arctan 4+\frac{96}{17}-6\pi-12\approx 6.617.
+      \]
+    </p>
+    <p><strong>Момент \(M_y=\iint_D 6x\,\mathrm{d}A\):</strong> в полярных \(x=r\cos\varphi\):</p>
+    <p>
+      \[
+      M_y=6\int_{\pi/4}^{\varphi_0}\cos\varphi\,\frac{(4\cos\varphi)^3}{3}\;\mathrm{d}\varphi
+      =128\int_{\pi/4}^{\varphi_0}\cos^4\varphi\;\mathrm{d}\varphi,\qquad
+      \int\cos^4\varphi\;\mathrm{d}\varphi=\frac{3\varphi}{8}+\frac{\sin2\varphi}{4}+\frac{\sin4\varphi}{32}.
+      \]
+      После подстановки пределов:
+      \[
+      M_y=12(4\arctan 4-\pi)-\frac{5856}{289}\approx 5.677.
+      \]
+    </p>
+    <p><strong>Момент \(M_x=\iint_D 6y\,\mathrm{d}A\):</strong> \(y=r\sin\varphi\):</p>
+    <p>
+      \[
+      M_x=128\int_{\pi/4}^{\varphi_0}\sin\varphi\cos^3\varphi\;\mathrm{d}\varphi
+      =128\Bigl[-\frac{\cos^4\varphi}{4}\Bigr]_{\pi/4}^{\varphi_0}
+      =\frac{2280}{289}\approx 7.889.
+      \]
+    </p>
+    <p><strong>Центр масс:</strong> \(\displaystyle \bar x=\frac{M_y}{m}\approx 0.858,\quad \bar y=\frac{M_x}{m}\approx 1.192.\)</p>
+
+    <hr />
+
+    <h2>§5.4 — Задача 1 (конус + цилиндр, \(y\le 0\))</h2>
+    <p><strong>По условию нужно найти:</strong> (1)&nbsp;\(V\); (2)&nbsp;\(m\); (3)&nbsp;\(M_{yz},\,M_{xz},\,M_{xy}\) (моменты относительно плоскостей \(Oyz,\,Oxz,\,Oxy\)); (4)&nbsp;\(x_c,\,y_c,\,z_c\); (5)&nbsp;\(I_z\) относительно оси \(Oz\). Ниже — все пять пунктов по порядку.</p>
+    <p><strong>Условие:</strong> \(z^2=x^2+y^2\), \(z\ge 0\), \(x^2+y^2\le 9\), \(y\le 0\); \(\Gamma=6\sqrt{x^2+y^2}=6r\).</p>
+    <div class="pic">РИС. 3 — GeoGebra 3D: \(z=\sqrt{x^2+y^2}\), цилиндр \(r=3\), \(y\le 0\). По желанию второй скрин (вид сверху): \(x^2+y^2=9\), полуплоскость \(y\le 0\).</div>
+    <p><strong>Замечание.</strong> Ниже порядок \(\mathrm{d}z\,\mathrm{d}r\,\mathrm{d}\varphi\): сначала по высоте конуса, затем по радиусу, затем по углу. Все ответы сверены с полным разбором в <code>solution_11110.md</code>.</p>
+    <p><strong>Общая подстановка.</strong> \(x=r\cos\varphi\), \(y=r\sin\varphi\), \(\Gamma=6r\), \(\mathrm{d}V=r\,\mathrm{d}z\,\mathrm{d}r\,\mathrm{d}\varphi\). Пределы: \(\varphi\in[\pi,2\pi]\), \(r\in[0,3]\), \(z\in[0,r]\).</p>
+    <p><strong>Объём \(V\) (под интегралом \(1\)).</strong></p>
+    <p>
+      \[
+      V=\int_\pi^{2\pi}\int_0^3\int_0^r 1\cdot r\;\mathrm{d}z\;\mathrm{d}r\;\mathrm{d}\varphi
+      =\int_\pi^{2\pi}\int_0^3 r\Bigl(\int_0^r\mathrm{d}z\Bigr)\mathrm{d}r\;\mathrm{d}\varphi
+      =\int_\pi^{2\pi}\int_0^3 r^2\;\mathrm{d}r\;\mathrm{d}\varphi
+      =\int_\pi^{2\pi}\Bigl[\frac{r^3}{3}\Bigr]_0^3\mathrm{d}\varphi
+      =\int_\pi^{2\pi}9\;\mathrm{d}\varphi=9\pi \approx 28.274.
+      \]
+    </p>
+    <p><strong>Масса \(m=\iiint \Gamma\,\mathrm{d}V\).</strong> Под интегралом \(\Gamma\,\mathrm{d}V = 6r\cdot r\,\mathrm{d}z\,\mathrm{d}r\,\mathrm{d}\varphi = 6r^2\,\mathrm{d}z\,\mathrm{d}r\,\mathrm{d}\varphi\):</p>
+    <p>
+      \[
+      m=\int_\pi^{2\pi}\int_0^3\int_0^r 6r^2\;\mathrm{d}z\;\mathrm{d}r\;\mathrm{d}\varphi
+      =\int_\pi^{2\pi}\int_0^3 6r^2\cdot r\;\mathrm{d}r\;\mathrm{d}\varphi
+      =\int_\pi^{2\pi}\int_0^3 6r^3\;\mathrm{d}r\;\mathrm{d}\varphi
+      =\int_\pi^{2\pi}\Bigl[\frac{6r^4}{4}\Bigr]_0^3\mathrm{d}\varphi
+      =\int_\pi^{2\pi}\frac{243}{2}\;\mathrm{d}\varphi=\frac{243\pi}{2}=121.5\pi \approx 381.704.
+      \]
+    </p>
+    <p><strong>\(M_{yz}=\iiint x\,\Gamma\,\mathrm{d}V\).</strong> Здесь \(x\,\Gamma\,\mathrm{d}V=(r\cos\varphi)(6r)\,r\,\mathrm{d}z\,\mathrm{d}r\,\mathrm{d}\varphi=6r^3\cos\varphi\,\mathrm{d}z\,\mathrm{d}r\,\mathrm{d}\varphi\).</p>
+    <p>
+      \[
+      M_{yz}=\int_\pi^{2\pi}\int_0^3\int_0^r 6r^3\cos\varphi\;\mathrm{d}z\;\mathrm{d}r\;\mathrm{d}\varphi
+      =\int_\pi^{2\pi}\int_0^3 6r^4\cos\varphi\;\mathrm{d}r\;\mathrm{d}\varphi
+      =\int_\pi^{2\pi}\Bigl[\frac{6r^5}{5}\Bigr]_0^3\cos\varphi\;\mathrm{d}\varphi
+      =\int_\pi^{2\pi}\frac{6\cdot 3^5}{5}\cos\varphi\;\mathrm{d}\varphi
+      =\int_\pi^{2\pi}\frac{1458}{5}\cos\varphi\;\mathrm{d}\varphi
+      =\frac{1458}{5}\bigl[\sin\varphi\bigr]_\pi^{2\pi}=0.
+      \]
+      (На \([\pi,2\pi]\) полный период \(\cos\varphi\) даёт ноль — это совпадает с геометрией: кусок тела симметричен относительно плоскости \(x=0\) при \(y\le 0\), плотность не зависит от знака \(x\).)
+    </p>
+    <p><strong>\(M_{xz}=\iiint y\,\Gamma\,\mathrm{d}V\).</strong> \(y\,\Gamma\,\mathrm{d}V=(r\sin\varphi)(6r)\,r\,\mathrm{d}z\,\mathrm{d}r\,\mathrm{d}\varphi=6r^3\sin\varphi\,\mathrm{d}z\,\mathrm{d}r\,\mathrm{d}\varphi\).</p>
+    <p>
+      \[
+      M_{xz}=\int_\pi^{2\pi}\int_0^3\int_0^r 6r^3\sin\varphi\;\mathrm{d}z\;\mathrm{d}r\;\mathrm{d}\varphi
+      =\int_\pi^{2\pi}\int_0^3 6r^4\sin\varphi\;\mathrm{d}r\;\mathrm{d}\varphi
+      =\int_\pi^{2\pi}\frac{1458}{5}\sin\varphi\;\mathrm{d}\varphi
+      =\frac{1458}{5}\bigl[-\cos\varphi\bigr]_\pi^{2\pi}.
+      \]
+      Подстановка: \(\cos(2\pi)=1\), \(\cos(\pi)=-1\) ⟹ \([- \cos\varphi]_\pi^{2\pi}=-1-(1)=-2\), поэтому \(\displaystyle M_{xz}=\frac{1458}{5}\cdot(-2)=-\frac{2916}{5}=-583.2\).
+    </p>
+    <p><strong>\(M_{xy}=\iiint z\,\Gamma\,\mathrm{d}V\).</strong> \(z\,\Gamma\,\mathrm{d}V=z\cdot 6r\cdot r\,\mathrm{d}z\,\mathrm{d}r\,\mathrm{d}\varphi=6r^2 z\,\mathrm{d}z\,\mathrm{d}r\,\mathrm{d}\varphi\).</p>
+    <p>
+      \[
+      \int_0^r z\,\mathrm{d}z=\frac{r^2}{2}\quad\Rightarrow\quad
+      M_{xy}=\int_\pi^{2\pi}\int_0^3 6r^2\cdot\frac{r^2}{2}\;\mathrm{d}r\;\mathrm{d}\varphi
+      =\int_\pi^{2\pi}\int_0^3 3r^4\;\mathrm{d}r\;\mathrm{d}\varphi
+      =\int_\pi^{2\pi}\Bigl[\frac{3r^5}{5}\Bigr]_0^3\mathrm{d}\varphi
+      =\int_\pi^{2\pi}\frac{729}{5}\;\mathrm{d}\varphi=\frac{729\pi}{5}\approx 458.149.
+      \]
+    </p>
+    <p><strong>Центр масс:</strong></p>
+    <p>
+      \[
+      x_c=\frac{M_{yz}}{m}=0,\quad
+      y_c=\frac{M_{xz}}{m}=\frac{-2916/5}{(243\pi)/2}=-\frac{24}{5\pi}\approx -1.528,\quad
+      z_c=\frac{M_{xy}}{m}=\frac{729\pi/5}{243\pi/2}=\frac{6}{5}=1.200.
+      \]
+    </p>
+    <p><strong>Момент инерции \(I_z=\iiint (x^2+y^2)\,\Gamma\,\mathrm{d}V\).</strong> Здесь \(x^2+y^2=r^2\), значит \(r^2\,\Gamma\,\mathrm{d}V=r^2\cdot 6r\cdot r\,\mathrm{d}z\,\mathrm{d}r\,\mathrm{d}\varphi=6r^4\,\mathrm{d}z\,\mathrm{d}r\,\mathrm{d}\varphi\).</p>
+    <p>
+      \[
+      I_z=\int_\pi^{2\pi}\int_0^3\int_0^r 6r^4\;\mathrm{d}z\;\mathrm{d}r\;\mathrm{d}\varphi
+      =\int_\pi^{2\pi}\int_0^3 6r^5\;\mathrm{d}r\;\mathrm{d}\varphi
+      =\int_\pi^{2\pi}\Bigl[\frac{6r^6}{6}\Bigr]_0^3\mathrm{d}\varphi
+      =\int_\pi^{2\pi}3^6\;\mathrm{d}\varphi
+      =\int_\pi^{2\pi}729\;\mathrm{d}\varphi=729\pi \approx 2290.221.
+      \]
+    </p>
+    <p><strong>Итог задачи 1 (все пункты задания):</strong> \(V=9\pi\); \(m=\dfrac{243\pi}{2}\); \(M_{yz}=0\), \(M_{xz}=-\dfrac{2916}{5}\), \(M_{xy}=\dfrac{729\pi}{5}\); \(x_c=0\), \(y_c=-\dfrac{24}{5\pi}\), \(z_c=\dfrac{6}{5}\); \(I_z=729\pi\).</p>
+
+    <hr />
+
+    <h2>§5.4 — Задача 2 (часть шара: \(z\ge 0\), \(x\ge 0\))</h2>
+    <p><strong>По условию нужно найти:</strong> те же пять пунктов: \(V,\; m,\; M_{yz},\,M_{xz},\,M_{xy},\; x_c,\,y_c,\,z_c,\; I_z\).</p>
+    <p><strong>Условие:</strong> \(x^2+y^2+z^2=25\), \(z\ge 0\), \(x\ge 0\); \(\Gamma=6\rho\) (здесь \(\rho\) — расстояние до начала координат).</p>
+    <div class="pic">РИС. 4 — GeoGebra 3D: сфера \(R=5\), «верх» \(z\ge 0\), сторона \(x\ge 0\). Команды: Sphere((0,0,0),5) ; z = sqrt(25-x^2-y^2) ; z = 0 ; x = 0</div>
+    <p><strong>Сферические:</strong> \(x=\rho\sin\theta\cos\varphi\), \(y=\rho\sin\theta\sin\varphi\), \(z=\rho\cos\theta\); \(\mathrm{d}V=\rho^2\sin\theta\,\mathrm{d}\rho\,\mathrm{d}\varphi\,\mathrm{d}\theta\). <strong>Пределы:</strong> \(\rho\in[0,5]\), \(\theta\in[0,\pi/2]\) (так как \(z\ge 0\)), \(\varphi\in[-\pi/2,\pi/2]\) (так как \(x\ge 0\) требует \(\cos\varphi\ge 0\) при \(0<\theta\le\pi/2\)).</p>
+    <p><strong>Замечание.</strong> Порядок дифференциалов \(\mathrm{d}\rho\,\mathrm{d}\theta\,\mathrm{d}\varphi\) в тройном интеграле можно менять вместе с пределами; ниже множители вынесены так же, как для \(V\) и \(m\). Контроль: \(\displaystyle\frac{M_{yz}}{m}=\frac{M_{xy}}{m}=2=x_c=z_c\), \(\displaystyle M_{xz}=0\Rightarrow y_c=0\).</p>
+    <p><strong>Объём \(V\):</strong> под интегралом снова \(1\):</p>
+    <p>
+      \[
+      V=\int_{-\pi/2}^{\pi/2}\int_0^{\pi/2}\int_0^5 \rho^2\sin\theta \,\mathrm{d}\rho\,\mathrm{d}\theta\,\mathrm{d}\varphi
+      =\Bigl(\int_{-\pi/2}^{\pi/2}\mathrm{d}\varphi\Bigr)\Bigl(\int_0^{\pi/2}\sin\theta\,\mathrm{d}\theta\Bigr)\Bigl(\int_0^5\rho^2\,\mathrm{d}\rho\Bigr)
+      =\pi\cdot 1\cdot \frac{125}{3}=\frac{125\pi}{3}\approx 130.900.
+      \]
+    </p>
+    <p><strong>Масса \(m\):</strong> \(\Gamma=6\rho\), значит \(\Gamma\,\mathrm{d}V=6\rho^3\sin\theta\,\mathrm{d}\rho\,\mathrm{d}\varphi\,\mathrm{d}\theta\):</p>
+    <p>
+      \[
+      m=\int_{-\pi/2}^{\pi/2}\!\!\int_0^{\pi/2}\!\!\int_0^5 6\rho^3\sin\theta \,\mathrm{d}\rho\,\mathrm{d}\theta\,\mathrm{d}\varphi
+      =6\cdot\pi\cdot 1\cdot\frac{625}{4}=\frac{3750\pi}{4}=937.5\pi\approx 2945.243.
+      \]
+    </p>
+    <p><strong>\(M_{yz}=\iiint x\,\Gamma\,\mathrm{d}V\):</strong> в сферических координатах \(x=\rho\sin\theta\cos\varphi\), \(\Gamma=6\rho\), \(\mathrm{d}V=\rho^2\sin\theta\,\mathrm{d}\rho\,\mathrm{d}\varphi\,\mathrm{d}\theta\):</p>
+    <p>
+      \[
+      M_{yz}=\int_{-\pi/2}^{\pi/2}\int_0^{\pi/2}\int_0^5 (\rho\sin\theta\cos\varphi)\cdot(6\rho)\cdot\rho^2\sin\theta \,\mathrm{d}\rho\,\mathrm{d}\varphi\,\mathrm{d}\theta
+      =\int_{-\pi/2}^{\pi/2}\int_0^{\pi/2}\int_0^5 6\rho^4\sin^2\theta\cos\varphi \,\mathrm{d}\rho\,\mathrm{d}\varphi\,\mathrm{d}\theta.
+      \]
+      Разделяя переменные (порядок «\(\mathrm{d}\rho\,\mathrm{d}\varphi\,\mathrm{d}\theta\)» даёт тот же результат):
+      \[
+      \int_0^5 6\rho^4\,\mathrm{d}\rho=\Bigl[\frac{6\rho^5}{5}\Bigr]_0^5=\frac{6\cdot 5^5}{5}=6\cdot 625=3750,\qquad
+      \int_{-\pi/2}^{\pi/2}\cos\varphi\,\mathrm{d}\varphi=2,\qquad
+      \int_0^{\pi/2}\sin^2\theta\,\mathrm{d}\theta=\frac{\pi}{4}.
+      \]
+      \[
+      M_{yz}=3750\cdot 2\cdot\frac{\pi}{4}=1875\pi \approx 5890.486.
+      \]
+    </p>
+    <p><strong>\(M_{xz}=\iiint y\,\Gamma\,\mathrm{d}V\).</strong> В сферических: \(y=\rho\sin\theta\sin\varphi\), подынтегральное выражение \(\cdot\,\mathrm{d}V\) даёт \((6\rho^4\sin^2\theta\sin\varphi)\,\mathrm{d}\rho\,\mathrm{d}\varphi\,\mathrm{d}\theta:\)</p>
+    <p>
+      \[
+      M_{xz}=\int_{-\pi/2}^{\pi/2}\int_0^{\pi/2}\int_0^5 6\rho^4\sin^2\theta\sin\varphi \,\mathrm{d}\rho\,\mathrm{d}\varphi\,\mathrm{d}\theta
+      =\Bigl(\int_0^5 6\rho^4\,\mathrm{d}\rho\Bigr)\Bigl(\int_0^{\pi/2}\sin^2\theta\,\mathrm{d}\theta\Bigr)\Bigl(\int_{-\pi/2}^{\pi/2}\sin\varphi\,\mathrm{d}\varphi\Bigr).
+      \]
+      Но \(\displaystyle\int_{-\pi/2}^{\pi/2}\sin\varphi\,\mathrm{d}\varphi=[-\cos\varphi]_{-\pi/2}^{\pi/2}=0\), следовательно \(\displaystyle M_{xz}=0\) (плотность зависит только от \(\rho\), тело симметрично относительно плоскости \(y=0\)).
+    </p>
+    <p><strong>\(M_{xy}=\iiint z\,\Gamma\,\mathrm{d}V\):</strong> \(z=\rho\cos\theta\), \(\Gamma=6\rho\), \(\mathrm{d}V=\rho^2\sin\theta\,\mathrm{d}\rho\,\mathrm{d}\varphi\,\mathrm{d}\theta\):</p>
+    <p>
+      \[
+      M_{xy}=\int_{-\pi/2}^{\pi/2}\int_0^{\pi/2}\int_0^5 (\rho\cos\theta)\cdot(6\rho)\cdot\rho^2\sin\theta \,\mathrm{d}\rho\,\mathrm{d}\varphi\,\mathrm{d}\theta
+      =\int_{-\pi/2}^{\pi/2}\int_0^{\pi/2}\int_0^5 6\rho^4\sin\theta\cos\theta \,\mathrm{d}\rho\,\mathrm{d}\varphi\,\mathrm{d}\theta.
+      \]
+      Здесь \(\sin\theta\cos\theta=\tfrac{1}{2}\sin 2\theta\), но удобнее сразу: \(\displaystyle\int_0^{\pi/2}\sin\theta\cos\theta\,\mathrm{d}\theta=\frac{1}{2}\).
+      Снова \(\displaystyle\int_0^5 6\rho^4\,\mathrm{d}\rho=3750\), \(\displaystyle\int_{-\pi/2}^{\pi/2}\mathrm{d}\varphi=\pi\), значит
+      \[
+      M_{xy}=3750\cdot\pi\cdot\frac{1}{2}=1875\pi \approx 5890.486.
+      \]
+    </p>
+    <p><strong>Центр масс:</strong></p>
+    <p>
+      \[
+      x_c=\frac{M_{yz}}{m}=\frac{1875\pi}{937.5\pi}=2.000,\quad y_c=\frac{M_{xz}}{m}=0.000,\quad
+      z_c=\frac{M_{xy}}{m}=\frac{1875\pi}{937.5\pi}=2.000.
+      \]
+    </p>
+    <p><strong>Момент инерции \(I_z=\iiint (x^2+y^2)\,\Gamma\,\mathrm{d}V\):</strong> \(x^2+y^2=\rho^2\sin^2\theta\), значит под интегралом \(6\rho^5\sin^3\theta\):</p>
+    <p>
+      \[
+      I_z=\int_{-\pi/2}^{\pi/2}\int_0^{\pi/2}\int_0^5 6\rho^5\sin^3\theta \,\mathrm{d}\rho\,\mathrm{d}\theta\,\mathrm{d}\varphi.
+      \]
+      По \(\rho\): \(\displaystyle\int_0^5 6\rho^5\,\mathrm{d}\rho=5^6=15625\). По \(\varphi\): множитель \(\pi\).
+      Для \(\displaystyle J=\int_0^{\pi/2}\sin^3\theta\,\mathrm{d}\theta\) первообразная \(-\cos\theta+\dfrac{\cos^3\theta}{3}\); на отрезке \([0,\pi/2]\) даёт \(\displaystyle J=\frac{2}{3}\) (в точке \(\theta=0\): \(-1+\dfrac{1}{3}=-\dfrac{2}{3}\), в точке \(\theta=\pi/2\): \(0\)).
+      \[
+      I_z=15625\cdot\frac{2}{3}\cdot\pi=\frac{31250\pi}{3}\approx 32724.923.
+      \]
+    </p>
+    <p><strong>Итог задачи 2 (все пункты задания):</strong> \(V=\dfrac{125\pi}{3}\); \(m=\dfrac{3750\pi}{4}=937.5\pi\); \(M_{yz}=1875\pi\), \(M_{xz}=0\), \(M_{xy}=1875\pi\); \(x_c=2\), \(y_c=0\), \(z_c=2\); \(I_z=\dfrac{31250\pi}{3}\).</p>
+
+    <hr />
+
+    <h2>Сводка для тетради</h2>
+    <h3>§5.3</h3>
+    <table>
+      <thead>
+        <tr><th></th><th>\(S\)</th><th>\(m\)</th><th>\(M_y\)</th><th>\(M_x\)</th><th>\(\bar x\)</th><th>\(\bar y\)</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>1</td><td>\(4\)</td><td>\(512/7\)</td><td>\(96\)</td><td>\(1536/5\)</td><td>\(1.313\)</td><td>\(4.200\)</td></tr>
+        <tr><td>2</td><td>\(\approx 1.103\)</td><td>\(\approx 6.617\)</td><td>\(\approx 5.677\)</td><td>\(\approx 7.889\)</td><td>\(0.858\)</td><td>\(1.192\)</td></tr>
+      </tbody>
+    </table>
+    <h3>§5.4 (все величины из задания)</h3>
+    <div class="table-scroll">
+    <table>
+      <thead>
+        <tr>
+          <th></th><th>\(V\)</th><th>\(m\)</th><th>\(M_{yz}\)</th><th>\(M_{xz}\)</th><th>\(M_{xy}\)</th>
+          <th>\(x_c\)</th><th>\(y_c\)</th><th>\(z_c\)</th><th>\(I_z\)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td>\(9\pi\)</td>
+          <td>\(\dfrac{243\pi}{2}\)</td>
+          <td>\(0\)</td>
+          <td>\(-\dfrac{2916}{5}\)</td>
+          <td>\(\dfrac{729\pi}{5}\)</td>
+          <td>\(0\)</td>
+          <td>\(-\dfrac{24}{5\pi}\)</td>
+          <td>\(\dfrac{6}{5}\)</td>
+          <td>\(729\pi\)</td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td>\(\dfrac{125\pi}{3}\)</td>
+          <td>\(937.5\pi\)</td>
+          <td>\(1875\pi\)</td>
+          <td>\(0\)</td>
+          <td>\(1875\pi\)</td>
+          <td>\(2\)</td>
+          <td>\(0\)</td>
+          <td>\(2\)</td>
+          <td>\(\dfrac{31250\pi}{3}\)</td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+    <p class="note" style="font-size:0.88rem;color:#444;margin-top:0.4rem">Округлённые значения см. в выкладках выше (\(\approx\) три знака после запятой).</p>
+  </main>
+</body>
+</html>
