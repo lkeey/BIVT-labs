@@ -1,0 +1,162 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="RssReaderApp.Views.MainWindow"
+        Title="RSS Reader - Лабораторная работа №8"
+        Width="1200" Height="900">
+    
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>   <!-- Адрес RSS -->
+            <RowDefinition Height="Auto"/>   <!-- Кнопки управления RSS -->
+            <RowDefinition Height="200"/>    <!-- XML (полный текст) -->
+            <RowDefinition Height="*"/>      <!-- Новости (распарсенные) -->
+            <RowDefinition Height="Auto"/>   <!-- Кнопки БД -->
+            <RowDefinition Height="200"/>    <!-- Новости из БД -->
+        </Grid.RowDefinitions>
+        
+        <!-- Адрес RSS -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,10">
+            <TextBlock Text="Адрес RSS-ленты:" FontWeight="Bold" Margin="0,0,0,5"/>
+            <TextBox Name="RssUrlTextBox" Text="https://lenta.ru/rss/news" Watermark="Введите URL RSS-ленты"/>
+        </StackPanel>
+        
+        <!-- Кнопки управления RSS -->
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="10" Margin="0,0,0,10">
+            <Button Name="DownloadRssButton" 
+                    Content="Загрузить RSS" 
+                    Click="OnDownloadRss"
+                    Width="150" Height="35"
+                    FontSize="14"/>
+            <Button Name="ParseRssButton" 
+                    Content="Распарсить XML" 
+                    Click="OnParseRss"
+                    Width="150" Height="35"
+                    FontSize="14"/>
+            <TextBlock Name="StatusTextBlock" 
+                       VerticalAlignment="Center" 
+                       FontStyle="Italic"
+                       Foreground="Gray"
+                       Margin="10,0,0,0"/>
+        </StackPanel>
+        
+        <!-- Полный XML текст -->
+        <Border Grid.Row="2" BorderBrush="Gray" BorderThickness="1" Margin="0,0,0,10">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                
+                <TextBlock Grid.Row="0" 
+                          Text="Полный текст RSS (XML):" 
+                          FontWeight="Bold" 
+                          Margin="5"
+                          Background="#F0F0F0"/>
+                
+                <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Auto">
+                    <TextBox Name="RawXmlTextBox" 
+                             IsReadOnly="True" 
+                             TextWrapping="Wrap" 
+                             BorderThickness="0"
+                             FontFamily="Consolas"
+                             FontSize="11"
+                             Padding="5"/>
+                </ScrollViewer>
+            </Grid>
+        </Border>
+        
+        <!-- Распарсенные новости -->
+        <Border Grid.Row="3" BorderBrush="Gray" BorderThickness="1" Margin="0,0,0,10">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                
+                <TextBlock Grid.Row="0" 
+                          Text="Распарсенные новости:" 
+                          FontWeight="Bold" 
+                          Margin="5"
+                          Background="#F0F0F0"/>
+                
+                <ListBox Grid.Row="1" Name="ParsedNewsListBox" Padding="5">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <Border BorderBrush="#E0E0E0" 
+                                    BorderThickness="0,0,0,1" 
+                                    Padding="10" 
+                                    Margin="0,0,0,5">
+                                <StackPanel>
+                                    <TextBlock Text="{Binding Title}" 
+                                              FontWeight="Bold" 
+                                              FontSize="14"
+                                              TextWrapping="Wrap"
+                                              Margin="0,0,0,5"/>
+                                    <TextBlock Text="{Binding Description}" 
+                                              TextWrapping="Wrap"
+                                              Margin="0,0,0,5"
+                                              Foreground="#555"/>
+                                    <StackPanel Orientation="Horizontal" Spacing="15">
+                                        <TextBlock Text="{Binding PubDate, StringFormat='Дата: {0:dd.MM.yyyy HH:mm}'}" 
+                                                  FontSize="11" 
+                                                  Foreground="Gray"/>
+                                        <TextBlock Text="{Binding Link}" 
+                                                  FontSize="11"
+                                                  Foreground="Blue"
+                                                  TextDecorations="Underline"
+                                                  Cursor="Hand"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </Grid>
+        </Border>
+        
+        <!-- Кнопки БД -->
+        <StackPanel Grid.Row="4" Orientation="Horizontal" Spacing="10" Margin="0,0,0,10">
+            <Button Name="SaveToDbButton" 
+                    Content="Сохранить в БД" 
+                    Click="OnSaveToDb"
+                    Width="150" Height="35"
+                    FontSize="14"/>
+            <Button Name="LoadFromDbButton" 
+                    Content="Загрузить из БД" 
+                    Click="OnLoadFromDb"
+                    Width="150" Height="35"
+                    FontSize="14"/>
+            <TextBlock Name="DbStatusTextBlock" 
+                       VerticalAlignment="Center" 
+                       FontStyle="Italic"
+                       Foreground="Gray"
+                       Margin="10,0,0,0"/>
+        </StackPanel>
+        
+        <!-- Новости из БД -->
+        <Border Grid.Row="5" BorderBrush="Gray" BorderThickness="1">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                
+                <TextBlock Grid.Row="0" 
+                          Text="Новости из БД:" 
+                          FontWeight="Bold" 
+                          Margin="5"
+                          Background="#F0F0F0"/>
+                
+                <ScrollViewer Grid.Row="1">
+                    <TextBox Name="DbNewsTextBox" 
+                             IsReadOnly="True" 
+                             TextWrapping="Wrap" 
+                             BorderThickness="0"
+                             FontFamily="Consolas"
+                             FontSize="11"
+                             Padding="5"/>
+                </ScrollViewer>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

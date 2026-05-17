@@ -1,0 +1,70 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="TicTacToe.Views.MainWindow"
+        Title="Крестики-нолики 10x10"
+        Width="700" Height="800">
+    
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>  <!-- Счет -->
+            <RowDefinition Height="*"/>      <!-- Игровое поле -->
+            <RowDefinition Height="Auto"/>  <!-- Кнопки -->
+        </Grid.RowDefinitions>
+        
+        <!-- Панель счета -->
+        <Border Grid.Row="0" BorderBrush="Gray" BorderThickness="1" 
+                Padding="10" Margin="0,0,0,10" Background="#F0F0F0">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                
+                <TextBlock Name="Player1ScoreLabel" Grid.Column="0"
+                          Text="Игрок 1 (X): 0"
+                          FontSize="16" FontWeight="Bold"
+                          Foreground="Blue"
+                          VerticalAlignment="Center"/>
+                
+                <TextBlock Name="CurrentPlayerLabel" Grid.Column="1"
+                          Text="Ход: Игрок 1"
+                          FontSize="16" FontWeight="Bold"
+                          HorizontalAlignment="Center"
+                          VerticalAlignment="Center"/>
+                
+                <TextBlock Name="Player2ScoreLabel" Grid.Column="2"
+                          Text="Игрок 2 (O): 0"
+                          FontSize="16" FontWeight="Bold"
+                          Foreground="Red"
+                          HorizontalAlignment="Right"
+                          VerticalAlignment="Center"/>
+            </Grid>
+        </Border>
+        
+        <!-- Canvas для игрового поля -->
+        <Border Grid.Row="1" BorderBrush="Black" BorderThickness="2" 
+                Margin="0,0,0,10">
+            <Canvas Name="GameCanvas"
+                    Width="600" Height="600"
+                    Background="White"
+                    PointerPressed="OnCanvasClick"
+                    ClipToBounds="True"/>
+        </Border>
+        
+        <!-- Кнопки управления -->
+        <StackPanel Grid.Row="2" Orientation="Horizontal" 
+                    HorizontalAlignment="Center" Spacing="20">
+            <Button Name="NewGameButton" 
+                   Content="Новая игра" 
+                   Click="OnNewGame"
+                   Width="150" Height="40"
+                   FontSize="16"/>
+            <Button Name="ResetScoreButton" 
+                   Content="Сбросить счет" 
+                   Click="OnResetScore"
+                   Width="150" Height="40"
+                   FontSize="16"/>
+        </StackPanel>
+    </Grid>
+</Window>
