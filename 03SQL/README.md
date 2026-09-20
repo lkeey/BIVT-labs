@@ -104,7 +104,8 @@ VS Code весь репозиторий `BIVT-labs`, а затем готовы�
 
 | № | Тема | Материалы | Статус |
 | --- | --- | --- | --- |
-| 01 | Введение в Transact-SQL | [`lab01/README.md`](lab01/README.md), [`lab01/solution.sql`](lab01/solution.sql) | В работе |
+| 01 | Введение в Transact-SQL | [`lab01/README.md`](lab01/README.md), [`lab01/solution.sql`](lab01/solution.sql) | Выполнена |
+| 02 | Запросы к таблицам SELECT | [`lab02/README.md`](lab02/README.md), [`lab02/solution.sql`](lab02/solution.sql) | Выполнена |
 
 ## Как сохраняются решения
 
