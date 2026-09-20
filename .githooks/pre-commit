@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+blocked=()
+
+while IFS= read -r -d '' path; do
+  case "/${path}/" in
+    */.DS_Store/*|*/bin/*|*/obj/*)
+      blocked+=("${path}")
+      ;;
+  esac
+done < <(git diff --cached --name-only --diff-filter=ACMR -z)
+
+if (( ${#blocked[@]} > 0 )); then
+  printf 'Commit rejected: generated files must not be tracked:\n' >&2
+  printf '  %s\n' "${blocked[@]}" >&2
+  printf 'Remove them from the index with: git rm --cached -- <path>\n' >&2
+  exit 1
+fi

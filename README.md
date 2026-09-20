@@ -211,6 +211,18 @@ dotnet run
 
 ## 📖 Дополнительная информация
 
+### Защита от generated-файлов
+
+После клонирования репозитория один раз включите версионируемые Git hooks:
+
+```bash
+./scripts/setup-git-hooks.sh
+```
+
+Pre-commit hook и GitHub Actions запрещают добавлять `.DS_Store`, а также файлы
+из каталогов `bin/` и `obj/`. Правила `.gitignore` дополнительно исключают эти
+файлы при обычной работе с Git.
+
 ### Python Labs
 Подробная документация по Python лабораторным работам доступна в [01Py/README.md](01Py/README.md)
 
