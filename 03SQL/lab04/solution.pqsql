@@ -15,23 +15,153 @@ JOIN sales.address AS a
 WHERE ca.addresstype = 'Main Office';
 
 -- Задача 1.2. Адреса доставки
+SELECT
+    c.companyname,
+    a.addressline1,
+    a.city,
+    'Shipping' AS addresstype
+FROM sales.customer AS c
+JOIN sales.customeraddress AS ca
+    ON ca.customerid = c.customerid
+JOIN sales.address AS a
+    ON a.addressid = ca.addressid
+WHERE ca.addresstype = 'Shipping';
 
 -- Задача 1.3. Общий список адресов
+SELECT companyname, addressline1, city, addresstype
+FROM (
+    SELECT
+        c.companyname,
+        a.addressline1,
+        a.city,
+        'Billing' AS addresstype
+    FROM sales.customer AS c
+    JOIN sales.customeraddress AS ca
+        ON ca.customerid = c.customerid
+    JOIN sales.address AS a
+        ON a.addressid = ca.addressid
+    WHERE ca.addresstype = 'Main Office'
+
+    UNION
+
+    SELECT
+        c.companyname,
+        a.addressline1,
+        a.city,
+        'Shipping' AS addresstype
+    FROM sales.customer AS c
+    JOIN sales.customeraddress AS ca
+        ON ca.customerid = c.customerid
+    JOIN sales.address AS a
+        ON a.addressid = ca.addressid
+    WHERE ca.addresstype = 'Shipping'
+) AS all_customer_addresses
+ORDER BY companyname, addresstype
+LIMIT 10;
 
 -- Задача 2.1. Клиенты только с главным офисом
+SELECT companyname
+FROM sales.customer AS c
+JOIN sales.customeraddress AS ca
+    ON ca.customerid = c.customerid
+WHERE ca.addresstype = 'Main Office'
+
+EXCEPT
+
+SELECT companyname
+FROM sales.customer AS c
+JOIN sales.customeraddress AS ca
+    ON ca.customerid = c.customerid
+WHERE ca.addresstype = 'Shipping';
 
 -- Задача 2.2. Клиенты с обоими типами адреса
+SELECT companyname
+FROM sales.customer AS c
+JOIN sales.customeraddress AS ca
+    ON ca.customerid = c.customerid
+WHERE ca.addresstype = 'Main Office'
+
+INTERSECT
+
+SELECT companyname
+FROM sales.customer AS c
+JOIN sales.customeraddress AS ca
+    ON ca.customerid = c.customerid
+WHERE ca.addresstype = 'Shipping';
 
 -- Задача 3.1. Все города сотрудников и клиентов
+SELECT city, countryregion
+FROM sales.employee
+
+UNION
+
+SELECT a.city, a.countryregion
+FROM sales.customeraddress AS ca
+JOIN sales.address AS a
+    ON a.addressid = ca.addressid;
 
 -- Задача 3.2. Города сотрудников без клиентов
+SELECT city, countryregion
+FROM sales.employee
+
+EXCEPT
+
+SELECT a.city, a.countryregion
+FROM sales.customeraddress AS ca
+JOIN sales.address AS a
+    ON a.addressid = ca.addressid;
 
 -- Задача 3.3. Общие города сотрудников и клиентов
+SELECT city, countryregion
+FROM sales.employee
+
+INTERSECT
+
+SELECT a.city, a.countryregion
+FROM sales.customeraddress AS ca
+JOIN sales.address AS a
+    ON a.addressid = ca.addressid;
 
 -- Задача 4.1. Товары дороже 50 или без указанного цвета
+SELECT name
+FROM production.product
+WHERE listprice > 50
+
+UNION
+
+SELECT name
+FROM production.product
+WHERE color IS NULL;
 
 -- Задача 4.2. Цвета дорогих товаров категории Components
+SELECT color
+FROM production.product
+WHERE listprice > 1000
+
+INTERSECT
+
+SELECT p.color
+FROM production.product AS p
+JOIN production.productcategory AS pc
+    ON pc.productcategoryid = p.productcategoryid
+WHERE pc.name = 'Components';
 
 -- Задача 5.1. Сводный список категорий и моделей
+SELECT 'категории' AS source, name
+FROM production.productcategory
+
+UNION ALL
+
+SELECT 'модели' AS source, name
+FROM production.productmodel;
 
 -- Задача 5.2. Недорогие товары без цвета
+SELECT name
+FROM production.product
+WHERE listprice < 100
+
+EXCEPT
+
+SELECT name
+FROM production.product
+WHERE color IS NOT NULL;
