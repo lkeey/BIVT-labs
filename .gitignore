@@ -7,6 +7,9 @@
 # Build artifacts
 **/bin/
 **/obj/
+**/.gradle/
+**/build/
+**/.kotlin/
 
 # IDE
 .vs/
