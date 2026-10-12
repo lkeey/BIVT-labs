@@ -57,7 +57,7 @@ FROM (
     WHERE ca.addresstype = 'Shipping'
 ) AS all_customer_addresses
 ORDER BY companyname, addresstype
-LIMIT 10;
+LIMIT 10 OFFSET 0;
 
 -- Задача 2.1. Клиенты только с главным офисом
 SELECT companyname
@@ -165,3 +165,5 @@ EXCEPT
 SELECT name
 FROM production.product
 WHERE color IS NOT NULL;
+
+

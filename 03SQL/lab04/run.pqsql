@@ -1,0 +1,2 @@
+SELECT addressline1 FROM sales.address
+WHERE addressline1 LIKE REGEXP '^[0-9]';
