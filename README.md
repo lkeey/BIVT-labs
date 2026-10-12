@@ -263,13 +263,14 @@ dotnet run
 
 #### Требования
 
-- Docker Desktop для Apple Silicon с Rosetta 2
+- Colima на Apple Silicon с VZ/Rosetta для amd64
 - Visual Studio Code с расширением Microsoft MSSQL
 
 #### Запуск SQL Server
 
 ```bash
 cd 03SQL/docker
+colima start --profile sqlserver
 ./scripts/setup.sh
 ```
 

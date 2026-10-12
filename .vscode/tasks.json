@@ -1,0 +1,35 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "AdventureWorks: Setup or verify database",
+      "type": "shell",
+      "command": "./03SQL/docker/scripts/setup.sh",
+      "problemMatcher": []
+    },
+    {
+      "label": "AdventureWorks: Start database",
+      "type": "shell",
+      "command": "./03SQL/docker/scripts/colima.sh start",
+      "problemMatcher": []
+    },
+    {
+      "label": "AdventureWorks: Stop database",
+      "type": "shell",
+      "command": "./03SQL/docker/scripts/colima.sh stop",
+      "problemMatcher": []
+    },
+    {
+      "label": "AdventureWorks: Status",
+      "type": "shell",
+      "command": "./03SQL/docker/scripts/colima.sh status",
+      "problemMatcher": []
+    },
+    {
+      "label": "AdventureWorks: Logs",
+      "type": "shell",
+      "command": "./03SQL/docker/scripts/colima.sh logs",
+      "problemMatcher": []
+    }
+  ]
+}

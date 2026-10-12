@@ -14,6 +14,11 @@
 # IDE
 .vs/
 .vscode/
+!.vscode/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/tasks.json
 .idea/
 *.user
 *.suo
