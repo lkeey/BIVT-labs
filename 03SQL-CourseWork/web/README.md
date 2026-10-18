@@ -16,6 +16,7 @@
 | `public/styles.css` | Адаптивная светлая тема |
 | `public/config.js` | Публичный адрес API, загружаемый при открытии страницы |
 | `firebase.json` | Публикация только `public/` на Firebase Hosting |
+| `.firebaserc` | Целевой Firebase-проект `bivt-labs-sql-coursework` |
 
 Локально запустите сервер статических файлов из `web/public`, например:
 
@@ -39,10 +40,9 @@ python3 -m http.server 8080
 в текущей вкладке. Backend должен разрешить домен Firebase Hosting по CORS,
 включая заголовок `Authorization`.
 
-Для входа через Google заполните `firebaseConfig` публичными настройками web
-app Firebase (`apiKey`, `authDomain`, `projectId`, `appId`), включите Google
-в Firebase Authentication и добавьте домен Hosting в разрешённые домены.
-Кнопка входа появится автоматически. Код загружает
+`firebaseConfig` уже содержит публичные настройки Web App проекта
+`bivt-labs-sql-coursework`. Google включён в Firebase Authentication, а
+`bivt-labs-sql-coursework.web.app` входит в разрешённые домены. Код загружает
 [Firebase Web SDK с официального CDN](https://firebase.google.com/docs/web/alt-setup)
 только при нажатии на неё и использует память вкладки как хранилище входа.
 SDK получает свежий ID token перед каждым запросом API.
@@ -51,31 +51,34 @@ SDK получает свежий ID token перед каждым запрос�
 секреты LLM и приватные ключи здесь недопустимы. Не вносите реальные токены в
 репозиторий или параметры URL.
 
-До настройки Firebase web app для интеграции доступна ручная вставка
-действующего Firebase ID token. Сайт отправляет его как
+Для интеграции также доступна ручная вставка действующего Firebase ID token.
+Сайт отправляет его как
 `Authorization: Bearer` и проверяет текущего пользователя
 через `GET /v1/auth/sessions/current`. Токен не сохраняется в localStorage,
 sessionStorage или cookie; обновление страницы завершает локальную сессию.
 Срок действия ручной сессии берётся из `exp` токена для удобства клиента,
 но доверенная проверка подписи, срока, `issuer` и `audience` выполняется только
-backend. Настроенный Firebase Auth SDK обновляет ID token автоматически; без
-настроек проекта кнопка входа отсутствует. Всплывающее окно входа через Google
+backend. Настроенный Firebase Auth SDK обновляет ID token автоматически.
+Всплывающее окно входа через Google
 может блокироваться некоторыми мобильными браузерами; вариант с redirect
 потребует отдельного решения по хранению состояния между перезагрузками.
 
 ## Публикация на Firebase Hosting
 
-После создания Firebase-проекта и настройки backend:
+Сайт опубликован на [bivt-labs-sql-coursework.web.app](https://bivt-labs-sql-coursework.web.app/).
+Публичный backend пока не подключён; на странице показано предупреждение.
+`backendReady: false` в `public/config.js` отвечает только за это сообщение и
+не подменяет фактическую проверку API. Для следующей публикации:
 
 ```bash
 cd 03SQL-CourseWork/web
-firebase deploy --only hosting --project YOUR_PROJECT_ID
+firebase deploy --only hosting --project bivt-labs-sql-coursework
 ```
 
-Команда приведена для владельца проекта; публикация из этой задачи не
-выполнялась. `firebase.json` размещает только содержимое `public/`. Если
+`firebase.json` размещает только содержимое `public/`. Если
 Firebase Hosting и API находятся на разных доменах, в `config.js` нужен
-полный HTTPS-адрес backend; правило rewrite в Hosting не настроено.
+полный HTTPS-адрес backend и `backendReady: true`; правило rewrite в Hosting
+не настроено. Не включайте этот флаг до проверки публичного API.
 
 ## Поведение и границы
 

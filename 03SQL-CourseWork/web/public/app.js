@@ -33,6 +33,10 @@ try {
   api = new ApiClient("/api", clearSession);
 }
 $("api-base").value = api.baseUrl;
+if (window.COURSEWORK_CONFIG?.backendReady === false) {
+  $("deployment-notice").textContent = "Публичный API пока не подключён. Сайт показывает интерфейс курсовой; для работы функций укажите адрес доступного HTTPS API.";
+  $("deployment-notice").hidden = false;
+}
 if (window.COURSEWORK_CONFIG?.firebaseConfig?.apiKey && window.COURSEWORK_CONFIG?.firebaseConfig?.projectId && window.COURSEWORK_CONFIG?.firebaseConfig?.authDomain && window.COURSEWORK_CONFIG?.firebaseConfig?.appId) {
   $("firebase-signin").hidden = false;
   $("auth-alternative").hidden = false;

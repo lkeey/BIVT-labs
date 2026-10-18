@@ -21,6 +21,10 @@
 htmlcov/
 **/.venv/
 
+# Firebase CLI local cache and debug output
+**/.firebase/
+**/firebase-debug.log
+
 # Local coursework credentials
 03SQL-CourseWork/.env
 

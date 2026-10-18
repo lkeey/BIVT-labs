@@ -160,7 +160,10 @@ backend пытается отметить созданный ход как `FAIL
 
 ## Размещение
 
-Сайт из [`web/`](../web/) можно разместить на [Firebase Hosting](https://firebase.google.com/docs/hosting/quickstart).
+Сайт из [`web/`](../web/) размещён на
+[Firebase Hosting](https://bivt-labs-sql-coursework.web.app/) в проекте
+`bivt-labs-sql-coursework` (Spark). Firebase Authentication и Google Sign-In
+включены; публичный Go API пока не подключён.
 Go API и SQL Server должны работать в среде с сетевым доступом к SQL Server;
 worker запускается отдельным процессом. [Cloud Run с оплатой за запрос](https://docs.cloud.google.com/run/docs/configuring/billing-settings)
 не подходит для постоянного опроса outbox внутри API. Firebase Hosting rewrite
@@ -172,4 +175,5 @@ worker запускается отдельным процессом. [Cloud Run 
 SQL Server 2025 Express бесплатен как движок, но постоянное облачное размещение
 SQL Server не является бесплатным: [Cloud SQL тарифицирует вычисления и хранение](https://cloud.google.com/sql/pricing/).
 Для демонстрации предусмотрен локальный SQL Server 2025; публичное размещение
-требует отдельной сметы и настройки, код сайта сам по себе не развёрнут.
+требует отдельной сметы и настройки. Публикация статики не подтверждает
+сквозную работу с SQL Server, OCR и RAG.
