@@ -58,14 +58,46 @@ CREATE OR ALTER PROCEDURE ops.usp_CompleteIndexOutbox
 AS
 BEGIN
     SET NOCOUNT ON;
-    UPDATE ops.IndexOutbox
-    SET EventStatus=CASE WHEN @Succeeded=1 THEN 'DONE'
-                         WHEN AttemptCount >= 3 THEN 'FAILED' ELSE 'PENDING' END,
-        ProcessedAt=CASE WHEN @Succeeded=1 THEN SYSUTCDATETIME() ELSE NULL END,
-        LeaseUntil=NULL,ClaimToken=NULL,
-        LastError=CASE WHEN @Succeeded=1 THEN NULL ELSE @ErrorMessage END
-    WHERE EventID=@EventID AND EventStatus='CLAIMED' AND ClaimToken=@ClaimToken;
-    IF @@ROWCOUNT <> 1 THROW 51013, N'Outbox claim token is stale or missing.', 1;
+    SET XACT_ABORT ON;
+    DECLARE @SourceRevisionID bigint, @FinalFailure bit=0;
+    BEGIN TRY
+        BEGIN TRANSACTION;
+        UPDATE ops.IndexOutbox
+        SET EventStatus=CASE WHEN @Succeeded=1 THEN 'DONE'
+                             WHEN AttemptCount >= 3 THEN 'FAILED' ELSE 'PENDING' END,
+            ProcessedAt=CASE WHEN @Succeeded=1 THEN SYSUTCDATETIME() ELSE NULL END,
+            LeaseUntil=NULL,ClaimToken=NULL,
+            LastError=CASE WHEN @Succeeded=1 THEN NULL ELSE @ErrorMessage END
+        WHERE EventID=@EventID AND EventStatus='CLAIMED'
+          AND ClaimToken=@ClaimToken AND LeaseUntil>SYSUTCDATETIME();
+        IF @@ROWCOUNT <> 1
+            THROW 51013, N'Outbox claim token is stale or missing.', 1;
+        SELECT @SourceRevisionID=SourceRevisionID,
+               @FinalFailure=CASE WHEN EventStatus='FAILED' THEN 1 ELSE 0 END
+        FROM ops.IndexOutbox WHERE EventID=@EventID;
+        IF @FinalFailure=1
+        BEGIN
+            UPDATE knowledge.SourceRevision
+            SET ProcessingStatus='FAILED',ProcessedAt=SYSUTCDATETIME()
+            WHERE SourceRevisionID=@SourceRevisionID AND IsCurrent=1;
+            UPDATE detail SET DocumentStatus='FAILED'
+            FROM social.DocumentDetail AS detail
+            JOIN knowledge.SourceRevision AS source
+              ON source.ContentID=detail.ContentID
+            WHERE source.SourceRevisionID=@SourceRevisionID AND source.IsCurrent=1;
+            UPDATE version SET OCRStatus='FAILED'
+            FROM knowledge.DocumentVersion AS version
+            JOIN knowledge.SourceRevision AS source
+              ON source.DocumentVersionID=version.DocumentVersionID
+            WHERE source.SourceRevisionID=@SourceRevisionID AND source.IsCurrent=1
+              AND version.OCRStatus='PENDING';
+        END;
+        COMMIT TRANSACTION;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT>0 ROLLBACK TRANSACTION;
+        THROW;
+    END CATCH;
 END;
 GO
 

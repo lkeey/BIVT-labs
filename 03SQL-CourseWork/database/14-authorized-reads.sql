@@ -15,7 +15,8 @@ BEGIN
     BEGIN TRY
         BEGIN TRANSACTION;
         SELECT version.DocumentVersionID, version.FileName, version.MimeType,
-               version.SizeBytes, version.SHA256, version.FileBytes
+               version.SizeBytes, version.SHA256, version.FileBytes,
+               version.PlainText
         FROM social.vAccessibleContent AS access
         JOIN social.DocumentDetail AS document
           ON document.ContentID = access.ContentID
@@ -25,7 +26,7 @@ BEGIN
           AND access.ContentID = @ContentID
           AND access.Kind = 'DOCUMENT'
           AND document.DocumentStatus = 'READY'
-          AND version.FileBytes IS NOT NULL;
+          AND (version.FileBytes IS NOT NULL OR version.PlainText IS NOT NULL);
 
         IF @@ROWCOUNT <> 1
             THROW 51070, N'Current document file is unavailable.', 1;
@@ -124,7 +125,8 @@ BEGIN
     SET XACT_ABORT ON;
     SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
 
-    DECLARE @StoredStatus varchar(12), @AnswerText nvarchar(max),
+    DECLARE @StoredStatus varchar(12), @QuestionText nvarchar(2000),
+            @AnswerText nvarchar(max),
             @AnswerModel nvarchar(120), @CompletedAt datetime2(3),
             @RetrievalRunID bigint, @ExpectedCitations int = 0,
             @VisibleCitations int = 0, @DeliveryStatus varchar(12);
@@ -132,6 +134,7 @@ BEGIN
     BEGIN TRY
     BEGIN TRANSACTION;
     SELECT @StoredStatus = turn.GenerationStatus,
+           @QuestionText = turn.QuestionText,
            @AnswerText = turn.AnswerText,
            @AnswerModel = turn.AnswerModel,
            @CompletedAt = turn.CompletedAt
@@ -171,7 +174,8 @@ BEGIN
         ELSE @StoredStatus
     END;
 
-    SELECT @TurnID AS TurnID, @DeliveryStatus AS DeliveryStatus,
+    SELECT @TurnID AS TurnID, @QuestionText AS QuestionText,
+           @DeliveryStatus AS DeliveryStatus,
            CASE WHEN @DeliveryStatus IN ('COMPLETED', 'NO_SOURCES')
                 THEN @AnswerText ELSE NULL END AS AnswerText,
            CASE WHEN @DeliveryStatus = 'COMPLETED'

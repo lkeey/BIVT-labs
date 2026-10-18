@@ -215,7 +215,7 @@ BEGIN
         THROW;
     END CATCH;
 
-    SELECT [Rank],ContentID,Score,ReasonCode,ReasonText,CommunityID,AuthorUserID
+    SELECT [Rank],ContentID,Kind,Score,ReasonCode,ReasonText,CommunityID,AuthorUserID
     FROM assistant.vRecommendationFeed
     WHERE BatchID=@BatchID AND UserID=@UserID
     ORDER BY [Rank];

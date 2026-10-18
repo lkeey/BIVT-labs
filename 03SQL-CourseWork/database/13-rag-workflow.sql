@@ -29,6 +29,26 @@ BEGIN
 END;
 GO
 
+/* A failed provider call must not leave a turn pending forever. */
+CREATE OR ALTER PROCEDURE assistant.usp_FailRagTurn
+    @TurnID bigint,
+    @RetrievalRunID bigint = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+    IF @RetrievalRunID IS NOT NULL AND NOT EXISTS
+       (SELECT 1 FROM assistant.RetrievalRun
+        WHERE RetrievalRunID=@RetrievalRunID AND TurnID=@TurnID)
+        THROW 51090, N'Retrieval run does not belong to the RAG turn.', 1;
+    UPDATE assistant.RagTurn
+    SET GenerationStatus='FAILED',CompletedAt=SYSUTCDATETIME()
+    WHERE TurnID=@TurnID AND GenerationStatus='PENDING';
+    IF @@ROWCOUNT<>1
+        THROW 51091, N'RAG turn is absent or already finished.', 1;
+END;
+GO
+
 /* Serializing on the session row makes TurnNo monotonic within each session. */
 CREATE OR ALTER PROCEDURE assistant.usp_StartRagTurn
     @SessionID bigint,

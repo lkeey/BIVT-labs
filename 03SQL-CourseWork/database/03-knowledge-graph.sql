@@ -19,11 +19,13 @@ GO
 IF NOT EXISTS
 (
     SELECT 1 FROM knowledge.EmbeddingModel
-    WHERE ModelName = N'intfloat/multilingual-e5-small' AND ModelVersion = N'main'
+    WHERE ModelName = N'intfloat/multilingual-e5-small'
+      AND ModelVersion = N'fd1525a9fd15316a2d503bf26ab031a61d056e98'
 )
 BEGIN
     INSERT INTO knowledge.EmbeddingModel(Provider,ModelName,ModelVersion,Dimensions,IsActive)
-    VALUES (N'Hugging Face',N'intfloat/multilingual-e5-small',N'main',384,1);
+    VALUES (N'Hugging Face',N'intfloat/multilingual-e5-small',
+            N'fd1525a9fd15316a2d503bf26ab031a61d056e98',384,1);
 END;
 GO
 

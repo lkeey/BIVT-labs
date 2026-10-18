@@ -9,13 +9,13 @@
 
 | Схема | Узлы SQL Graph (`AS NODE`) | Рёбра SQL Graph (`AS EDGE`) | Обычные таблицы |
 | --- | --- | --- | --- |
-| `auth` | `UserAccount` | — | `UserProfile` |
+| `auth` | `UserAccount` | — | `UserProfile`, `ExternalIdentity` |
 | `social` | `Community`, `ContentItem` | `Follows`, `MemberOf`, `Authored`, `PublishedIn`, `CommentOn`, `ReactTo` | `PostRevision`, `CommentRevision`, `DocumentDetail` |
 | `knowledge` | `Chunk`, `KnowledgeEntity` | `ChunkOf`, `Mentions`, `EntityRelation` | `DocumentVersion`, `SourceRevision`, `EmbeddingModel`, `ChunkEmbedding` |
 | `assistant` | — | — | `RagSession`, `RagTurn`, `RetrievalRun`, `RetrievedChunk`, `AnswerCitation`, `TurnFeedback`, `RecommendationBatch`, `RecommendationItem` |
 | `ops` | — | — | `IndexOutbox`, `AuditEvent` |
 
-Итого: **5 узлов, 9 рёбер и 18 обычных таблиц — 32 таблицы**. Это физические
+Итого: **5 узлов, 9 рёбер и 19 обычных таблиц — 33 таблицы**. Это физические
 таблицы; представления, функции, процедуры и триггеры в счёт не входят.
 
 ## Социальный граф и граф знаний
@@ -37,7 +37,7 @@ flowchart LR
 различает `Post`, `Comment`, `Document`. Для `CommentOn` начало — только
 комментарий, конец — только пост; `ReactTo` направлено на пост или комментарий.
 В `MemberOf` хранятся роль, статус и даты; доступ к закрытому сообществу
-предоставляет только `ACTIVE`. Действующий `BLOCKED` или исторический `BANNED`
+предоставляет только `ACTIVE` с пустым `EndedAt`. Действующий `BLOCKED` или `BANNED`
 закрывает чтение даже открытого сообщества. `KnowledgeEntity` — отдельное извлечённое
 упоминание темы, человека, организации, события или места. Узлы с похожими
 названиями автоматически не объединяются.
@@ -45,7 +45,7 @@ flowchart LR
 У `Mentions` исходный `Chunk` задаёт источник. У `EntityRelation` обязателен
 `EvidenceChunkID`: каждое ребро — отдельное свидетельство с предикатом
 `PARTICIPATES_IN`, `WORKS_AT`, `TAKES_PLACE_IN` или `RELATED_TO`.
-Для извлечённых рёбер сохраняются координаты внутри фрагмента, `Confidence`
+Для извлечённых рёбер сохраняются координаты внутри извлечённого текста, `Confidence`
 в диапазоне 0..1 и `ExtractorVersion`. Для ответа и ранжирования ребро
 пригодно только тогда, когда его исходный фрагмент доступен пользователю.
 
@@ -57,6 +57,7 @@ flowchart LR
 ```mermaid
 erDiagram
     auth_UserAccount ||--o| auth_UserProfile : "профиль"
+    auth_UserAccount ||--o| auth_ExternalIdentity : "Firebase UID"
     auth_UserAccount ||--o{ social_Community : "владелец"
     social_ContentItem ||--o{ social_PostRevision : "версии поста"
     social_ContentItem ||--o{ social_CommentRevision : "версии комментария"
@@ -84,13 +85,17 @@ erDiagram
 | --- | --- | --- |
 | Оригинал PDF/DOCX | `knowledge.DocumentVersion.FileBytes VARBINARY(MAX)` и SHA-256 | Единая транзакция и резервная копия вместе с метаданными; размер загрузки ограничивается приложением. |
 | Тексты и фрагменты | `NVARCHAR(MAX)` в редакциях и `knowledge.Chunk`; страница и offsets отдельными столбцами | Поиск и точная цитата из текущей редакции. |
-| Embedding фрагмента | `knowledge.ChunkEmbedding.Embedding VECTOR(384)` + FK на `EmbeddingModel` | Модель [`intfloat/multilingual-e5-small`](https://huggingface.co/intfloat/multilingual-e5-small); текст индексируется с `passage:`, вопрос — с `query:`. |
+| Embedding фрагмента | `knowledge.ChunkEmbedding.Embedding VECTOR(384)` + FK на `EmbeddingModel` | Модель [`intfloat/multilingual-e5-small` на фиксированной ревизии](https://huggingface.co/intfloat/multilingual-e5-small/tree/fd1525a9fd15316a2d503bf26ab031a61d056e98); текст индексируется с `passage:`, вопрос — с `query:`. |
 | Связи | SQL Graph `AS NODE`/`AS EDGE`; доменные ID остаются обычными столбцами | Обход через `MATCH`; автоматически созданные `$node_id`/`$edge_id` не служат публичными ID. |
 
 Для учебного объёма используется точное `VECTOR_DISTANCE`. Новую версию
 embedding-модели можно зарегистрировать в `EmbeddingModel`, но операция
 массовой переиндексации пока не реализована. До её выполнения нельзя
 переключать активную модель или смешивать векторы разных размерностей.
+`auth.ExternalIdentity` привязывает проверенный Firebase UID к `UserAccount`;
+адрес электронной почты не используется для автоматического объединения
+аккаунтов. Роли `coursework_api` и `coursework_worker` получают только права
+вызова нужных процедур, без прямого чтения базовых таблиц.
 
 ## ER: ответ, рекомендации и обработка
 
@@ -120,7 +125,7 @@ erDiagram
 | --- | --- |
 | Inline TVF | `auth.fn_UserCanReadCommunity` — правило чтения; `auth.fn_UserCanWriteCommunity` — правило публикации для владельца или активного участника. |
 | Представления | `social.vAccessibleContent`, `knowledge.vCurrentRagChunks`, `assistant.vAnswerWithCitations`, `assistant.vRecommendationFeed`. |
-| Процедуры | Публикация и документы: `social.usp_PublishContent`, `knowledge.usp_SaveDocumentVersion`, `knowledge.usp_GetDocumentFile`; социальные операции: `social.usp_CreateCommunity`, `usp_RequestMembership`, `usp_SetMembership`, `usp_LeaveCommunity`, `usp_SetFollow`, `usp_SetReaction`, `usp_ModerateContent`, `usp_ListPendingMemberships`; RAG: `assistant.usp_StartRagSession`, `usp_StartRagTurn`, `usp_SearchRag`, `usp_RecordRetrievedChunks`, `usp_SaveRagAnswer`, `usp_SaveRagNoSources`, `usp_GetRagTurn`; также `assistant.usp_GenerateRecommendations`, `assistant.usp_RevokeContentAccess`, процедуры `ops` для outbox. |
+| Процедуры | Публикация и документы: `social.usp_PublishContent`, `knowledge.usp_SaveDocumentVersion`, `knowledge.usp_GetDocumentFile`; социальные операции и чтение: процедуры `social.usp_*` из скриптов 12/14/15; RAG: `assistant.usp_StartRagSession`, `usp_StartRagTurn`, `usp_SearchRag`, `usp_RecordRetrievedChunks`, `usp_SaveRagAnswer`, `usp_SaveRagNoSources`, `usp_FailRagTurn`, `usp_GetRagTurn`; также `assistant.usp_GenerateRecommendations`, `assistant.usp_RevokeContentAccess`, `auth.usp_GetOrCreateFirebaseUser` и процедуры `ops` для outbox. |
 | Триггер | После добавления `knowledge.SourceRevision` создаёт set-based события `ops.IndexOutbox`; OCR и сетевых вызовов в триггере нет. |
 
 Уникальность логина, подписки и номера редакции, запрет подписки на себя,

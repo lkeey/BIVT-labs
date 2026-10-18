@@ -93,6 +93,9 @@ BEGIN
           ON embedding.ChunkID = rag.ChunkID
         JOIN knowledge.EmbeddingModel AS model
           ON model.ModelID = embedding.ModelID AND model.IsActive = 1
+         AND model.ModelName = N'intfloat/multilingual-e5-small'
+         AND model.ModelVersion = N'fd1525a9fd15316a2d503bf26ab031a61d056e98'
+         AND model.Dimensions = 384
         LEFT JOIN FREETEXTTABLE(knowledge.Chunk, ChunkText, @Question) AS fulltext
           ON fulltext.[KEY] = rag.ChunkID
         LEFT JOIN GraphScore AS graph ON graph.ChunkID = rag.ChunkID

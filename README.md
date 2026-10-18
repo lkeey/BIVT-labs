@@ -13,7 +13,7 @@
 | [`01Py/`](01Py/README.md) | Python, лабораторные 01–10: код в `src/`, общая библиотека, тесты, учебные данные и скриншоты. |
 | [`02C#/`](02C%23/) | C#, лабораторные 01–11. Каждая работа содержит отдельные .NET-проекты; `RUN_LABS.sh` запускает часть GUI-работ 05–09. |
 | [`03SQL/`](03SQL/README.md) | SQL-лабораторные: T-SQL-работы 01–03 и 05 используют `AdventureWorksLT2019`; отдельный семинар 04 использует PostgreSQL 16. |
-| [`03SQL-CourseWork/`](03SQL-CourseWork/README.md) | Отдельный проект курсовой на T-SQL и SQL Server 2025: схема, SQL Graph, диаграммы и контракт HTTP API; его среда не смешивается с `03SQL`. |
+| [`03SQL-CourseWork/`](03SQL-CourseWork/README.md) | Отдельный проект курсовой на T-SQL и SQL Server 2025: SQL Graph, диаграммы, Go API, Python обработчик индексации и JavaScript-сайт; его среда не смешивается с `03SQL`. |
 | [`03TechnologiesOfProgramming/`](03TechnologiesOfProgramming/README.md) | Kotlin/JVM, лабораторные 01–07 в одном Gradle-проекте. |
 | [`.agents/skills/`](.agents/skills/sql-coursework/SKILL.md) | Узкие повторяемые процедуры для агентских задач; сейчас здесь Skill для курсовой. Общие постоянные правила хранятся в `AGENTS.md`. |
 | `.github/` | GitHub Actions и шаблоны pull request. |

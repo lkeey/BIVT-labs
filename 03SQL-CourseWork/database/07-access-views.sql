@@ -40,6 +40,7 @@ RETURN
                 AND member.UserID = @UserID
                 AND joinedCommunity.CommunityID = @CommunityID
                 AND membership.MemberStatus = 'ACTIVE'
+                AND membership.EndedAt IS NULL
           )
       )
 );

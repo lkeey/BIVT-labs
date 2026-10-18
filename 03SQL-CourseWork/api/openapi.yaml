@@ -1,14 +1,15 @@
 openapi: 3.1.0
 info:
   title: SocialNetworkDB API
-  version: 0.1.0
+  version: 0.2.0
   description: |
-    Контракт будущего серверного API курсовой. Спецификация не утверждает, что
-    HTTP-сервер уже реализован. Сервер проверяет личность и права при каждом
-    запросе; браузер никогда не подключается к SQL Server напрямую.
+    Контракт Go API курсовой. Сервер проверяет Firebase ID token и права при
+    каждом запросе; браузер никогда не подключается к SQL Server напрямую.
+    RAG использует приватный сервис embeddings и OpenAI-совместимую модель
+    ответа; без их настройки запрос на генерацию возвращает 503.
 servers:
   - url: /api
-    description: Относительный путь; домен и язык backend не зафиксированы
+    description: Относительный путь Go backend; публичный домен задаётся при размещении
 tags:
   - name: Session
   - name: Communities
@@ -17,59 +18,27 @@ tags:
   - name: Documents
   - name: Assistant
 security:
-  - sessionToken: []
+  - firebaseIdToken: []
 paths:
-  /v1/auth/sessions:
-    post:
-      tags: [Session]
-      summary: Обменять проверенный внешним провайдером токен на сессию приложения
-      description: |
-        Выбор OIDC-провайдера остаётся за backend; Firebase Auth возможен позднее.
-        Сервер проверяет подпись, issuer, audience и срок действия токена и
-        сопоставляет внешнюю личность с UserAccount. Пароли SQL не передаются.
-      security: []
-      x-implementation-status: planned
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/SessionCreate'
-      responses:
-        '201':
-          description: Сессия создана
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Session'
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '429': { $ref: '#/components/responses/RateLimited' }
   /v1/auth/sessions/current:
     get:
       tags: [Session]
-      summary: Текущая сессия и пользователь
-      x-implementation-status: planned
+      summary: Текущий пользователь по проверенному Firebase ID token
+      x-implementation-status: implemented
       responses:
         '200':
-          description: Активная сессия
+          description: Активная учётная запись
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/SessionIdentity'
-        '401': { $ref: '#/components/responses/Unauthorized' }
-    delete:
-      tags: [Session]
-      summary: Завершить текущую сессию
-      x-implementation-status: planned
-      responses:
-        '204': { description: Сессия отозвана }
         '401': { $ref: '#/components/responses/Unauthorized' }
   /v1/communities:
     get:
       tags: [Communities]
       summary: Доступные сообщества
       description: Чужие закрытые сообщества в выдачу не попадают.
-      x-implementation-status: planned
+      x-implementation-status: implemented
       parameters:
         - $ref: '#/components/parameters/Limit'
         - $ref: '#/components/parameters/Cursor'
@@ -85,7 +54,7 @@ paths:
       tags: [Communities]
       summary: Создать сообщество
       x-sql-operation: social.usp_CreateCommunity
-      x-implementation-status: planned
+      x-implementation-status: implemented
       requestBody:
         required: true
         content:
@@ -114,7 +83,7 @@ paths:
     get:
       tags: [Communities]
       summary: Сообщество, доступное текущему пользователю
-      x-implementation-status: planned
+      x-implementation-status: implemented
       responses:
         '200':
           description: Сообщество
@@ -135,7 +104,7 @@ paths:
         заявок PENDING. Курсор и фильтрация применяются после проверки роли;
         для остальных пользователей данные о заявителях недоступны.
       x-sql-operation: social.usp_ListPendingMemberships
-      x-implementation-status: planned
+      x-implementation-status: implemented
       parameters:
         - $ref: '#/components/parameters/Limit'
         - $ref: '#/components/parameters/Cursor'
@@ -159,7 +128,7 @@ paths:
         владелец передаёт вне API; список и карточка скрывают такое сообщество
         до подтверждения членства. Токены приглашения в v1 не предусмотрены.
       x-sql-operation: social.usp_RequestMembership
-      x-implementation-status: planned
+      x-implementation-status: implemented
       responses:
         '201':
           description: Членство или заявка создана
@@ -184,7 +153,7 @@ paths:
       summary: Отозвать заявку или выйти из сообщества
       description: Владелец не может выйти из сообщества в v1; передача владения пока не реализована.
       x-sql-operation: social.usp_LeaveCommunity
-      x-implementation-status: planned
+      x-implementation-status: implemented
       responses:
         '204': { description: Заявка отозвана или членство завершено; повторный запрос ничего не меняет }
         '401': { $ref: '#/components/responses/Unauthorized' }
@@ -199,7 +168,7 @@ paths:
       summary: Рассмотреть заявку или заблокировать участника
       description: Только владелец или администратор; блокировка запрещает чтение и в открытом сообществе.
       x-sql-operation: social.usp_SetMembership
-      x-implementation-status: planned
+      x-implementation-status: implemented
       requestBody:
         required: true
         content:
@@ -228,7 +197,7 @@ paths:
       tags: [Social]
       summary: Публичный профиль пользователя
       description: PRIVATE-профиль выдаётся только владельцу.
-      x-implementation-status: planned
+      x-implementation-status: implemented
       responses:
         '200':
           description: Профиль
@@ -246,7 +215,7 @@ paths:
       summary: Подписаться на пользователя
       description: Повторный PUT идемпотентен; на себя подписаться нельзя.
       x-sql-operation: social.usp_SetFollow
-      x-implementation-status: planned
+      x-implementation-status: implemented
       responses:
         '204': { description: Подписка существует }
         '400': { $ref: '#/components/responses/BadRequest' }
@@ -256,7 +225,7 @@ paths:
       tags: [Social]
       summary: Отписаться от пользователя
       x-sql-operation: social.usp_SetFollow
-      x-implementation-status: planned
+      x-implementation-status: implemented
       responses:
         '204': { description: Подписки нет }
         '401': { $ref: '#/components/responses/Unauthorized' }
@@ -266,7 +235,7 @@ paths:
     get:
       tags: [Content]
       summary: Доступные опубликованные посты сообщества
-      x-implementation-status: planned
+      x-implementation-status: implemented
       parameters:
         - $ref: '#/components/parameters/Limit'
         - $ref: '#/components/parameters/Cursor'
@@ -283,7 +252,7 @@ paths:
       tags: [Content]
       summary: Опубликовать пост
       x-sql-operation: social.usp_PublishContent
-      x-implementation-status: planned
+      x-implementation-status: implemented
       requestBody:
         required: true
         content:
@@ -306,7 +275,7 @@ paths:
     get:
       tags: [Content]
       summary: Текущая опубликованная версия поста
-      x-implementation-status: planned
+      x-implementation-status: implemented
       responses:
         '200':
           description: Пост
@@ -320,7 +289,7 @@ paths:
       tags: [Content]
       summary: Создать новую редакцию своего поста
       x-sql-operation: social.usp_PublishContent
-      x-implementation-status: planned
+      x-implementation-status: implemented
       requestBody:
         required: true
         content:
@@ -342,7 +311,7 @@ paths:
       summary: Скрыть свой пост и отозвать его из RAG
       description: Backend вызывает процедуру с ExpectedKind=POST; ID комментария или документа здесь отклоняется.
       x-sql-operation: assistant.usp_RevokeContentAccess
-      x-implementation-status: planned
+      x-implementation-status: implemented
       responses:
         '204': { description: Пост скрыт }
         '401': { $ref: '#/components/responses/Unauthorized' }
@@ -354,7 +323,7 @@ paths:
     get:
       tags: [Content]
       summary: Видимые комментарии доступного поста
-      x-implementation-status: planned
+      x-implementation-status: implemented
       parameters:
         - $ref: '#/components/parameters/Limit'
         - $ref: '#/components/parameters/Cursor'
@@ -371,7 +340,7 @@ paths:
       tags: [Content]
       summary: Ответить на пост
       x-sql-operation: social.usp_PublishContent
-      x-implementation-status: planned
+      x-implementation-status: implemented
       requestBody:
         required: true
         content:
@@ -393,7 +362,7 @@ paths:
     get:
       tags: [Content]
       summary: Текущая видимая версия комментария
-      x-implementation-status: planned
+      x-implementation-status: implemented
       responses:
         '200':
           description: Комментарий
@@ -407,7 +376,7 @@ paths:
       tags: [Content]
       summary: Создать новую редакцию своего комментария
       x-sql-operation: social.usp_PublishContent
-      x-implementation-status: planned
+      x-implementation-status: implemented
       requestBody:
         required: true
         content:
@@ -429,7 +398,7 @@ paths:
       summary: Скрыть свой комментарий и отозвать его из RAG
       description: Backend вызывает процедуру с ExpectedKind=COMMENT; ID поста или документа здесь отклоняется.
       x-sql-operation: assistant.usp_RevokeContentAccess
-      x-implementation-status: planned
+      x-implementation-status: implemented
       responses:
         '204': { description: Комментарий скрыт }
         '401': { $ref: '#/components/responses/Unauthorized' }
@@ -447,7 +416,7 @@ paths:
         комментарии. Повторный PUT идемпотентен. Материал немедленно исчезает
         из чтения, ленты и RAG, затем удаляется из производных индексов.
       x-sql-operation: social.usp_ModerateContent
-      x-implementation-status: planned
+      x-implementation-status: implemented
       responses:
         '204': { description: Материал скрыт }
         '401': { $ref: '#/components/responses/Unauthorized' }
@@ -461,7 +430,7 @@ paths:
       summary: Поставить или заменить свою реакцию
       description: Одна реакция пользователя на доступный пост, комментарий или готовый документ.
       x-sql-operation: social.usp_SetReaction
-      x-implementation-status: planned
+      x-implementation-status: implemented
       requestBody:
         required: true
         content:
@@ -480,7 +449,7 @@ paths:
       tags: [Social]
       summary: Убрать свою реакцию
       x-sql-operation: social.usp_SetReaction
-      x-implementation-status: planned
+      x-implementation-status: implemented
       responses:
         '204': { description: Реакции нет }
         '401': { $ref: '#/components/responses/Unauthorized' }
@@ -490,7 +459,7 @@ paths:
     get:
       tags: [Documents]
       summary: Готовые доступные документы сообщества
-      x-implementation-status: planned
+      x-implementation-status: implemented
       parameters:
         - $ref: '#/components/parameters/Limit'
         - $ref: '#/components/parameters/Cursor'
@@ -508,7 +477,7 @@ paths:
       summary: Загрузить PDF/DOCX или ввести текст
       description: Сервер ограничивает размер 10 MiB в байтах, проверяет MIME и содержимое.
       x-sql-operation: knowledge.usp_SaveDocumentVersion
-      x-implementation-status: planned
+      x-implementation-status: implemented
       requestBody:
         $ref: '#/components/requestBodies/DocumentPayload'
       responses:
@@ -531,7 +500,7 @@ paths:
       description: |
         Автор видит PROCESSING/FAILED. Остальные получают документ только после
         READY и при текущем доступе к сообществу.
-      x-implementation-status: planned
+      x-implementation-status: implemented
       responses:
         '200':
           description: Документ
@@ -548,7 +517,7 @@ paths:
       tags: [Documents]
       summary: Заменить содержимое своего документа новой версией
       x-sql-operation: knowledge.usp_SaveDocumentVersion
-      x-implementation-status: planned
+      x-implementation-status: implemented
       requestBody:
         $ref: '#/components/requestBodies/DocumentPayload'
       responses:
@@ -571,36 +540,49 @@ paths:
       summary: Скачать текущий оригинал PDF/DOCX
       description: |
         knowledge.usp_GetDocumentFile проверяет текущий доступ, опубликованный
-        статус и READY для актуальной версии перед возвратом FileBytes.
+        статус и READY для актуальной версии перед возвратом FileBytes или PlainText.
         Автор может видеть статус PROCESSING или FAILED в карточке, но скачать
-        такой файл через этот маршрут нельзя. Для text/plain возвращается 404.
+        такой файл через этот маршрут нельзя. Текстовый документ выдаётся как UTF-8 text/plain.
       x-sql-operation: knowledge.usp_GetDocumentFile
-      x-implementation-status: planned
+      x-implementation-status: implemented
       responses:
         '200':
-          description: Оригинальный файл
+          description: Текущая готовая версия документа
           headers:
             Content-Disposition:
               schema: { type: string }
               description: attachment с безопасным именем файла
           content:
-            application/octet-stream:
+            application/pdf:
               schema: { type: string, format: binary }
+            application/vnd.openxmlformats-officedocument.wordprocessingml.document:
+              schema: { type: string, format: binary }
+            text/plain:
+              schema: { type: string }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '404': { $ref: '#/components/responses/NotFound' }
   /v1/rag/queries:
     post:
       tags: [Assistant]
-      summary: Начать ответ на вопрос по доступным источникам
+      summary: Создать ответ на вопрос по доступным источникам
       description: |
-        Backend создаёт RagSession/RagTurn и сразу возвращает ID. Фоновый
-        обработчик строит embedding, выполняет assistant.usp_SearchRag,
-        записывает проверенные фрагменты и вызывает LLM только с доступными
-        источниками. Ответ асинхронен.
+        Backend проверяет доступность модели ответа и получает закреплённый
+        embedding до создания SQL-хода. Затем вызывает гибридный поиск,
+        фиксирует доступные фрагменты и передаёт LLM максимум пять источников.
+        Ответ должен содержать ссылки [1]..[N]; в SQL сохраняются только
+        фактически упомянутые цитаты после повторной проверки доступа.
+        Обработка завершается до HTTP-ответа; для долгого запроса хостингу
+        нужен таймаут больше 100 секунд. При отсутствии модели или сервиса
+        embeddings возвращается 503 без создания хода.
       x-sql-operations:
         - assistant.usp_StartRagSession
         - assistant.usp_StartRagTurn
-      x-implementation-status: planned
+        - assistant.usp_SearchRag
+        - assistant.usp_RecordRetrievedChunks
+        - assistant.usp_SaveRagAnswer
+        - assistant.usp_SaveRagNoSources
+        - assistant.usp_FailRagTurn
+      x-implementation-status: implemented
       requestBody:
         required: true
         content:
@@ -608,15 +590,24 @@ paths:
             schema:
               $ref: '#/components/schemas/RagQuestion'
       responses:
-        '202':
-          description: Запрос принят
+        '201':
+          description: Ответ сохранён либо подтверждено отсутствие источников; Location указывает на сохранённый ход
+          headers:
+            Location:
+              schema: { type: string }
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RagAccepted'
+                $ref: '#/components/schemas/RagCreated'
+        '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
-        '404': { $ref: '#/components/responses/NotFound' }
-        '429': { $ref: '#/components/responses/RateLimited' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '503':
+          description: Сервис embeddings или модель ответа не настроены либо недоступны
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
   /v1/rag/queries/{queryId}:
     parameters:
       - $ref: '#/components/parameters/QueryId'
@@ -633,7 +624,7 @@ paths:
       x-sql-operations:
         - assistant.usp_GetRagTurn
         - assistant.vAnswerWithCitations
-      x-implementation-status: planned
+      x-implementation-status: implemented
       responses:
         '200':
           description: Текущее состояние; завершённый ответ содержит цитаты
@@ -655,7 +646,7 @@ paths:
       summary: Персональная лента доступных постов и документов
       description: Результат дополнительно фильтруется vRecommendationFeed при чтении.
       x-sql-operation: assistant.usp_GenerateRecommendations
-      x-implementation-status: planned
+      x-implementation-status: implemented
       parameters:
         - name: limit
           in: query
@@ -676,11 +667,11 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
 components:
   securitySchemes:
-    sessionToken:
+    firebaseIdToken:
       type: http
       scheme: bearer
-      bearerFormat: opaque
-      description: Короткоживущая серверная сессия; для браузера рекомендуем HttpOnly Secure cookie при same-site backend.
+      bearerFormat: JWT
+      description: Firebase ID token; Go API проверяет подпись, проект, срок и отзыв через Admin SDK при каждом запросе.
   parameters:
     CommunityId: { name: communityId, in: path, required: true, schema: { $ref: '#/components/schemas/Id' } }
     UserId: { name: userId, in: path, required: true, schema: { $ref: '#/components/schemas/Id' } }
@@ -713,7 +704,7 @@ components:
               file: { type: string, format: binary, description: PDF или DOCX, не более 10 MiB }
   responses:
     BadRequest: { description: Некорректные входные данные, content: { application/json: { schema: { $ref: '#/components/schemas/Problem' } } } }
-    Unauthorized: { description: Нет действующей сессии, content: { application/json: { schema: { $ref: '#/components/schemas/Problem' } } } }
+    Unauthorized: { description: Нет действительного Firebase ID token, content: { application/json: { schema: { $ref: '#/components/schemas/Problem' } } } }
     Forbidden: { description: Операция запрещена, content: { application/json: { schema: { $ref: '#/components/schemas/Problem' } } } }
     NotFound: { description: Объект отсутствует или недоступен, content: { application/json: { schema: { $ref: '#/components/schemas/Problem' } } } }
     Conflict: { description: Конфликт текущего состояния, content: { application/json: { schema: { $ref: '#/components/schemas/Problem' } } } }
@@ -734,20 +725,6 @@ components:
         code: { type: string }
         message: { type: string }
         requestId: { type: string }
-    SessionCreate:
-      type: object
-      additionalProperties: false
-      required: [identityToken]
-      properties:
-        identityToken: { type: string, minLength: 1, description: JWT внешнего OIDC-провайдера }
-    Session:
-      type: object
-      additionalProperties: false
-      required: [accessToken, expiresAt, user]
-      properties:
-        accessToken: { type: string, description: Непрозрачный короткоживущий токен }
-        expiresAt: { type: string, format: date-time }
-        user: { $ref: '#/components/schemas/UserProfile' }
     SessionIdentity:
       type: object
       additionalProperties: false
@@ -867,13 +844,13 @@ components:
         communityId:
           description: Если не задано, поиск по всем доступным сообществам.
           $ref: '#/components/schemas/Id'
-    RagAccepted:
+    RagCreated:
       type: object
       additionalProperties: false
       required: [queryId, status]
       properties:
         queryId: { $ref: '#/components/schemas/Id' }
-        status: { type: string, const: PENDING }
+        status: { type: string, enum: [COMPLETED, NO_SOURCES] }
     RagResult:
       type: object
       additionalProperties: false

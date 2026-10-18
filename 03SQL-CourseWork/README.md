@@ -7,8 +7,8 @@
 ## Архитектурные решения
 
 - Одна база `SocialNetworkDB` со схемами `auth`, `social`, `knowledge`,
-  `assistant`, `ops` и 32 таблицами: 5 узлов и 9 рёбер SQL Graph,
-  18 обычных таблиц.
+  `assistant`, `ops` и 33 таблицами: 5 узлов и 9 рёбер SQL Graph,
+  19 обычных таблиц.
 - SQL Graph связывает пользователей, сообщества, публикации, документы и
   извлечённые сущности. Социальные рёбра включают подписки, членство и реакции;
   рёбра знаний указывают на проверяемые фрагменты исходного текста.
@@ -16,7 +16,7 @@
   Проверка доступа выполняется при поиске и перед передачей контекста LLM;
   цитата должна указывать на действительно найденный доступный фрагмент.
 - Embeddings строятся моделью
-  [`intfloat/multilingual-e5-small`](https://huggingface.co/intfloat/multilingual-e5-small)
+  [`intfloat/multilingual-e5-small` на закреплённой ревизии](https://huggingface.co/intfloat/multilingual-e5-small/tree/fd1525a9fd15316a2d503bf26ab031a61d056e98)
   с размерностью 384 и хранятся в `VECTOR(384)`.
 - Рекомендательная лента ранжирует доступные публикации и документы по интересам
   пользователя, социальным связям, членству, реакциям, комментариям и свежести.
@@ -32,6 +32,9 @@
 | [`database/`](database/README.md) | Упорядоченные T-SQL-скрипты базы, SQL Graph, ACL, RAG и рекомендаций |
 | [`docs/`](docs/architecture.md) | Архитектура, ER-диаграммы и принятые решения |
 | [`api/`](api/README.md) | Контракт HTTP API v1 на OpenAPI 3.1 и граница доверенного backend |
+| [`backend/`](backend/README.md) | Go API: проверка Firebase ID token, социальные маршруты и SQL-процедуры |
+| [`worker/`](worker/README.md) | Обработчик outbox: PDF/DOCX, русский OCR, E5 и граф с источниками |
+| [`web/`](web/README.md) | Адаптивный JavaScript-сайт для Firebase Hosting |
 
 Диаграммы потоков и правила доступа находятся в
 [`docs/architecture.md`](docs/architecture.md), каталог таблиц и ER-связи — в
@@ -51,12 +54,33 @@ repo-local Skill в [`.agents/skills/sql-coursework/SKILL.md`](../.agents/skills
 ## Применение скриптов
 
 Создайте отдельную пустую `SocialNetworkDB` на SQL Server 2025 с компонентом
-Full-Text Search и примените скрипты 00–14 по порядку из
+Full-Text Search и примените скрипты 00–17 по порядку из
 [`database/README.md`](database/README.md). Среда `03SQL/docker` относится к
 лабораторным на SQL Server 2019.
 
-Прикладной слой для OCR, embeddings и ответа LLM, а также HTTP-сервер пока не
-реализованы. Их контракт описан в [`api/openapi.yaml`](api/openapi.yaml),
-границы доступа — в [`docs/architecture.md`](docs/architecture.md). Следующий
-этап предполагает JavaScript-сайт на Firebase Hosting и backend на Kotlin или
-Go; выбор языка backend и место размещения SQL Server пока открыты.
+## Локальная демонстрация
+
+1. Разверните SQL Server 2025 с Full-Text Search и примените скрипты по
+   [`database/README.md`](database/README.md). Для API и индексатора создайте
+   отдельных пользователей базы с ролями `coursework_api` и
+   `coursework_worker`.
+2. Настройте Firebase Authentication и доверенные учётные данные backend по
+   [`backend/README.md`](backend/README.md). Browser config содержит только
+   публичные параметры Firebase; SQL-пароль остаётся на сервере.
+3. Запустите [`worker/`](worker/README.md) с ODBC Driver 18, русским Tesseract
+   и закреплённой E5-моделью. Он заполняет индекс после публикации.
+4. Запустите приватный сервис embedding вопроса из того же `worker/` и
+   доверенный OpenAI-совместимый endpoint модели ответа. Укажите их адреса в
+   окружении Go API и запустите backend.
+5. Укажите адрес API в [`web/public/config.js`](web/public/config.js) и
+   откройте сайт локально по инструкции [`web/README.md`](web/README.md).
+
+`POST /api/v1/rag/queries` использует SQL-поиск, SQL Graph и LLM, сохраняет
+ответ только с проверенными цитатами. Если модели не настроены, маршрут
+возвращает `503`; лента, публикации и документы продолжают работать. Полный
+контракт запросов и ответов — в [`api/openapi.yaml`](api/openapi.yaml).
+
+Сайт можно разместить на Firebase Hosting, но код не развёрнут. Постоянный
+SQL Server в облаке потребует оплачиваемую инфраструктуру; для демонстрации
+можно использовать локальный SQL Server 2025. Подробности и схема размещения —
+в [`docs/architecture.md`](docs/architecture.md).

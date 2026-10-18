@@ -86,7 +86,8 @@ BEGIN
         THROW 51179, N'Community name is required.', 1;
     IF @Visibility IS NULL OR @Visibility NOT IN ('PUBLIC','PRIVATE')
         THROW 51180, N'Visibility must be PUBLIC or PRIVATE.', 1;
-    DECLARE @CommunityID bigint, @ExistingOwnerUserID bigint,
+    DECLARE @CommunityID bigint, @Created bit=0,
+            @ExistingOwnerUserID bigint,
             @ExistingName nvarchar(160), @ExistingVisibility varchar(8),
             @ExistingDescription nvarchar(1000), @ExistingStatus varchar(12),
             @LockResult int,
@@ -112,6 +113,7 @@ BEGIN
                 (OwnerUserID,Slug,CommunityName,Description,Visibility)
             VALUES (@OwnerUserID,@Slug,@Name,@Description,@Visibility);
             SET @CommunityID = CONVERT(bigint,SCOPE_IDENTITY());
+            SET @Created = 1;
             INSERT INTO ops.AuditEvent (ActorUserID,EventType,EntityType,EntityID)
             VALUES (@OwnerUserID,'COMMUNITY_CREATE','COMMUNITY',@CommunityID);
         END
@@ -121,7 +123,7 @@ BEGIN
              OR ISNULL(@ExistingDescription,N'') <> ISNULL(@Description,N'')
             THROW 51182, N'Slug already belongs to a different community definition.', 1;
         COMMIT TRANSACTION;
-        SELECT @CommunityID AS CommunityID;
+        SELECT @CommunityID AS CommunityID,@Created AS Created;
     END TRY
     BEGIN CATCH
         IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
@@ -141,7 +143,8 @@ BEGIN
     DECLARE @LockResult int, @LockResource nvarchar(255),
             @OwnerUserID bigint, @Visibility varchar(8),
             @MembershipID bigint, @CurrentStatus varchar(8), @CurrentRole varchar(10),
-            @CurrentCount bigint, @ResultStatus varchar(8), @ResultRole varchar(10);
+            @CurrentCount bigint, @ResultStatus varchar(8), @ResultRole varchar(10),
+            @Created bit=0;
 
     BEGIN TRY
         BEGIN TRANSACTION;
@@ -216,13 +219,14 @@ BEGIN
                 FROM auth.UserAccount AS member, social.Community AS community
                 WHERE member.UserID = @UserID AND community.CommunityID = @CommunityID;
                 SET @MembershipID = CONVERT(bigint, SCOPE_IDENTITY());
+                SET @Created = 1;
                 INSERT INTO ops.AuditEvent (ActorUserID,EventType,EntityType,EntityID)
                 VALUES (@UserID,'MEMBERSHIP_REQUEST','MEMBERSHIP',@MembershipID);
             END;
         END;
         COMMIT TRANSACTION;
         SELECT @MembershipID AS MembershipID, @ResultStatus AS MemberStatus,
-               @ResultRole AS [Role];
+               @ResultRole AS [Role], @Created AS Created;
     END TRY
     BEGIN CATCH
         IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
