@@ -278,11 +278,11 @@ def build_payload(extracted: Extracted, model: Any, supplementary_width: int) ->
 _PERSON = r"[А-ЯЁ][а-яё]+\s+[А-ЯЁ][а-яё]+"
 _LABEL = r"[А-ЯЁA-Z][\wЁё-]*(?:\s+[А-ЯЁA-Z][\wЁё-]*){0,2}"
 _PATTERNS = (
-    (re.compile(rf"(?P<person>{_PERSON})\s+работает\s+в\s+(?:компании|организации)\s+(?P<org>{_LABEL})"),
+    (re.compile(rf"(?P<person>{_PERSON})\s+работает\s+в\s+(?:компании|организации)\s+«?(?P<org>{_LABEL})»?"),
      ("person", "PERSON"), ("org", "ORGANIZATION"), "WORKS_AT"),
-    (re.compile(rf"(?P<person>{_PERSON})\s+участвует\s+в\s+(?:мероприятии|проекте)\s+(?P<event>{_LABEL})"),
+    (re.compile(rf"(?P<person>{_PERSON})\s+участвует\s+в\s+(?:мероприятии|проекте)\s+«?(?P<event>{_LABEL})»?"),
      ("person", "PERSON"), ("event", "EVENT"), "PARTICIPATES_IN"),
-    (re.compile(rf"(?P<event>(?:Фестиваль|Конференция|Форум|Семинар)\s+{_LABEL})\s+проходит\s+в\s+(?:городе|г\.)\s+(?P<place>{_LABEL})"),
+    (re.compile(rf"(?:Фестиваль|Конференция|Форум|Семинар)\s+«?(?P<event>{_LABEL})»?\s+проходит\s+в\s+(?:(?:городе|г\.)\s+)?(?P<place>{_LABEL})"),
      ("event", "EVENT"), ("place", "PLACE"), "TAKES_PLACE_IN"),
 )
 _TOPIC = re.compile(r"(?:^|[\n.;])\s*[Тт]ема\s*:\s*(?P<topic>[^\n.;:]{2,100})")

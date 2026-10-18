@@ -83,7 +83,10 @@ BEGIN
                rag.StartOffset, rag.EndOffset,
                rag.Title, access.AuthorUserID, access.CommunityID,
                CAST(1.0 - VECTOR_DISTANCE('cosine', embedding.Embedding, @Vector) AS float) AS VectorScore,
-               CAST(COALESCE(fulltext.[RANK], 0) / 1000.0 AS float) AS TextScore,
+               /* SQL Server can return a matching key with RANK = 0 for a
+                  natural-language question containing Russian noise words. */
+               CAST(CASE WHEN fulltext.[KEY] IS NULL THEN 0.0
+                         ELSE (fulltext.[RANK] + 1) / 1001.0 END AS float) AS TextScore,
                CAST(COALESCE(graph.Score, 0) AS float) AS GraphScore
         FROM knowledge.vCurrentRagChunks AS rag
         JOIN social.vAccessibleContent AS access

@@ -251,6 +251,12 @@ BEGIN
            LEFT JOIN @Mentions AS origin ON origin.LocalID = relation.FromLocalID
            LEFT JOIN @Mentions AS target ON target.LocalID = relation.ToLocalID
            WHERE chunk.ChunkNo IS NULL OR origin.LocalID IS NULL OR target.LocalID IS NULL
+              OR origin.ChunkNo <> relation.ChunkNo
+              OR target.ChunkNo <> relation.ChunkNo
+              OR relation.StartOffset > origin.StartOffset
+              OR relation.EndOffset < origin.EndOffset
+              OR relation.StartOffset > target.StartOffset
+              OR relation.EndOffset < target.EndOffset
               OR relation.PredicateCode NOT IN
                  ('PARTICIPATES_IN','WORKS_AT','TAKES_PLACE_IN','RELATED_TO')
               OR NULLIF(relation.ExtractorVersion,N'') IS NULL
