@@ -838,23 +838,23 @@ public partial class BookingDialog : Window
 
 **Рис. 1 — Авторизация в приложении и получение токена.**
 
-![](/Users/lkeey/BIVT-labs/02C#/lab11/screenshots/lab11_01_auth_wait.png){width=6.3in}
+![](screenshots/lab11_01_auth_wait.png){width=6.3in}
 
 **Рис. 2 — Загрузка списка бронирований из REST API.**
 
-![](/Users/lkeey/BIVT-labs/02C#/lab11/screenshots/lab11_02_loaded.png){width=6.3in}
+![](screenshots/lab11_02_loaded.png){width=6.3in}
 
 **Рис. 3 — Создание нового бронирования через диалоговое окно.**
 
-![](/Users/lkeey/BIVT-labs/02C#/lab11/screenshots/lab11_03_add_dialog.png){width=6.3in}
+![](screenshots/lab11_03_add_dialog.png){width=6.3in}
 
 **Рис. 4 — Добавление новой записи в таблицу.**
 
-![](/Users/lkeey/BIVT-labs/02C#/lab11/screenshots/lab11_04_created.png){width=6.3in}
+![](screenshots/lab11_04_created.png){width=6.3in}
 
 **Рис. 5 — Подтверждение удаления выбранного бронирования.**
 
-![](/Users/lkeey/BIVT-labs/02C#/lab11/screenshots/lab11_05_delete_confirm.png){width=6.3in}
+![](screenshots/lab11_05_delete_confirm.png){width=6.3in}
 
 # 5. ОТВЕТЫ НА КОНТРОЛЬНЫЕ ВОПРОСЫ
 

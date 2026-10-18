@@ -11,6 +11,22 @@
 **/build/
 **/.kotlin/
 
+# Python artifacts
+**/__pycache__/
+**/.pytest_cache/
+**/.ruff_cache/
+*.py[cod]
+.coverage
+.coverage.*
+htmlcov/
+**/.venv/
+
+# Local coursework credentials
+03SQL-CourseWork/.env
+
+# Local agent configuration
+/opencode.json
+
 # IDE
 .vs/
 .vscode/

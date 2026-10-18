@@ -1,6 +1,7 @@
 # Python Labs Repository
 
-This repository contains laboratory works for Python programming course.
+This directory contains laboratory works for the Python programming course in
+the BIVT Labs monorepository.
 
 **Автор:** Кирюшин Алексей  
 **Группа:** БИВТ-25-1
@@ -21,8 +22,8 @@ This repository contains laboratory works for Python programming course.
 ## Project Structure
 
 ```
-python_labs/
-├─ README.md                        # Main report
+01Py/
+├─ README.md                        # Project overview and commands
 ├─ src/
 │   ├─ lib                          # Shared library modules
 │   ├─ lab01/                       # Lab 1: Basic Python
@@ -39,6 +40,22 @@ python_labs/
 ├─ images/                          # Screenshots and images
 └─ tests/                           # Test files
 ```
+
+## Data used by labs
+
+Files under `data/` are kept because they are inputs, fixtures, or example
+outputs for the exercises; they are not temporary build artifacts.
+
+| Path | Purpose |
+| --- | --- |
+| `data/samples/` | Shared sample CSV, JSON, and text inputs |
+| `data/lab04/` | Text and CSV inputs for file I/O exercises |
+| `data/out/` | Tracked example output files used by conversion exercises |
+| `data/lab08/` | Input and serialized output for the dataclass exercise |
+| `data/lab09/` | CSV and JSON fixtures and exports for class-based data management |
+
+Keep lab inputs and intentional example outputs in their lab-specific folders.
+Place local run artifacts outside the repository or in ignored directories.
 
 ## Requirements
 
@@ -67,3 +84,4 @@ black --check .
 
 # Check code linting
 ruff check .
+```
