@@ -1,3 +1,8 @@
+/* Filtered indexes require these session options when applied through sqlcmd. */
+SET ANSI_NULLS ON;
+SET QUOTED_IDENTIFIER ON;
+GO
+
 /* One current snapshot per material; old snapshots remain for audit only. */
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE object_id = OBJECT_ID(N'social.PostRevision') AND name = N'UX_PostRevision_Current')
     CREATE UNIQUE INDEX UX_PostRevision_Current ON social.PostRevision(ContentID) WHERE IsCurrent = 1;

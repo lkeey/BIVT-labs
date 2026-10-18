@@ -14,6 +14,18 @@ RETURN
     WHERE u.UserID = @UserID
       AND u.AccountStatus = 'ACTIVE'
       AND c.Status = 'ACTIVE'
+      AND NOT EXISTS
+      (
+          SELECT 1
+          FROM auth.UserAccount AS blockedUser,
+               social.MemberOf AS blockedMembership,
+               social.Community AS blockedCommunity
+          WHERE MATCH(blockedUser-(blockedMembership)->blockedCommunity)
+            AND blockedUser.UserID = @UserID
+            AND blockedCommunity.CommunityID = @CommunityID
+            AND blockedMembership.MemberStatus IN ('BLOCKED', 'BANNED')
+            AND blockedMembership.EndedAt IS NULL
+      )
       AND
       (
           c.Visibility = 'PUBLIC'
@@ -30,6 +42,36 @@ RETURN
                 AND membership.MemberStatus = 'ACTIVE'
           )
       )
+);
+GO
+
+/* Reading a public community does not grant permission to publish in it. */
+CREATE OR ALTER FUNCTION auth.fn_UserCanWriteCommunity
+(
+    @UserID bigint,
+    @CommunityID bigint
+)
+RETURNS TABLE
+AS
+RETURN
+(
+    SELECT CAST(1 AS bit) AS CanWrite
+    FROM auth.fn_UserCanReadCommunity(@UserID, @CommunityID) AS readable
+    WHERE EXISTS
+          (SELECT 1 FROM social.Community AS owned
+           WHERE owned.CommunityID = @CommunityID AND owned.OwnerUserID = @UserID)
+       OR EXISTS
+          (
+              SELECT 1
+              FROM auth.UserAccount AS member,
+                   social.MemberOf AS membership,
+                   social.Community AS joinedCommunity
+              WHERE MATCH(member-(membership)->joinedCommunity)
+                AND member.UserID = @UserID
+                AND joinedCommunity.CommunityID = @CommunityID
+                AND membership.MemberStatus = 'ACTIVE'
+                AND membership.EndedAt IS NULL
+          )
 );
 GO
 
@@ -124,7 +166,8 @@ AS
 SELECT turn.TurnID, session.UserID, turn.QuestionText, turn.AnswerText,
        citation.CitationID, citation.QuoteText, citation.PageNo,
        citation.StartOffset, citation.EndOffset, chunk.ChunkID,
-       chunk.ContentID, chunk.Title, access.AuthorUserID, access.CommunityID
+       chunk.ContentID, chunk.Kind, chunk.Title,
+       access.AuthorUserID, access.CommunityID
 FROM assistant.RagTurn AS turn
 JOIN assistant.RagSession AS session ON session.SessionID = turn.SessionID
 JOIN assistant.RetrievalRun AS run ON run.TurnID = turn.TurnID

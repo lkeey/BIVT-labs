@@ -44,14 +44,15 @@ BEGIN
     UPDATE claim
     SET EventStatus='CLAIMED', AttemptCount=AttemptCount+1,
         ClaimedAt=SYSUTCDATETIME(), LeaseUntil=DATEADD(minute,10,SYSUTCDATETIME()),
-        LastError=NULL
+        ClaimToken=NEWID(),LastError=NULL
     OUTPUT inserted.EventID,inserted.SourceRevisionID,
-           inserted.Operation,inserted.ModelID;
+           inserted.Operation,inserted.ModelID,inserted.ClaimToken;
 END;
 GO
 
 CREATE OR ALTER PROCEDURE ops.usp_CompleteIndexOutbox
     @EventID bigint,
+    @ClaimToken uniqueidentifier,
     @Succeeded bit,
     @ErrorMessage nvarchar(2000) = NULL
 AS
@@ -61,10 +62,10 @@ BEGIN
     SET EventStatus=CASE WHEN @Succeeded=1 THEN 'DONE'
                          WHEN AttemptCount >= 3 THEN 'FAILED' ELSE 'PENDING' END,
         ProcessedAt=CASE WHEN @Succeeded=1 THEN SYSUTCDATETIME() ELSE NULL END,
-        LeaseUntil=NULL,
+        LeaseUntil=NULL,ClaimToken=NULL,
         LastError=CASE WHEN @Succeeded=1 THEN NULL ELSE @ErrorMessage END
-    WHERE EventID=@EventID AND EventStatus='CLAIMED';
-    IF @@ROWCOUNT <> 1 THROW 51013, N'Outbox event is not claimed.', 1;
+    WHERE EventID=@EventID AND EventStatus='CLAIMED' AND ClaimToken=@ClaimToken;
+    IF @@ROWCOUNT <> 1 THROW 51013, N'Outbox claim token is stale or missing.', 1;
 END;
 GO
 
@@ -76,7 +77,7 @@ BEGIN
     SET NOCOUNT ON;
     UPDATE ops.IndexOutbox
     SET EventStatus='PENDING',AttemptCount=0,ClaimedAt=NULL,
-        LeaseUntil=NULL,ProcessedAt=NULL,LastError=NULL
+        ClaimToken=NULL,LeaseUntil=NULL,ProcessedAt=NULL,LastError=NULL
     WHERE EventID=@EventID
       AND (EventStatus='FAILED'
            OR (EventStatus='CLAIMED' AND LeaseUntil < SYSUTCDATETIME()));
@@ -140,24 +141,39 @@ CREATE OR ALTER PROCEDURE assistant.usp_RevokeContentAccess
     @ActorUserID bigint,
     @ContentID bigint,
     @NewStatus varchar(12) = 'HIDDEN',
-    @AllowRag bit = 0
+    @AllowRag bit = 0,
+    @ExpectedKind varchar(8) = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
     SET XACT_ABORT ON;
-    IF @NewStatus NOT IN ('HIDDEN','DELETED')
+    IF @NewStatus IS NULL OR @NewStatus NOT IN ('HIDDEN','DELETED')
         THROW 51014, N'New status must be HIDDEN or DELETED.', 1;
-    IF NOT EXISTS
-    (
-        SELECT 1
-        FROM auth.UserAccount AS author,
-             social.Authored AS authored,
-             social.ContentItem AS item
-        WHERE MATCH(author-(authored)->item)
-          AND author.UserID=@ActorUserID AND item.ContentID=@ContentID
-    ) THROW 51015, N'Only the author may revoke this content.', 1;
+    IF @ExpectedKind IS NOT NULL
+       AND @ExpectedKind NOT IN ('POST','COMMENT','DOCUMENT')
+        THROW 51035, N'Expected content kind is invalid.', 1;
+    DECLARE @ActualKind varchar(8), @ActiveActorUserID bigint;
     BEGIN TRY
         BEGIN TRANSACTION;
+        SELECT @ActiveActorUserID = UserID
+        FROM auth.UserAccount WITH (UPDLOCK,HOLDLOCK)
+        WHERE UserID = @ActorUserID AND AccountStatus = 'ACTIVE';
+        IF @ActiveActorUserID IS NULL
+            THROW 51036, N'Only an active author may revoke content.', 1;
+        SELECT @ActualKind = Kind
+        FROM social.ContentItem WITH (UPDLOCK,HOLDLOCK)
+        WHERE ContentID = @ContentID;
+        IF NOT EXISTS
+        (
+            SELECT 1
+            FROM auth.UserAccount AS author,
+                 social.Authored AS authored,
+                 social.ContentItem AS item
+            WHERE MATCH(author-(authored)->item)
+              AND author.UserID=@ActorUserID AND item.ContentID=@ContentID
+        ) THROW 51015, N'Only the author may revoke this content.', 1;
+        IF @ExpectedKind IS NOT NULL AND @ActualKind <> @ExpectedKind
+            THROW 51037, N'Content kind does not match the expected kind.', 1;
         UPDATE social.ContentItem
         SET ContentStatus=@NewStatus,AllowRag=@AllowRag,UpdatedAt=SYSUTCDATETIME()
         WHERE ContentID=@ContentID;
@@ -203,17 +219,37 @@ BEGIN
         THROW 51002, N'A post cannot have a parent post.', 1;
     IF @Kind = 'COMMENT' AND @ParentPostID IS NULL
         THROW 51003, N'A comment requires a parent post.', 1;
-    IF NOT EXISTS (SELECT 1 FROM auth.fn_UserCanReadCommunity(@AuthorUserID,@CommunityID))
-        THROW 51004, N'Author cannot access the community.', 1;
+    IF NOT EXISTS (SELECT 1 FROM auth.fn_UserCanWriteCommunity(@AuthorUserID,@CommunityID))
+        THROW 51004, N'Author cannot publish in the community.', 1;
     IF @Kind = 'COMMENT' AND NOT EXISTS
        (SELECT 1 FROM social.vAccessibleContent
         WHERE UserID = @AuthorUserID AND ContentID = @ParentPostID
           AND CommunityID = @CommunityID AND Kind = 'POST')
         THROW 51005, N'Parent post is not accessible.', 1;
 
-    DECLARE @RevisionID bigint, @SourceRevisionID bigint, @RevisionNo int;
+    DECLARE @RevisionID bigint, @SourceRevisionID bigint, @RevisionNo int,
+            @MembershipLockResult int, @LockedContentID bigint,
+            @MembershipLockResource nvarchar(255) =
+                CONCAT(N'social:community:',@CommunityID,N':membership');
     BEGIN TRY
         BEGIN TRANSACTION;
+        EXEC @MembershipLockResult = sys.sp_getapplock
+            @Resource = @MembershipLockResource,
+            @LockMode = 'Shared', @LockOwner = 'Transaction', @LockTimeout = 5000;
+        IF @MembershipLockResult < 0
+            THROW 51018, N'Could not lock community membership.', 1;
+        IF NOT EXISTS (SELECT 1 FROM auth.fn_UserCanWriteCommunity(@AuthorUserID,@CommunityID))
+            THROW 51004, N'Author can no longer publish in the community.', 1;
+        IF @Kind = 'COMMENT'
+        BEGIN
+            SELECT @LockedContentID=ContentID FROM social.ContentItem WITH (UPDLOCK,HOLDLOCK)
+            WHERE ContentID=@ParentPostID;
+            IF NOT EXISTS
+               (SELECT 1 FROM social.vAccessibleContent
+                WHERE UserID=@AuthorUserID AND ContentID=@ParentPostID
+                  AND CommunityID=@CommunityID AND Kind='POST')
+                THROW 51005, N'Parent post is no longer accessible.', 1;
+        END;
         IF @ContentID IS NULL
         BEGIN
             INSERT INTO social.ContentItem (Kind,ContentStatus,AllowRag,PublishedAt)
@@ -239,6 +275,8 @@ BEGIN
         END
         ELSE
         BEGIN
+            SELECT @LockedContentID=ContentID FROM social.ContentItem WITH (UPDLOCK,HOLDLOCK)
+            WHERE ContentID=@ContentID;
             IF NOT EXISTS
             (
                 SELECT 1 FROM social.vAccessibleContent AS access
@@ -306,8 +344,8 @@ AS
 BEGIN
     SET NOCOUNT ON;
     SET XACT_ABORT ON;
-    IF NOT EXISTS (SELECT 1 FROM auth.fn_UserCanReadCommunity(@AuthorUserID,@CommunityID))
-        THROW 51007, N'Uploader cannot access the community.', 1;
+    IF NOT EXISTS (SELECT 1 FROM auth.fn_UserCanWriteCommunity(@AuthorUserID,@CommunityID))
+        THROW 51007, N'Uploader cannot publish in the community.', 1;
     IF @MimeType NOT IN ('text/plain','application/pdf',
         'application/vnd.openxmlformats-officedocument.wordprocessingml.document')
         THROW 51008, N'Unsupported document MIME type.', 1;
@@ -318,9 +356,19 @@ BEGIN
     IF @SizeBytes IS NULL OR @SizeBytes < 1 OR @SizeBytes > 10485760
         THROW 51010, N'Document size must be between 1 byte and 10 MiB.', 1;
 
-    DECLARE @VersionNo int, @DocumentVersionID bigint, @SourceRevisionID bigint;
+    DECLARE @VersionNo int, @DocumentVersionID bigint, @SourceRevisionID bigint,
+            @MembershipLockResult int, @LockedContentID bigint,
+            @MembershipLockResource nvarchar(255) =
+                CONCAT(N'social:community:',@CommunityID,N':membership');
     BEGIN TRY
         BEGIN TRANSACTION;
+        EXEC @MembershipLockResult = sys.sp_getapplock
+            @Resource = @MembershipLockResource,
+            @LockMode = 'Shared', @LockOwner = 'Transaction', @LockTimeout = 5000;
+        IF @MembershipLockResult < 0
+            THROW 51019, N'Could not lock community membership.', 1;
+        IF NOT EXISTS (SELECT 1 FROM auth.fn_UserCanWriteCommunity(@AuthorUserID,@CommunityID))
+            THROW 51007, N'Uploader can no longer publish in the community.', 1;
         IF @ContentID IS NULL
         BEGIN
             INSERT INTO social.ContentItem (Kind,ContentStatus,AllowRag,PublishedAt)
@@ -340,6 +388,8 @@ BEGIN
         END
         ELSE
         BEGIN
+            SELECT @LockedContentID=ContentID FROM social.ContentItem WITH (UPDLOCK,HOLDLOCK)
+            WHERE ContentID=@ContentID;
             IF NOT EXISTS
             (
                 SELECT 1

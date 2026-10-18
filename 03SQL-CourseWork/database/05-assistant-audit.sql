@@ -157,6 +157,7 @@ BEGIN
         AttemptCount int NOT NULL CONSTRAINT DF_IndexOutbox_Attempts DEFAULT (0),
         CreatedAt datetime2(3) NOT NULL CONSTRAINT DF_IndexOutbox_CreatedAt DEFAULT (SYSUTCDATETIME()),
         ClaimedAt datetime2(3) NULL,
+        ClaimToken uniqueidentifier NULL,
         LeaseUntil datetime2(3) NULL,
         ProcessedAt datetime2(3) NULL,
         LastError nvarchar(2000) NULL,
@@ -165,7 +166,10 @@ BEGIN
         CONSTRAINT CK_IndexOutbox_Operation CHECK (Operation IN ('UPSERT','DELETE')),
         CONSTRAINT CK_IndexOutbox_Status CHECK (EventStatus IN ('PENDING','CLAIMED','DONE','FAILED')),
         CONSTRAINT CK_IndexOutbox_Attempts CHECK (AttemptCount >= 0),
-        CONSTRAINT CK_IndexOutbox_Lease CHECK (LeaseUntil IS NULL OR ClaimedAt IS NOT NULL)
+        CONSTRAINT CK_IndexOutbox_Lease CHECK (LeaseUntil IS NULL OR ClaimedAt IS NOT NULL),
+        CONSTRAINT CK_IndexOutbox_ClaimToken CHECK
+            ((EventStatus = 'CLAIMED' AND ClaimToken IS NOT NULL)
+             OR (EventStatus <> 'CLAIMED' AND ClaimToken IS NULL))
     );
 END;
 GO

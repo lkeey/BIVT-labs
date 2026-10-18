@@ -4,14 +4,31 @@ CREATE OR ALTER PROCEDURE assistant.usp_SearchRag
     @Question nvarchar(2000),
     @QueryEmbedding nvarchar(max), -- JSON array supplied by the embedding client
     @TopK int = 5,
-    @QueryEntitiesJson nvarchar(max) = N'[]'
+    @QueryEntitiesJson nvarchar(max) = N'[]',
+    @CommunityID bigint = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
-    IF @TopK NOT BETWEEN 1 AND 20 OR NULLIF(LTRIM(RTRIM(@Question)), N'') IS NULL
+    IF @TopK IS NULL OR @TopK NOT BETWEEN 1 AND 20
+       OR NULLIF(LTRIM(RTRIM(@Question)), N'') IS NULL
         THROW 51020, N'Question or TopK is invalid.', 1;
-    IF ISJSON(@QueryEmbedding) <> 1 OR ISJSON(@QueryEntitiesJson) <> 1
-        THROW 51021, N'Embedding and entities must be JSON.', 1;
+    IF NOT EXISTS
+       (SELECT 1 FROM auth.UserAccount
+        WHERE UserID=@UserID AND AccountStatus='ACTIVE')
+        THROW 51033, N'Active user is required.', 1;
+    IF @QueryEmbedding IS NULL OR @QueryEntitiesJson IS NULL
+       OR ISJSON(@QueryEmbedding, ARRAY) <> 1
+       OR ISJSON(@QueryEntitiesJson, ARRAY) <> 1
+        THROW 51021, N'Embedding and entities must be JSON arrays.', 1;
+    IF (SELECT COUNT(*) FROM OPENJSON(@QueryEmbedding)) <> 384
+       OR EXISTS (SELECT 1 FROM OPENJSON(@QueryEmbedding)
+                  WHERE [type] <> 2 OR TRY_CONVERT(float,[value]) IS NULL)
+       OR NOT EXISTS (SELECT 1 FROM OPENJSON(@QueryEmbedding)
+                      WHERE TRY_CONVERT(float,[value]) <> 0)
+        THROW 51026, N'Embedding must contain 384 numeric values and be nonzero.', 1;
+    IF @CommunityID IS NOT NULL AND NOT EXISTS
+       (SELECT 1 FROM auth.fn_UserCanReadCommunity(@UserID,@CommunityID))
+        THROW 51027, N'Community is not accessible to this user.', 1;
 
     DECLARE @Vector vector(384) = CAST(@QueryEmbedding AS vector(384));
 
@@ -50,6 +67,7 @@ BEGIN
           AND evidence.ChunkID = relation.EvidenceChunkID
           AND evidenceAccess.UserID = @UserID
           AND evidenceAccess.ContentID = evidence.ContentID
+          AND (@CommunityID IS NULL OR evidenceAccess.CommunityID = @CommunityID)
           AND EXISTS (SELECT 1 FROM QueryNames AS q WHERE q.EntityName = queryEntity.EntityName)
         GROUP BY mention.EvidenceChunkID
     ),
@@ -70,6 +88,7 @@ BEGIN
         FROM knowledge.vCurrentRagChunks AS rag
         JOIN social.vAccessibleContent AS access
           ON access.UserID = @UserID AND access.ContentID = rag.ContentID
+         AND (@CommunityID IS NULL OR access.CommunityID = @CommunityID)
         JOIN knowledge.ChunkEmbedding AS embedding
           ON embedding.ChunkID = rag.ChunkID
         JOIN knowledge.EmbeddingModel AS model
@@ -114,8 +133,12 @@ AS
 BEGIN
     SET NOCOUNT ON;
     SET XACT_ABORT ON;
-    IF ISJSON(@CitationsJson) <> 1
-        THROW 51022, N'Citations must be a JSON array.', 1;
+    IF @CitationsJson IS NULL OR ISJSON(@CitationsJson, ARRAY) <> 1
+       OR NOT EXISTS (SELECT 1 FROM OPENJSON(@CitationsJson))
+        THROW 51022, N'Completed answers require a nonempty citation array.', 1;
+    IF NULLIF(LTRIM(RTRIM(@AnswerText)),N'') IS NULL
+       OR NULLIF(LTRIM(RTRIM(@AnswerModel)),N'') IS NULL
+        THROW 51028, N'Answer text and model are required.', 1;
 
     DECLARE @UserID bigint;
     SELECT @UserID = session.UserID
@@ -192,11 +215,45 @@ BEGIN
         UPDATE assistant.RagTurn
         SET AnswerText = @AnswerText, AnswerModel = @AnswerModel,
             GenerationStatus = 'COMPLETED', CompletedAt = SYSUTCDATETIME()
-        WHERE TurnID = @TurnID;
+        WHERE TurnID = @TurnID AND GenerationStatus = 'PENDING';
+        IF @@ROWCOUNT <> 1 THROW 51029, N'Turn is already finished.', 1;
         COMMIT TRANSACTION;
     END TRY
     BEGIN CATCH
         IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
+        THROW;
+    END CATCH;
+END;
+GO
+
+/* An empty retrieval is recorded explicitly without asking an LLM to guess. */
+CREATE OR ALTER PROCEDURE assistant.usp_SaveRagNoSources
+    @TurnID bigint,
+    @RetrievalRunID bigint
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+    BEGIN TRY
+        BEGIN TRANSACTION;
+        IF NOT EXISTS
+           (SELECT 1 FROM assistant.RetrievalRun
+            WHERE RetrievalRunID=@RetrievalRunID AND TurnID=@TurnID)
+            THROW 51040, N'Retrieval run does not belong to this turn.', 1;
+        IF EXISTS
+           (SELECT 1 FROM assistant.RetrievedChunk
+            WHERE RetrievalRunID=@RetrievalRunID)
+            THROW 51041, N'This retrieval run already has sources.', 1;
+        UPDATE assistant.RagTurn
+        SET AnswerText=N'Недостаточно доступных источников для ответа.',
+            AnswerModel=NULL,GenerationStatus='NO_SOURCES',
+            CompletedAt=SYSUTCDATETIME()
+        WHERE TurnID=@TurnID AND GenerationStatus='PENDING';
+        IF @@ROWCOUNT<>1 THROW 51042, N'Turn is already finished.', 1;
+        COMMIT TRANSACTION;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT>0 ROLLBACK TRANSACTION;
         THROW;
     END CATCH;
 END;

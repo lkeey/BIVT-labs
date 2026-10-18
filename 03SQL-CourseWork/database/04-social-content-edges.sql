@@ -18,8 +18,8 @@ BEGIN
         [Role] varchar(10) NOT NULL CONSTRAINT DF_MemberOf_Role DEFAULT ('MEMBER'),
         JoinedAt datetime2(3) NOT NULL CONSTRAINT DF_MemberOf_JoinedAt DEFAULT (SYSUTCDATETIME()),
         EndedAt datetime2(3) NULL,
-        CONSTRAINT CK_MemberOf_Status CHECK (MemberStatus IN ('PENDING','ACTIVE','REJECTED','BANNED','LEFT')),
-        CONSTRAINT CK_MemberOf_Role CHECK ([Role] IN ('OWNER','MODERATOR','MEMBER')),
+        CONSTRAINT CK_MemberOf_Status CHECK (MemberStatus IN ('PENDING','ACTIVE','BLOCKED','REJECTED','BANNED','LEFT')),
+        CONSTRAINT CK_MemberOf_Role CHECK ([Role] IN ('OWNER','ADMIN','MODERATOR','MEMBER')),
         CONSTRAINT CK_MemberOf_Period CHECK (EndedAt IS NULL OR EndedAt >= JoinedAt),
         CONSTRAINT CK_MemberOf_Active CHECK (MemberStatus <> 'ACTIVE' OR EndedAt IS NULL),
         CONSTRAINT EC_MemberOf_User_Community CONNECTION (auth.UserAccount TO social.Community)

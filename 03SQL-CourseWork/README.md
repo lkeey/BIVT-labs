@@ -31,6 +31,7 @@
 | --- | --- |
 | [`database/`](database/README.md) | Упорядоченные T-SQL-скрипты базы, SQL Graph, ACL, RAG и рекомендаций |
 | [`docs/`](docs/architecture.md) | Архитектура, ER-диаграммы и принятые решения |
+| [`api/`](api/README.md) | Контракт HTTP API v1 на OpenAPI 3.1 и граница доверенного backend |
 
 Диаграммы потоков и правила доступа находятся в
 [`docs/architecture.md`](docs/architecture.md), каталог таблиц и ER-связи — в
@@ -50,10 +51,12 @@ repo-local Skill в [`.agents/skills/sql-coursework/SKILL.md`](../.agents/skills
 ## Применение скриптов
 
 Создайте отдельную пустую `SocialNetworkDB` на SQL Server 2025 с компонентом
-Full-Text Search и примените скрипты 00–11 по порядку из
+Full-Text Search и примените скрипты 00–14 по порядку из
 [`database/README.md`](database/README.md). Среда `03SQL/docker` относится к
 лабораторным на SQL Server 2019.
 
-Прикладной слой для OCR, embeddings и ответа LLM в этом этапе не реализован:
-его язык и фреймворк пока не выбраны. Контракт данных и границы доступа
-описаны в [`docs/architecture.md`](docs/architecture.md).
+Прикладной слой для OCR, embeddings и ответа LLM, а также HTTP-сервер пока не
+реализованы. Их контракт описан в [`api/openapi.yaml`](api/openapi.yaml),
+границы доступа — в [`docs/architecture.md`](docs/architecture.md). Следующий
+этап предполагает JavaScript-сайт на Firebase Hosting и backend на Kotlin или
+Go; выбор языка backend и место размещения SQL Server пока открыты.

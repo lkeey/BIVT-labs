@@ -49,7 +49,7 @@ BEGIN
     (
         EntityID bigint IDENTITY(1,1) NOT NULL CONSTRAINT PK_KnowledgeEntity PRIMARY KEY,
         EntityType varchar(14) NOT NULL,
-        EntityName nvarchar(300) NOT NULL,
+        EntityName nvarchar(500) NOT NULL,
         ExtractorVersion nvarchar(80) NOT NULL,
         CreatedAt datetime2(3) NOT NULL CONSTRAINT DF_KnowledgeEntity_CreatedAt DEFAULT (SYSUTCDATETIME()),
         CONSTRAINT CK_KnowledgeEntity_Type CHECK (EntityType IN ('TOPIC','PERSON','ORGANIZATION','EVENT','PLACE'))

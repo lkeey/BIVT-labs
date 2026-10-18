@@ -37,7 +37,8 @@ flowchart LR
 различает `Post`, `Comment`, `Document`. Для `CommentOn` начало — только
 комментарий, конец — только пост; `ReactTo` направлено на пост или комментарий.
 В `MemberOf` хранятся роль, статус и даты; доступ к закрытому сообществу
-предоставляет только `Active`. `KnowledgeEntity` — отдельное извлечённое
+предоставляет только `ACTIVE`. Действующий `BLOCKED` или исторический `BANNED`
+закрывает чтение даже открытого сообщества. `KnowledgeEntity` — отдельное извлечённое
 упоминание темы, человека, организации, события или места. Узлы с похожими
 названиями автоматически не объединяются.
 
@@ -86,10 +87,10 @@ erDiagram
 | Embedding фрагмента | `knowledge.ChunkEmbedding.Embedding VECTOR(384)` + FK на `EmbeddingModel` | Модель [`intfloat/multilingual-e5-small`](https://huggingface.co/intfloat/multilingual-e5-small); текст индексируется с `passage:`, вопрос — с `query:`. |
 | Связи | SQL Graph `AS NODE`/`AS EDGE`; доменные ID остаются обычными столбцами | Обход через `MATCH`; автоматически созданные `$node_id`/`$edge_id` не служат публичными ID. |
 
-Для учебного объёма используется точное `VECTOR_DISTANCE`. Новая версия
-embedding-модели регистрируется в `EmbeddingModel` и запускает повторную
-индексацию; смешивать векторы разных размерностей в одном поисковом запросе
-нельзя.
+Для учебного объёма используется точное `VECTOR_DISTANCE`. Новую версию
+embedding-модели можно зарегистрировать в `EmbeddingModel`, но операция
+массовой переиндексации пока не реализована. До её выполнения нельзя
+переключать активную модель или смешивать векторы разных размерностей.
 
 ## ER: ответ, рекомендации и обработка
 
@@ -117,9 +118,9 @@ erDiagram
 
 | Вид | Объекты |
 | --- | --- |
-| Inline TVF | `auth.fn_UserCanReadCommunity` — единое правило доступа к сообществу. |
+| Inline TVF | `auth.fn_UserCanReadCommunity` — правило чтения; `auth.fn_UserCanWriteCommunity` — правило публикации для владельца или активного участника. |
 | Представления | `social.vAccessibleContent`, `knowledge.vCurrentRagChunks`, `assistant.vAnswerWithCitations`, `assistant.vRecommendationFeed`. |
-| Процедуры | `usp_PublishContent`, `usp_SaveDocumentVersion`, `usp_ClaimIndexOutbox`, `usp_SearchRag`, `usp_SaveRagAnswer`, `usp_GenerateRecommendations`, `usp_RevokeContentAccess`. |
+| Процедуры | Публикация и документы: `social.usp_PublishContent`, `knowledge.usp_SaveDocumentVersion`, `knowledge.usp_GetDocumentFile`; социальные операции: `social.usp_CreateCommunity`, `usp_RequestMembership`, `usp_SetMembership`, `usp_LeaveCommunity`, `usp_SetFollow`, `usp_SetReaction`, `usp_ModerateContent`, `usp_ListPendingMemberships`; RAG: `assistant.usp_StartRagSession`, `usp_StartRagTurn`, `usp_SearchRag`, `usp_RecordRetrievedChunks`, `usp_SaveRagAnswer`, `usp_SaveRagNoSources`, `usp_GetRagTurn`; также `assistant.usp_GenerateRecommendations`, `assistant.usp_RevokeContentAccess`, процедуры `ops` для outbox. |
 | Триггер | После добавления `knowledge.SourceRevision` создаёт set-based события `ops.IndexOutbox`; OCR и сетевых вызовов в триггере нет. |
 
 Уникальность логина, подписки и номера редакции, запрет подписки на себя,

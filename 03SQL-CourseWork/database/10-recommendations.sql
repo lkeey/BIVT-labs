@@ -11,9 +11,11 @@ AS
 BEGIN
     SET NOCOUNT ON;
     SET XACT_ABORT ON;
-    IF @Limit NOT BETWEEN 1 AND 50
+    IF @Limit IS NULL OR @Limit NOT BETWEEN 1 AND 50
         THROW 51030, N'Limit must be between 1 and 50.', 1;
-    IF @TopicWeight < 0 OR @FollowWeight < 0 OR @MemberWeight < 0
+    IF @TopicWeight IS NULL OR @FollowWeight IS NULL OR @MemberWeight IS NULL
+       OR @InterestWeight IS NULL OR @FreshWeight IS NULL
+       OR @TopicWeight < 0 OR @FollowWeight < 0 OR @MemberWeight < 0
        OR @InterestWeight < 0 OR @FreshWeight < 0
        OR @TopicWeight+@FollowWeight+@MemberWeight+@InterestWeight+@FreshWeight <> 1
         THROW 51031, N'Recommendation weights must be nonnegative and sum to 1.', 1;
@@ -38,6 +40,9 @@ BEGIN
              social.Community AS community
         WHERE MATCH(reader-(membership)->community)
           AND reader.UserID=@UserID AND membership.MemberStatus='ACTIVE'
+        UNION
+        SELECT CommunityID FROM social.Community
+        WHERE OwnerUserID=@UserID AND Status='ACTIVE'
     ),
     Reacted AS
     (
