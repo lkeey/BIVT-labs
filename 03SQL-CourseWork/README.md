@@ -36,6 +36,7 @@
 | [`worker/`](worker/README.md) | Обработчик outbox: PDF/DOCX, русский OCR, E5 и граф с источниками |
 | [`web/`](web/README.md) | Адаптивный JavaScript-сайт для Firebase Hosting |
 | [`tools/`](tools/verify_contract.py) | Локальная проверка маршрутов Go и ссылок в OpenAPI |
+| [`compose.yaml`](compose.yaml) | Локальный запуск Go API, индексатора и приватного E5-сервиса при готовом SQL Server |
 
 Диаграммы потоков и правила доступа находятся в
 [`docs/architecture.md`](docs/architecture.md), каталог таблиц и ER-связи — в
@@ -44,6 +45,8 @@
 материалов](docs/coursework-outline.md). Постоянные правила для агентов
 описаны в [`AGENTS.md`](AGENTS.md); повторяемая процедура доступна как
 repo-local Skill в [`.agents/skills/sql-coursework/SKILL.md`](../.agents/skills/sql-coursework/SKILL.md).
+Шаги запуска и границы бесплатного размещения описаны в
+[`docs/deployment.md`](docs/deployment.md).
 
 ## Материалы курсовой
 
@@ -90,7 +93,7 @@ Full-Text Search и примените скрипты 00–17 по порядк�
 Статический сайт опубликован на [Firebase Hosting](https://bivt-labs-sql-coursework.web.app/),
 а Google Sign-In включён в проекте `bivt-labs-sql-coursework`. Публичные Go API,
 SQL Server, worker и модели пока не размещены, поэтому функции социальной сети
-на этом адресе ещё недоступны. Постоянный SQL Server в облаке потребует
-оплачиваемую инфраструктуру; для демонстрации можно использовать локальный
-SQL Server 2025. Подробности и схема размещения — в
-[`docs/architecture.md`](docs/architecture.md).
+на этом адресе ещё недоступны. Для демонстрации можно использовать локальный
+SQL Server 2025 и [Compose-конфигурацию приложения](docs/deployment.md).
+Публичное размещение требует отдельно доступных SQL Server, worker и модели;
+подробности и ограничения — в [`docs/architecture.md`](docs/architecture.md).

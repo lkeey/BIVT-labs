@@ -1,0 +1,90 @@
+# Развёртывание приложения
+
+Этот документ описывает локальный запуск прикладных компонентов. Публичный сайт
+уже находится на [Firebase Hosting](https://bivt-labs-sql-coursework.web.app/),
+но работающий API, SQL Server и модель ответа для него пока не размещены.
+`backendReady` в `web/public/config.js` остаётся `false` до проверки
+публичного API.
+
+## Что нужно до запуска
+
+1. Отдельный SQL Server 2025 с Full-Text Search, база `SocialNetworkDB` и
+   скрипты `database/00`–`database/17` по порядку. Контейнер SQL Server из
+   лабораторных `03SQL/` имеет другую версию и не подходит. Скрипты и проверка
+   Full-Text описаны в [`database/README.md`](../database/README.md).
+2. Два SQL-логина с пользователями базы: один в роли `coursework_api`, второй
+   в `coursework_worker`. Не использовать `sa` для работающих сервисов.
+3. Доступный только backend Firebase Admin ADC JSON для проекта
+   `bivt-labs-sql-coursework`. Файл хранить **вне репозитория** с правами
+   только для владельца. Firebase Web App config не заменяет Admin credential.
+4. Доверенный OpenAI-совместимый endpoint модели ответа. Он получает вопрос и
+   до пяти фрагментов из доступных пользователю материалов; используйте лишь
+   endpoint, которому разрешено передавать эти тексты. Локальный HTTP endpoint
+   должен быть доступен backend по буквальному приватному IPv4-адресу;
+   удалённому нужен HTTPS. Настройте `CHAT_COMPLETIONS_URL` и `CHAT_MODEL`.
+5. Docker Compose и достаточно памяти для закреплённой E5-модели. Первый запуск
+   worker загружает модель в именованный том `hf-cache`; контейнеру нужен
+   сетевой доступ к Hugging Face или заранее подготовленный кеш.
+
+## Локальный запуск
+
+В каталоге `03SQL-CourseWork/` скопируйте [`.env.example`](../.env.example)
+в `.env` и заполните все значения. Этот файл игнорируется Git. Для SQL Server,
+работающего на том же компьютере вне Compose, в примерах указан
+`host.docker.internal`; при другом размещении измените адрес. Настройте TLS
+с доверенным сертификатом. `TrustServerCertificate=yes/true` допустимо только
+в изолированной локальной учебной среде.
+
+```sh
+docker compose config --quiet
+docker compose up --build -d
+docker compose ps
+```
+
+[`compose.yaml`](../compose.yaml) запускает три сервиса: Go API, постоянный
+обработчик `ops.IndexOutbox` и приватный E5-сервис вектора вопроса. Он не
+создаёт базу, SQL-логины и модель ответа. API слушает только
+`127.0.0.1:8081` на компьютере; E5 не публикует порт наружу. Его адрес
+`172.30.251.10` задан внутри сети Compose, потому что Go API разрешает
+внутренний HTTP для embedding только по буквальному приватному IP. Если эта
+подсеть конфликтует с существующей Docker-сетью, измените и subnet, и URL
+в `compose.yaml` одновременно.
+
+На локальной машине `GET http://127.0.0.1:8081/healthz` показывает состояние
+процесса, `GET /readyz` — доступность SQL Server. Для локальной демонстрации
+запустите копию сайта на `http://localhost:8080` по [`web/README.md`](../web/README.md)
+и укажите в форме подключения `http://localhost:8081/api`; установите
+`CORS_ORIGIN=http://localhost:8080` в `.env` перед запуском API. Для публичной
+работы потребуется HTTPS-адрес API, доступ к SQL Server из среды backend и
+изменение публичного `apiBaseUrl` после проверки.
+
+Остановить сервисы без удаления кеша E5:
+
+```sh
+docker compose down
+```
+
+Не используйте `down --volumes`, если хотите сохранить скачанную модель.
+
+## Публичное размещение
+
+Firebase-проект сейчас на тарифе **Spark**. [Hosting и Authentication
+доступны без оплаты](https://firebase.google.com/pricing), но
+[Cloud Run требует подключённого Cloud Billing](https://firebase.google.com/docs/hosting/cloud-run),
+который переводит проект на Blaze. Firebase Hosting rewrite к Cloud Run также
+имеет лимит 60 секунд, а текущий синхронный RAG-маршрут может занимать до
+90 секунд. Поэтому для этого API нужен отдельный HTTPS-адрес либо изменение
+RAG на асинхронную обработку с долговечной очередью.
+
+Полноценный публичный запуск требует постоянно доступного SQL Server 2025 с
+Full-Text и места для worker, OCR, E5 и модели ответа. Бесплатная лицензия
+SQL Server Express сама по себе не предоставляет бесплатную VM или Cloud SQL:
+[Cloud SQL тарифицирует вычисления и хранение](https://cloud.google.com/sql/pricing/).
+У Microsoft есть [Azure SQL Database Free Offer](https://learn.microsoft.com/en-us/azure/azure-sql/database/free-offer?view=azuresql)
+с ежемесячным бесплатным лимитом и остановкой при его исчерпании, но Azure
+SQL Database не является экземпляром SQL Server 2025. Для него потребуются
+отдельная Azure-подписка и проверка совместимости всех скриптов. Нельзя
+подменять им выбранный движок курсовой без отдельного решения.
+Не переводите Firebase на Blaze и не создавайте оплачиваемые ресурсы без
+отдельного решения о расходах. До появления реально доступного API сохраняйте
+`backendReady: false`: опубликованный сайт честно показывает текущее состояние.

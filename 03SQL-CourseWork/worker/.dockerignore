@@ -1,0 +1,7 @@
+*
+!Dockerfile
+!requirements.txt
+!requirements-embed.txt
+!index_worker.py
+!embed_service.py
+!pipeline.py

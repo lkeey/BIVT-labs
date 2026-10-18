@@ -163,7 +163,8 @@ backend пытается отметить созданный ход как `FAIL
 Сайт из [`web/`](../web/) размещён на
 [Firebase Hosting](https://bivt-labs-sql-coursework.web.app/) в проекте
 `bivt-labs-sql-coursework` (Spark). Firebase Authentication и Google Sign-In
-включены; публичный Go API пока не подключён.
+включены; публичный Go API пока не подключён. Локальный запуск API,
+индексатора и E5 описан в [руководстве по развёртыванию](deployment.md).
 Go API и SQL Server должны работать в среде с сетевым доступом к SQL Server;
 worker запускается отдельным процессом. [Cloud Run с оплатой за запрос](https://docs.cloud.google.com/run/docs/configuring/billing-settings)
 не подходит для постоянного опроса outbox внутри API. Firebase Hosting rewrite
