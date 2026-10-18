@@ -32,7 +32,7 @@ AS
 BEGIN
     SET NOCOUNT ON;
     SET XACT_ABORT ON;
-    IF @BatchSize NOT BETWEEN 1 AND 100
+    IF @BatchSize IS NULL OR @BatchSize NOT BETWEEN 1 AND 100
         THROW 51012, N'Batch size must be between 1 and 100.', 1;
     ;WITH claim AS
     (
@@ -185,6 +185,7 @@ BEGIN
        AND @ExpectedKind NOT IN ('POST','COMMENT','DOCUMENT')
         THROW 51035, N'Expected content kind is invalid.', 1;
     DECLARE @ActualKind varchar(8), @ActiveActorUserID bigint;
+    DECLARE @Affected TABLE (ContentID bigint PRIMARY KEY);
     BEGIN TRY
         BEGIN TRANSACTION;
         SELECT @ActiveActorUserID = UserID
@@ -206,15 +207,29 @@ BEGIN
         ) THROW 51015, N'Only the author may revoke this content.', 1;
         IF @ExpectedKind IS NOT NULL AND @ActualKind <> @ExpectedKind
             THROW 51037, N'Content kind does not match the expected kind.', 1;
-        UPDATE social.ContentItem
-        SET ContentStatus=@NewStatus,AllowRag=@AllowRag,UpdatedAt=SYSUTCDATETIME()
-        WHERE ContentID=@ContentID;
+        INSERT INTO @Affected (ContentID) VALUES (@ContentID);
+        IF @ActualKind = 'POST'
+            INSERT INTO @Affected (ContentID)
+            SELECT comment.ContentID
+            FROM social.ContentItem AS comment,
+                 social.CommentOn AS relation,
+                 social.ContentItem AS post
+            WHERE MATCH(comment-(relation)->post)
+              AND post.ContentID=@ContentID AND comment.Kind='COMMENT';
+
+        /* A revoked post also revokes its comments and their derived index. */
+        UPDATE item
+        SET ContentStatus=@NewStatus,
+            AllowRag=CASE WHEN item.ContentID=@ContentID THEN @AllowRag ELSE 0 END,
+            UpdatedAt=SYSUTCDATETIME()
+        FROM social.ContentItem AS item
+        JOIN @Affected AS affected ON affected.ContentID=item.ContentID;
         INSERT INTO ops.IndexOutbox (SourceRevisionID,ModelID,Operation)
         SELECT source.SourceRevisionID,model.ModelID,'DELETE'
         FROM knowledge.SourceRevision AS source
+        JOIN @Affected AS affected ON affected.ContentID=source.ContentID
         CROSS JOIN knowledge.EmbeddingModel AS model
-        WHERE source.ContentID=@ContentID
-          AND model.IsActive=1
+        WHERE model.IsActive=1
           AND NOT EXISTS
           (SELECT 1 FROM ops.IndexOutbox AS queued
            WHERE queued.SourceRevisionID=source.SourceRevisionID

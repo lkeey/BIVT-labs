@@ -358,6 +358,10 @@ type feedItem struct {
 }
 
 func (s *server) getFeed(w http.ResponseWriter, r *http.Request, p principal) {
+	if r.URL.Query().Has("cursor") {
+		problem(w, http.StatusBadRequest, "INVALID_PAGE", "Лента рассчитывается заново и не поддерживает курсор")
+		return
+	}
 	_, limit, ok := pageParams(w, r)
 	if !ok {
 		return

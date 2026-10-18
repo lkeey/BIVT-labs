@@ -33,6 +33,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/SessionIdentity'
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
   /v1/communities:
     get:
       tags: [Communities]
@@ -77,6 +78,7 @@ paths:
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '409': { $ref: '#/components/responses/Conflict' }
+        '503': { $ref: '#/components/responses/RetryLater' }
   /v1/communities/{communityId}:
     parameters:
       - $ref: '#/components/parameters/CommunityId'
@@ -118,6 +120,7 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
+        '503': { $ref: '#/components/responses/RetryLater' }
     post:
       tags: [Communities]
       summary: Вступить или подать заявку на вступление
@@ -145,6 +148,7 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '404': { $ref: '#/components/responses/NotFound' }
         '409': { $ref: '#/components/responses/Conflict' }
+        '503': { $ref: '#/components/responses/RetryLater' }
   /v1/communities/{communityId}/memberships/current:
     parameters:
       - $ref: '#/components/parameters/CommunityId'
@@ -159,6 +163,7 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
+        '503': { $ref: '#/components/responses/RetryLater' }
   /v1/communities/{communityId}/memberships/{userId}:
     parameters:
       - $ref: '#/components/parameters/CommunityId'
@@ -190,6 +195,7 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
+        '503': { $ref: '#/components/responses/RetryLater' }
   /v1/users/{userId}:
     parameters:
       - $ref: '#/components/parameters/UserId'
@@ -221,6 +227,7 @@ paths:
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '404': { $ref: '#/components/responses/NotFound' }
+        '503': { $ref: '#/components/responses/RetryLater' }
     delete:
       tags: [Social]
       summary: Отписаться от пользователя
@@ -229,6 +236,7 @@ paths:
       responses:
         '204': { description: Подписки нет }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '503': { $ref: '#/components/responses/RetryLater' }
   /v1/communities/{communityId}/posts:
     parameters:
       - $ref: '#/components/parameters/CommunityId'
@@ -269,6 +277,7 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
+        '503': { $ref: '#/components/responses/RetryLater' }
   /v1/posts/{postId}:
     parameters:
       - $ref: '#/components/parameters/PostId'
@@ -306,6 +315,7 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
+        '503': { $ref: '#/components/responses/RetryLater' }
     delete:
       tags: [Content]
       summary: Скрыть свой пост и отозвать его из RAG
@@ -356,6 +366,7 @@ paths:
                 $ref: '#/components/schemas/ContentWrite'
         '401': { $ref: '#/components/responses/Unauthorized' }
         '404': { $ref: '#/components/responses/NotFound' }
+        '503': { $ref: '#/components/responses/RetryLater' }
   /v1/comments/{commentId}:
     parameters:
       - $ref: '#/components/parameters/CommentId'
@@ -393,6 +404,7 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
+        '503': { $ref: '#/components/responses/RetryLater' }
     delete:
       tags: [Content]
       summary: Скрыть свой комментарий и отозвать его из RAG
@@ -422,6 +434,7 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
+        '503': { $ref: '#/components/responses/RetryLater' }
   /v1/content/{contentId}/reaction:
     parameters:
       - $ref: '#/components/parameters/ContentId'
@@ -443,8 +456,10 @@ paths:
                 type: { type: string, enum: [LIKE, HELPFUL, INSIGHTFUL] }
       responses:
         '204': { description: Реакция сохранена }
+        '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '404': { $ref: '#/components/responses/NotFound' }
+        '503': { $ref: '#/components/responses/RetryLater' }
     delete:
       tags: [Social]
       summary: Убрать свою реакцию
@@ -453,6 +468,7 @@ paths:
       responses:
         '204': { description: Реакции нет }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '503': { $ref: '#/components/responses/RetryLater' }
   /v1/communities/{communityId}/documents:
     parameters:
       - $ref: '#/components/parameters/CommunityId'
@@ -487,10 +503,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DocumentWrite'
+        '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '413': { $ref: '#/components/responses/TooLarge' }
         '415': { $ref: '#/components/responses/UnsupportedMedia' }
+        '503': { $ref: '#/components/responses/RetryLater' }
   /v1/documents/{documentId}:
     parameters:
       - $ref: '#/components/parameters/DocumentId'
@@ -527,17 +545,19 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DocumentWrite'
+        '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
         '413': { $ref: '#/components/responses/TooLarge' }
         '415': { $ref: '#/components/responses/UnsupportedMedia' }
+        '503': { $ref: '#/components/responses/RetryLater' }
   /v1/documents/{documentId}/file:
     parameters:
       - $ref: '#/components/parameters/DocumentId'
     get:
       tags: [Documents]
-      summary: Скачать текущий оригинал PDF/DOCX
+      summary: Скачать текущий текст, PDF или DOCX
       description: |
         knowledge.usp_GetDocumentFile проверяет текущий доступ, опубликованный
         статус и READY для актуальной версии перед возвратом FileBytes или PlainText.
@@ -566,14 +586,16 @@ paths:
       tags: [Assistant]
       summary: Создать ответ на вопрос по доступным источникам
       description: |
-        Backend проверяет доступность модели ответа и получает закреплённый
+        Backend проверяет доступность сервиса модели ответа и получает закреплённый
         embedding до создания SQL-хода. Затем вызывает гибридный поиск,
         фиксирует доступные фрагменты и передаёт LLM максимум пять источников.
         Ответ должен содержать ссылки [1]..[N]; в SQL сохраняются только
         фактически упомянутые цитаты после повторной проверки доступа.
-        Обработка завершается до HTTP-ответа; для долгого запроса хостингу
-        нужен таймаут больше 100 секунд. При отсутствии модели или сервиса
-        embeddings возвращается 503 без создания хода.
+        Обработка завершается до HTTP-ответа; для долгого запроса прокси
+        нужен таймаут больше 90 секунд. Отсутствующая конфигурация или сбой
+        предварительных проверок дают 503 без создания хода. Если генерация
+        сорвалась позже, backend пытается отметить ход FAILED и HTTP также
+        возвращает 503. При недоступной БД ход может остаться PENDING.
       x-sql-operations:
         - assistant.usp_StartRagSession
         - assistant.usp_StartRagTurn
@@ -601,6 +623,8 @@ paths:
                 $ref: '#/components/schemas/RagCreated'
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
         '409': { $ref: '#/components/responses/Conflict' }
         '503':
           description: Сервис embeddings или модель ответа не настроены либо недоступны
@@ -618,8 +642,8 @@ paths:
         Выдавать только собственный запрос. Перед выдачей завершённого ответа
         assistant.usp_GetRagTurn возвращает состояние PENDING, COMPLETED,
         NO_SOURCES или FAILED и проверяет отзыв доступа ко ВСЕМ переданным LLM
-        фрагментам. Только для разрешённого COMPLETED backend читает цитаты из
-        assistant.vAnswerWithCitations. При отзыве доступа к источнику не
+        фрагментам. Только для разрешённого COMPLETED процедура возвращает
+        цитаты через assistant.vAnswerWithCitations. При отзыве доступа к источнику не
         отдавать ни сохранённый ответ, ни цитаты (410).
       x-sql-operations:
         - assistant.usp_GetRagTurn
@@ -664,6 +688,7 @@ paths:
                   items:
                     type: array
                     items: { $ref: '#/components/schemas/FeedItem' }
+        '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
 components:
   securitySchemes:
@@ -710,7 +735,7 @@ components:
     Conflict: { description: Конфликт текущего состояния, content: { application/json: { schema: { $ref: '#/components/schemas/Problem' } } } }
     TooLarge: { description: Документ превышает 10 MiB, content: { application/json: { schema: { $ref: '#/components/schemas/Problem' } } } }
     UnsupportedMedia: { description: Поддерживаются text/plain, PDF и DOCX, content: { application/json: { schema: { $ref: '#/components/schemas/Problem' } } } }
-    RateLimited: { description: Превышен лимит запросов, content: { application/json: { schema: { $ref: '#/components/schemas/Problem' } } } }
+    RetryLater: { description: Временная блокировка SQL; повторите запрос, content: { application/json: { schema: { $ref: '#/components/schemas/Problem' } } } }
   schemas:
     Id:
       type: string

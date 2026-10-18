@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -59,6 +60,13 @@ func newRagProvider() (*ragProvider, error) {
 	if err := validateProviderURL(healthURL); err != nil {
 		return nil, fmt.Errorf("chat health URL: %w", err)
 	}
+	chatEndpoint, _ := url.Parse(chatURL)
+	healthEndpoint, _ := url.Parse(healthURL)
+	if chatEndpoint.Scheme != healthEndpoint.Scheme ||
+		!strings.EqualFold(chatEndpoint.Hostname(), healthEndpoint.Hostname()) ||
+		chatEndpoint.Port() != healthEndpoint.Port() {
+		return nil, errors.New("CHAT_HEALTH_URL must have the same origin as CHAT_COMPLETIONS_URL")
+	}
 	transport := http.DefaultTransport.(*http.Transport).Clone()
 	transport.Proxy = nil // Never forward private source text through HTTP_PROXY.
 	return &ragProvider{
@@ -76,6 +84,14 @@ func validateProviderURL(raw string) error {
 		(parsed.Scheme != "https" && parsed.Scheme != "http") ||
 		parsed.RawQuery != "" || parsed.Fragment != "" {
 		return errors.New("expected absolute HTTP(S) URL without credentials or query")
+	}
+	if parsed.Scheme == "http" {
+		host := parsed.Hostname()
+		address := net.ParseIP(host)
+		if host != "localhost" &&
+			(address == nil || (!address.IsLoopback() && !address.IsPrivate())) {
+			return errors.New("HTTP provider must use localhost or a private IP address; use HTTPS for other hosts")
+		}
 	}
 	return nil
 }

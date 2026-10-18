@@ -138,7 +138,7 @@
         <div class="section-heading"><div><p class="eyebrow">ПОИСК С ИСТОЧНИКАМИ</p><h2 id="assistant-title">Спросите материалы</h2><p>Помощник ищет только в доступных вам материалах и показывает проверяемые цитаты.</p></div></div>
         <div class="assistant-layout">
           <form id="rag-form" class="panel stack-form">
-            <p class="hint">Для генерации ответа backend должен подключить обработчик OCR, embeddings и LLM. До этого он вернёт 503, и сайт не покажет выдуманный ответ.</p>
+            <p class="hint">Для ответа нужны индексированные материалы, сервис embeddings и модель ответа. Если модели недоступны, сервер вернёт 503.</p>
             <label class="field" for="rag-question"><span>Ваш вопрос</span><textarea id="rag-question" name="question" maxlength="2000" rows="5" placeholder="Например: какие решения приняли по проекту?" required></textarea></label>
             <label class="field" for="rag-community"><span>Где искать</span><select id="rag-community"><option value="">Во всех доступных сообществах</option></select></label>
             <div class="assistant-form-footer"><span class="hint">Ответ может занять некоторое время.</span><button class="button button-primary" type="submit">Найти ответ <span aria-hidden="true">↗</span></button></div>

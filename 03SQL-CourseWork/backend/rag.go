@@ -51,42 +51,52 @@ func (s *server) getRagTurn(w http.ResponseWriter, r *http.Request, p principal)
 		return
 	}
 	citations := make([]citation, 0)
-	if rows.NextResultSet() {
-		for rows.Next() {
-			var citationID, chunkID, contentID, authorID, communityID int64
-			var kind, title, quote string
-			var pageNo sql.NullInt64
-			var start, end int
-			if err := rows.Scan(&citationID, &chunkID, &contentID, &kind, &title,
-				&authorID, &communityID, &quote, &pageNo, &start, &end); err != nil {
-				s.sqlProblem(w, err)
-				return
-			}
-			_ = chunkID
-			_ = communityID
-			path := "/api/v1/posts/" + idString(contentID)
-			if kind == "COMMENT" {
-				path = "/api/v1/comments/" + idString(contentID)
-			}
-			if kind == "DOCUMENT" {
-				path = "/api/v1/documents/" + idString(contentID)
-			}
-			var page *int
-			if pageNo.Valid {
-				v := int(pageNo.Int64)
-				page = &v
-			}
-			if status == "COMPLETED" {
-				citations = append(citations, citation{
-					CitationID: idString(citationID), ContentID: idString(contentID),
-					Kind: kind, Title: title, AuthorUserID: idString(authorID),
-					Quote: quote, PageNo: page, StartOffset: start, EndOffset: end, SourcePath: path,
-				})
-			}
+	if !rows.NextResultSet() {
+		if err := rows.Err(); err != nil {
+			s.sqlProblem(w, err)
+		} else {
+			problem(w, http.StatusInternalServerError, "INVALID_RAG_RESULT", "База данных не вернула источники ответа")
+		}
+		return
+	}
+	for rows.Next() {
+		var citationID, chunkID, contentID, authorID, communityID int64
+		var kind, title, quote string
+		var pageNo sql.NullInt64
+		var start, end int
+		if err := rows.Scan(&citationID, &chunkID, &contentID, &kind, &title,
+			&authorID, &communityID, &quote, &pageNo, &start, &end); err != nil {
+			s.sqlProblem(w, err)
+			return
+		}
+		_ = chunkID
+		_ = communityID
+		path := "/api/v1/posts/" + idString(contentID)
+		if kind == "COMMENT" {
+			path = "/api/v1/comments/" + idString(contentID)
+		}
+		if kind == "DOCUMENT" {
+			path = "/api/v1/documents/" + idString(contentID)
+		}
+		var page *int
+		if pageNo.Valid {
+			v := int(pageNo.Int64)
+			page = &v
+		}
+		if status == "COMPLETED" {
+			citations = append(citations, citation{
+				CitationID: idString(citationID), ContentID: idString(contentID),
+				Kind: kind, Title: title, AuthorUserID: idString(authorID),
+				Quote: quote, PageNo: page, StartOffset: start, EndOffset: end, SourcePath: path,
+			})
 		}
 	}
 	if err := rows.Err(); err != nil {
 		s.sqlProblem(w, err)
+		return
+	}
+	if status == "COMPLETED" && len(citations) == 0 {
+		problem(w, http.StatusInternalServerError, "INVALID_RAG_RESULT", "Завершённый ответ не содержит проверяемых источников")
 		return
 	}
 	result := map[string]any{

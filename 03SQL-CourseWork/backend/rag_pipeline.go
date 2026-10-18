@@ -179,7 +179,7 @@ func (s *server) createRagQuery(w http.ResponseWriter, r *http.Request, p princi
 	).Scan(&recordedRunID, &recordedCount)
 	if err != nil {
 		s.logger.Warn("RAG source access changed before generation", "turnID", turnID, "error", err)
-		problem(w, http.StatusConflict, "SOURCES_CHANGED", "Доступ к источникам изменился; повторите запрос")
+		s.sqlProblem(w, err)
 		return
 	}
 	if recordedRunID != retrievalRunID || recordedCount != len(sources) {
@@ -213,7 +213,7 @@ func (s *server) createRagQuery(w http.ResponseWriter, r *http.Request, p princi
 		sql.Named("CitationsJson", string(citationsJSON)))
 	if err != nil {
 		s.logger.Warn("RAG answer could not be committed", "turnID", turnID, "error", err)
-		problem(w, http.StatusConflict, "SOURCES_CHANGED", "Доступ к источникам изменился; повторите запрос")
+		s.sqlProblem(w, err)
 		return
 	}
 	finished = true

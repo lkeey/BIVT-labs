@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"bytes"
 	"database/sql"
+	"errors"
 	"io"
 	"mime"
 	"mime/multipart"
@@ -59,6 +60,11 @@ func readDocumentInput(w http.ResponseWriter, r *http.Request) (documentInput, b
 				break
 			}
 			if err != nil {
+				var tooLarge *http.MaxBytesError
+				if errors.As(err, &tooLarge) {
+					problem(w, http.StatusRequestEntityTooLarge, "DOCUMENT_TOO_LARGE", "Размер запроса превышает 10 МиБ")
+					return documentInput{}, false
+				}
 				problem(w, http.StatusBadRequest, "INVALID_MULTIPART", "Некорректная форма")
 				return documentInput{}, false
 			}
@@ -123,8 +129,12 @@ func readDocumentInput(w http.ResponseWriter, r *http.Request) (documentInput, b
 		return documentInput{}, false
 	}
 	if input.text != nil {
-		if strings.TrimSpace(*input.text) == "" || 2*len(utf16.Encode([]rune(*input.text))) > maxDocumentBytes {
-			problem(w, http.StatusRequestEntityTooLarge, "INVALID_TEXT", "Текст пуст или длиннее 10 МиБ в UTF-16")
+		if strings.TrimSpace(*input.text) == "" {
+			problem(w, http.StatusBadRequest, "INVALID_TEXT", "Текст документа не может быть пустым")
+			return documentInput{}, false
+		}
+		if 2*len(utf16.Encode([]rune(*input.text))) > maxDocumentBytes {
+			problem(w, http.StatusRequestEntityTooLarge, "DOCUMENT_TOO_LARGE", "Текст длиннее 10 МиБ в UTF-16")
 			return documentInput{}, false
 		}
 	}
@@ -238,6 +248,7 @@ func (s *server) getDocumentFile(w http.ResponseWriter, r *http.Request, p princ
 			return
 		}
 		body = []byte(plainText.String)
+		mimeType = "text/plain; charset=utf-8"
 		extension = ".txt"
 	case "application/pdf":
 		body = fileBytes

@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf16"
 )
 
 type principal struct {
@@ -39,7 +40,8 @@ func (s *server) withUser(next authedHandler) http.HandlerFunc {
 		if value, ok := token.Claims["email"].(string); ok && value != "" {
 			email = value
 		}
-		if value, ok := token.Claims["name"].(string); ok && value != "" {
+		if value, ok := token.Claims["name"].(string); ok &&
+			strings.TrimSpace(value) != "" && len(utf16.Encode([]rune(value))) <= 120 {
 			displayName = value
 		}
 		var userID int64
@@ -183,19 +185,28 @@ func (s *server) sqlProblem(w http.ResponseWriter, err error) {
 	if errors.As(err, &numbered) {
 		switch numbered.SQLErrorNumber() {
 		case 2601, 2627, 51154, 51177, 51182:
-			problem(w, http.StatusConflict, "CONFLICT", "Данные уже существуют")
+			problem(w, http.StatusConflict, "CONFLICT", "Операция конфликтует с текущим состоянием")
 			return
-		case 51005, 51015, 51037, 51070, 51071, 51151, 51152, 51163,
+		case 51025, 51029, 51059, 51062, 51063:
+			problem(w, http.StatusConflict, "SOURCES_CHANGED", "Состояние запроса или доступ к источникам изменились")
+			return
+		case 51005, 51015, 51027, 51037, 51051, 51053, 51055, 51058,
+			51061, 51070, 51071, 51151, 51152, 51163,
 			51165, 51172, 51173, 51175, 51201, 51203, 51205, 51207, 51209:
 			problem(w, http.StatusNotFound, "NOT_FOUND", "Материал отсутствует или недоступен")
 			return
-		case 51001, 51002, 51003, 51009, 51014, 51035, 51155, 51156, 51157,
+		case 51001, 51002, 51003, 51009, 51014, 51020, 51030, 51035,
+			51052, 51072, 51155, 51156, 51157,
 			51168, 51171, 51178, 51179, 51180, 51202, 51204, 51206, 51208:
 			problem(w, http.StatusBadRequest, "INVALID_REQUEST", "Некорректные данные")
 			return
-		case 51004, 51006, 51007, 51011, 51036, 51158, 51159, 51160,
+		case 51004, 51006, 51007, 51011, 51033, 51036, 51050, 51054,
+			51060, 51074, 51158, 51159, 51160,
 			51161, 51162, 51164, 51166, 51170, 51176:
 			problem(w, http.StatusForbidden, "FORBIDDEN", "Операция запрещена")
+			return
+		case 51018, 51019, 51073, 51150, 51169, 51174, 51181:
+			problem(w, http.StatusServiceUnavailable, "RETRY_LATER", "Временная блокировка; повторите запрос")
 			return
 		case 51008:
 			problem(w, http.StatusUnsupportedMediaType, "UNSUPPORTED_MEDIA", "Неподдерживаемый формат документа")

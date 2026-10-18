@@ -35,10 +35,13 @@
 | [`backend/`](backend/README.md) | Go API: проверка Firebase ID token, социальные маршруты и SQL-процедуры |
 | [`worker/`](worker/README.md) | Обработчик outbox: PDF/DOCX, русский OCR, E5 и граф с источниками |
 | [`web/`](web/README.md) | Адаптивный JavaScript-сайт для Firebase Hosting |
+| [`tools/`](tools/verify_contract.py) | Локальная проверка маршрутов Go и ссылок в OpenAPI |
 
 Диаграммы потоков и правила доступа находятся в
 [`docs/architecture.md`](docs/architecture.md), каталог таблиц и ER-связи — в
-[`docs/data-model.md`](docs/data-model.md). Постоянные правила для агентов
+[`docs/data-model.md`](docs/data-model.md). Для написания пояснительной записки
+подготовлен [план глав с указанием исходного кода и демонстрационных
+материалов](docs/coursework-outline.md). Постоянные правила для агентов
 описаны в [`AGENTS.md`](AGENTS.md); повторяемая процедура доступна как
 repo-local Skill в [`.agents/skills/sql-coursework/SKILL.md`](../.agents/skills/sql-coursework/SKILL.md).
 
@@ -71,9 +74,13 @@ Full-Text Search и примените скрипты 00–17 по порядк�
    и закреплённой E5-моделью. Он заполняет индекс после публикации.
 4. Запустите приватный сервис embedding вопроса из того же `worker/` и
    доверенный OpenAI-совместимый endpoint модели ответа. Укажите их адреса в
-   окружении Go API и запустите backend.
-5. Укажите адрес API в [`web/public/config.js`](web/public/config.js) и
-   откройте сайт локально по инструкции [`web/README.md`](web/README.md).
+   окружении Go API. При локальном запуске задайте `ADDR=:8081` и
+   `CORS_ORIGIN=http://localhost:8080`: сайт из следующего шага использует
+   порт 8080, а backend по умолчанию тоже слушает его.
+5. Откройте сайт локально по инструкции [`web/README.md`](web/README.md)
+   на `http://localhost:8080`. В форме подключения укажите
+   `http://localhost:8081/api` либо запишите этот публичный адрес в
+   [`web/public/config.js`](web/public/config.js).
 
 `POST /api/v1/rag/queries` использует SQL-поиск, SQL Graph и LLM, сохраняет
 ответ только с проверенными цитатами. Если модели не настроены, маршрут

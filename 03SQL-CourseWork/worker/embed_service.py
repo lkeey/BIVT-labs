@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import argparse
 import hmac
-from http.server import BaseHTTPRequestHandler, HTTPServer
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import ipaddress
 import json
 import logging
@@ -40,9 +40,10 @@ def embed_question(model: Any, question: str) -> list[float]:
     return values
 
 
-class EmbeddingHTTPServer(HTTPServer):
+class EmbeddingHTTPServer(ThreadingHTTPServer):
     allow_reuse_address = True
     request_queue_size = 8
+    daemon_threads = True
 
     def __init__(self, address: tuple[str, int], model: Any, token: str) -> None:
         super().__init__(address, EmbeddingHandler)
