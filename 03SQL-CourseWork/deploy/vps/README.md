@@ -4,7 +4,7 @@
 Они рассчитаны на Ubuntu 24.04, SQL Server на этом же хосте и отдельное
 HTTPS-имя API. До запуска нужны готовая база `SocialNetworkDB`, два SQL-логина
 с ролями `coursework_api` и `coursework_worker`, сертификат SQL для `localhost`,
-Firebase Admin credential и доступная модель ответа. Ни один пример с
+публичный Firebase Web API key и доступная модель ответа. Ни один пример с
 `REPLACE_` не является рабочим секретом.
 
 После установки и настройки SQL Server из корня `03SQL-CourseWork/` примените
@@ -74,9 +74,8 @@ sudo /opt/sql-coursework/venv/bin/python -m pip install -r /opt/sql-coursework/w
 `root:coursework-index`, для `embed.env` — `root:coursework-embed`; режим каждого
 файла — `0640`, каталог `/etc/sql-coursework` — `0755`. Замените все примеры
 паролей; указанную в образце модель загрузите перед запуском API. Firebase
-Admin JSON разместите в
-`/etc/sql-coursework/firebase-admin.json` с владельцем
-`root:coursework-api` и режимом `0640`. Не печатайте секреты в истории shell
+Web API key возьмите из конфигурации веб-приложения того же проекта и задайте
+как `FIREBASE_WEB_API_KEY`; сервисный JSON не требуется. Не печатайте секреты в истории shell
 или журнале. Сертификат, которому доверяют Go и ODBC, должен соответствовать
 `localhost` в SAN; `TrustServerCertificate` остаётся `false` / `no`.
 

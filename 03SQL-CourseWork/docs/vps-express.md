@@ -113,9 +113,9 @@ Firebase Hosting. Это самостоятельно администрируе
    для API и worker, добавьте соответствующих пользователей базы в роли из
    скрипта 17. Работающие сервисы не должны входить как `sa`.
 4. Подготовьте Firebase Authentication проекта `bivt-labs-sql-coursework` и
-   Firebase Admin credential JSON только для Go API. Сохраните его **вне Git**
-   с владельцем `root:coursework-api` и правами `0640`, чтобы процесс под
-   пользователем `coursework-api` мог его прочитать; SQL-пароли, токен
+   передайте Go API публичный `FIREBASE_WEB_API_KEY` того же проекта. Backend
+   проверяет подпись токена и состояние учётной записи через Firebase Auth REST;
+   сервисный JSON не нужен. SQL-пароли, токен
    embedding-сервиса и ключ LLM храните
    в секретах сервера с доступом лишь служебным пользователям. Переменные
    приведены в [`.env.example`](../.env.example). Для соединений через
@@ -127,7 +127,7 @@ Firebase Hosting. Это самостоятельно администрируе
    `index_worker.py --loop --poll-seconds 10` и `embed_service.py` под
    системным менеджером служб с автозапуском и наблюдением за памятью.
    Для Go API задайте `ADDR=127.0.0.1:8081`, `SQLSERVER_DSN`,
-   `GOOGLE_APPLICATION_CREDENTIALS` и `FIREBASE_PROJECT_ID` по инструкции
+   `FIREBASE_WEB_API_KEY` и `FIREBASE_PROJECT_ID` по инструкции
    backend; worker получает свою отдельную ODBC-строку подключения.
    Закреплённую E5-модель загрузите в постоянный `HF_HOME` до приёма
    документов; для индексации и вопроса должна использоваться одна ревизия
@@ -153,7 +153,7 @@ Firebase Hosting. Это самостоятельно администрируе
    `GET /healthz`, `GET /readyz`, входа через Firebase и сценария с цитатами
    обновите `web/public/config.js` на HTTPS API и `backendReady: true`, затем
    переопубликуйте сайт. Браузер не получает SQL-строку подключения,
-   Firebase Admin credential или ключ LLM.
+   ключ LLM.
 
 `compose.yaml` предназначен для локального запуска прикладных контейнеров.
 На Linux он **не является готовым VPS-рецептом**: SQL Server и модель ответа

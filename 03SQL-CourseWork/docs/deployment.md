@@ -18,9 +18,9 @@
    Full-Text описаны в [`database/README.md`](../database/README.md).
 2. Два SQL-логина с пользователями базы: один в роли `coursework_api`, второй
    в `coursework_worker`. Не использовать `sa` для работающих сервисов.
-3. Доступный только backend Firebase Admin ADC JSON для проекта
-   `bivt-labs-sql-coursework`. Файл хранить **вне репозитория** с правами
-   только для владельца. Firebase Web App config не заменяет Admin credential.
+3. Firebase Authentication проекта `bivt-labs-sql-coursework` и его публичный
+   Web API key. Backend проверяет подпись ID token по ключам Google и состояние
+   учётной записи через Firebase Auth REST API; Admin JSON ему не нужен.
 4. Доверенный OpenAI-совместимый endpoint модели ответа. Он получает вопрос и
    до пяти фрагментов из доступных пользователю материалов; используйте лишь
    endpoint, которому разрешено передавать эти тексты. Локальный HTTP endpoint

@@ -42,7 +42,8 @@ flowchart LR
    [`database/postgres/README.md`](../database/postgres/README.md). Не
    направляйте PostgreSQL-миграции на базу курсовой.
 2. Запустите Go API из [`backend/`](../backend/README.md) с
-   `POSTGRES_DSN` или `DATABASE_URL`, `FIREBASE_PROJECT_ID` и Admin credential.
+   `POSTGRES_DSN` или `DATABASE_URL`, `FIREBASE_PROJECT_ID` и
+   `FIREBASE_WEB_API_KEY` из публичной конфигурации Firebase.
    Для [Vercel Go Runtime](https://vercel.com/docs/functions/runtimes/go)
    задайте корнем проекта `03SQL-CourseWork/backend`, preset `go` и секреты
    окружения. Из-за лимита тела запроса задайте `MAX_DOCUMENT_BYTES=4194304`

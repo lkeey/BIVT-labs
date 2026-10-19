@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -16,16 +15,13 @@ import (
 	"syscall"
 	"time"
 
-	firebase "firebase.google.com/go/v4"
-	"firebase.google.com/go/v4/auth"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	_ "github.com/microsoft/go-mssqldb"
-	"google.golang.org/api/option"
 )
 
 type server struct {
 	db               *appDB
-	auth             *auth.Client
+	auth             *firebaseTokenVerifier
 	logger           *slog.Logger
 	origin           string
 	rag              *ragProvider
@@ -42,6 +38,7 @@ func main() {
 		postgresDSN = os.Getenv("DATABASE_URL")
 	}
 	projectID := os.Getenv("FIREBASE_PROJECT_ID")
+	firebaseAPIKey := os.Getenv("FIREBASE_WEB_API_KEY")
 	origin := os.Getenv("CORS_ORIGIN")
 	maxDocumentBytes := int64(hardMaxDocumentBytes)
 	if raw := os.Getenv("MAX_DOCUMENT_BYTES"); raw != "" {
@@ -52,8 +49,8 @@ func main() {
 		}
 		maxDocumentBytes = parsed
 	}
-	if (sqlServerDSN == "") == (postgresDSN == "") || projectID == "" || origin == "" {
-		logger.Error("set exactly one of SQLSERVER_DSN or POSTGRES_DSN/DATABASE_URL, plus FIREBASE_PROJECT_ID and CORS_ORIGIN")
+	if (sqlServerDSN == "") == (postgresDSN == "") || projectID == "" || firebaseAPIKey == "" || origin == "" {
+		logger.Error("set exactly one of SQLSERVER_DSN or POSTGRES_DSN/DATABASE_URL, plus FIREBASE_PROJECT_ID, FIREBASE_WEB_API_KEY and CORS_ORIGIN")
 		os.Exit(1)
 	}
 	parsedOrigin, err := url.Parse(origin)
@@ -67,27 +64,7 @@ func main() {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
-	var firebaseOptions []option.ClientOption
-	if credentials := os.Getenv("FIREBASE_SERVICE_ACCOUNT_JSON"); credentials != "" {
-		var account struct {
-			ProjectID string `json:"project_id"`
-		}
-		if err := json.Unmarshal([]byte(credentials), &account); err != nil || account.ProjectID != projectID {
-			logger.Error("Firebase service account JSON is invalid or belongs to another project")
-			os.Exit(1)
-		}
-		firebaseOptions = append(firebaseOptions, option.WithCredentialsJSON([]byte(credentials)))
-	}
-	app, err := firebase.NewApp(ctx, &firebase.Config{ProjectID: projectID}, firebaseOptions...)
-	if err != nil {
-		logger.Error("Firebase initialization failed", "error", err)
-		os.Exit(1)
-	}
-	authClient, err := app.Auth(ctx)
-	if err != nil {
-		logger.Error("Firebase Auth initialization failed", "error", err)
-		os.Exit(1)
-	}
+	authClient := newFirebaseTokenVerifier(projectID, firebaseAPIKey)
 	driver, dsn := "sqlserver", sqlServerDSN
 	if postgresDSN != "" {
 		driver, dsn = "pgx", postgresDSN

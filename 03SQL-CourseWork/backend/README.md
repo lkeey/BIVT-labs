@@ -4,8 +4,9 @@ Go-сервер соединяет [веб-клиент](../web/README.md) с п
 SQL Server и T-SQL остаются канонической реализацией курсовой. Для публичной
 демонстрации сервер может вместо них вызвать совместимые функции PostgreSQL
 из `database/postgres/`; HTTP-контракт остаётся тем же.
-Браузер получает Firebase ID token; сервер проверяет подпись, срок действия,
-проект и отзыв через Firebase Admin SDK. После проверки `UID` сопоставляется с
+Браузер получает Firebase ID token; сервер проверяет подпись по открытым ключам
+Google, срок действия, проект и отзыв через Firebase Auth REST API. Ключ
+сервисного аккаунта для этой проверки не требуется. После проверки `UID` сопоставляется с
 `auth.UserAccount` через `auth.usp_GetOrCreateFirebaseUser`. Пользовательский
 `UserID` из JSON и URL никогда не служит личностью вызывающего.
 
@@ -21,10 +22,9 @@ SQL Server и T-SQL остаются канонической реализаци
    необходимые функции. Не используйте учётную запись администратора базы и
    не выдавайте прямых прав на таблицы. Соединение с базой должно проверять
    сертификат TLS.
-3. Настройте Firebase Auth и проект. Локально предоставьте Firebase Admin SDK
-   Application Default Credentials через `GOOGLE_APPLICATION_CREDENTIALS`
-   (путь к файлу вне репозитория). На хостинге используйте защищённую
-   переменную `FIREBASE_SERVICE_ACCOUNT_JSON` или штатную identity платформы.
+3. Настройте Firebase Auth и проект. Используйте Web API key из конфигурации
+   Firebase веб-приложения для запроса сведений о текущем пользователе.
+   Ограничьте его применимость Firebase API в настройках Google Cloud.
 4. Установите переменные окружения:
 
 | Переменная | Назначение |
@@ -32,7 +32,7 @@ SQL Server и T-SQL остаются канонической реализаци
 | `SQLSERVER_DSN` | Строка подключения `sqlserver://user:password@host:1433?database=SocialNetworkDB&encrypt=true&TrustServerCertificate=false` |
 | `POSTGRES_DSN` или `DATABASE_URL` | Строка подключения PostgreSQL, например Neon `postgresql://...?...sslmode=verify-full`; задавайте вместо `SQLSERVER_DSN` |
 | `FIREBASE_PROJECT_ID` | Идентификатор именно того Firebase-проекта, чьи токены принимаются |
-| `FIREBASE_SERVICE_ACCOUNT_JSON` | JSON ключ сервисного аккаунта Firebase Admin для хостинга без Application Default Credentials; `project_id` должен совпадать с `FIREBASE_PROJECT_ID` |
+| `FIREBASE_WEB_API_KEY` | Публичный Web API key того же Firebase-проекта; используется только с Firebase Auth `accounts:lookup` |
 | `CORS_ORIGIN` | Точный HTTPS origin веб-сайта, например `https://coursework.web.app`; при локальном запуске по инструкции сайта — `http://localhost:8080` |
 | `ADDR` или `PORT` | Адрес прослушивания; `ADDR` имеет приоритет, затем порт из `PORT`, по умолчанию `:8080` |
 | `MAX_DOCUMENT_BYTES` | Необязательный лимит файла/текста в байтах, от 1 до 10485760; по умолчанию 10485760 (10 МиБ) |
@@ -44,8 +44,11 @@ SQL Server и T-SQL остаются канонической реализаци
 | `CHAT_HEALTH_URL` | Необязательный GET-маршрут доступности; по умолчанию выводится `/v1/models` из `CHAT_COMPLETIONS_URL` |
 
 Задавайте только один тип подключения к базе. Секреты держите в окружении
-хостинга или локальном файле вне Git. Проверка
-токена с отзывом делает сетевой запрос к Firebase на каждом HTTP-запросе.
+хостинга или локальном файле вне Git. Firebase Web API key сам по себе не даёт
+доступ к данным: права задаются Firebase и SQL. Проверка токена с отзывом
+делает сетевой запрос к Firebase на каждом HTTP-запросе: после проверки JWT
+сервер вызывает `accounts:lookup`, сверяет UID, `auth_time` с `validSince` и
+отклоняет заблокированную учётную запись. Ошибка Firebase закрывает доступ.
 Сервис embedding и модель ответа получают текст вопроса; модель ответа также
 получает до пяти цитат из доступных материалов. Используйте собственный
 доверенный endpoint или провайдера, которому можно передавать эти данные.
