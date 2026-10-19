@@ -142,7 +142,10 @@ def _pdf_pages(payload: bytes) -> tuple[list[Page], Optional[str]]:
                         area = page.get_width() * page.get_height()
                         if area <= 0:
                             raise ProcessingError("PDF page has invalid dimensions")
-                        scale = min(1.5, math.sqrt(15_000_000 / area))
+                        # PDF coordinates are 72 dpi. Render ordinary scanned
+                        # pages near 300 dpi while bounding large pages to
+                        # 15 megapixels for the scheduled worker.
+                        scale = min(4.0, math.sqrt(15_000_000 / area))
                         if scale < 0.5:
                             raise ProcessingError("PDF page is too large for bounded OCR")
                         bitmap = page.render(scale=scale)

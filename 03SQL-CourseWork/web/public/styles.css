@@ -132,6 +132,9 @@ h3 { font-size: 1.45rem; }
 .feed-preview { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 5; }
 .card-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 12px 17px; border-top: 1px solid var(--line); padding-top: 14px; }
 .card-author { margin-right: auto; color: var(--ink-soft); font-size: .78rem; }
+.author-link { padding: 0; border: 0; background: transparent; text-align: left; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.author-link:hover { color: var(--forest); }
+.feed-community { color: var(--ink-soft); font-size: .78rem; }
 .text-button { padding: 0; border: 0; color: var(--forest); background: transparent; font-size: .79rem; font-weight: 750; text-decoration: underline; text-decoration-color: #a8b9a7; text-underline-offset: 4px; }
 .text-button:hover { color: var(--accent); }
 .text-button.danger { color: var(--danger); }
@@ -165,6 +168,11 @@ h3 { font-size: 1.45rem; }
 .subheading { display: flex; align-items: center; justify-content: space-between; margin: 28px 0 15px; }
 .subheading h4 { margin: 0; font-size: 1rem; }
 .community-detail .card-list { grid-template-columns: minmax(0, 1fr); }
+.membership-panel { margin: 16px 0; padding: 0 22px 18px; border: 1px solid var(--line); border-radius: 5px; background: var(--surface); }
+.membership-panel .subheading { margin: 16px 0 10px; }
+.membership-list { display: grid; gap: 8px; }
+.membership-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; border-top: 1px solid var(--line); font-size: .86rem; }
+.membership-panel > .button { margin-top: 10px; }
 .comments-area { margin-top: 17px; padding-top: 16px; border-top: 1px solid var(--line); }
 .comment-card { padding: 14px 0; border-bottom: 1px solid var(--line); }
 .comment-card .post-body { margin: 8px 0 12px; font-size: .9rem; }

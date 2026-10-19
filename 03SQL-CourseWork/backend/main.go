@@ -62,8 +62,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	defer cancel()
 	authClient := newFirebaseTokenVerifier(projectID, firebaseAPIKey)
 	driver, dsn := "sqlserver", sqlServerDSN
 	if postgresDSN != "" {
@@ -84,11 +82,6 @@ func main() {
 		db.SetMaxIdleConns(6)
 	}
 	db.SetConnMaxLifetime(30 * time.Minute)
-	if err = db.PingContext(ctx); err != nil {
-		logger.Error("database is unavailable", "driver", driver, "error", err)
-		os.Exit(1)
-	}
-
 	rag, ragErr := newRagProvider(db.isPostgres())
 	if ragErr != nil {
 		logger.Warn("RAG provider configuration is unavailable", "error", ragErr)

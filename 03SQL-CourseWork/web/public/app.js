@@ -13,13 +13,17 @@ const state = {
   session: null,
   firebaseSignIn: false,
   view: "feed",
+  feedLoadVersion: 0,
   communities: [],
   communityCursor: null,
+  communityLoadVersion: 0,
   selectedCommunityId: null,
   posts: [],
   postCursor: null,
+  postLoadVersion: 0,
   documents: [],
   documentCursor: null,
+  documentLoadVersion: 0,
   documentCommunityId: null,
   ragQueryId: null,
   ragPollCount: 0,
@@ -38,6 +42,7 @@ try {
   api = new ApiClient("/api", clearSession);
 }
 $("api-base").value = api.baseUrl;
+$("document-file-label").textContent = `PDF или DOCX до ${MAX_FILE_MIB} МиБ`;
 if (window.COURSEWORK_CONFIG?.backendReady === false) {
   $("deployment-notice").textContent = "Публичный API пока не подключён. Сайт показывает интерфейс курсовой; для работы функций укажите адрес доступного HTTPS API.";
   $("deployment-notice").hidden = false;
@@ -130,6 +135,7 @@ function clearSession() {
   state.dialogVersion += 1;
   state.session = null;
   state.firebaseSignIn = false;
+  state.feedLoadVersion += 1;
   api.setTokenProvider(null);
   api.setAccessToken(null);
   clearTimeout(state.ragPollTimer);
@@ -137,11 +143,14 @@ function clearSession() {
   state.ragQueryId = null;
   state.communities = [];
   state.communityCursor = null;
+  state.communityLoadVersion += 1;
   state.selectedCommunityId = null;
   state.posts = [];
   state.postCursor = null;
+  state.postLoadVersion += 1;
   state.documents = [];
   state.documentCursor = null;
+  state.documentLoadVersion += 1;
   state.documentCommunityId = null;
   state.documentCheckId = null;
   $("workspace").hidden = true;
@@ -274,14 +283,17 @@ function showView(name) {
 async function loadCommunities(reset = false) {
   requireSession();
   const session = state.session;
+  const version = ++state.communityLoadVersion;
   if (reset) {
     state.communityCursor = null;
     state.communities = [];
+    state.selectedCommunityId = null;
     $("community-list").replaceChildren(textBlock("Загружаем сообщества…"));
+    $("community-detail").replaceChildren();
   }
   const query = encodedQuery({ limit: 20, cursor: state.communityCursor });
   const page = await api.request(`/v1/communities?${query}`);
-  if (state.session !== session) return;
+  if (state.session !== session || version !== state.communityLoadVersion) return;
   if (!Array.isArray(page?.items)) throw new ApiError("Неверный формат списка сообществ.", 0, "BAD_RESPONSE");
   state.communities.push(...page.items);
   state.communityCursor = page.nextCursor || null;
@@ -360,7 +372,11 @@ function renderCommunityDetail(community) {
   head.append(info);
   if (["NONE", "LEFT", "REJECTED"].includes(community.membershipStatus)) head.append(action("Вступить", "button button-primary", () => joinCommunity(community.communityId)));
   if (community.membershipStatus === "PENDING") head.append(element("span", "pending-label", "Заявка ожидает решения"));
+  if (community.membershipStatus === "ACTIVE" && String(community.ownerUserId) !== String(state.session?.user?.userId)) {
+    head.append(action("Выйти", "button button-quiet", () => leaveCommunity(community.communityId)));
+  }
   detail.append(head);
+  if (String(community.ownerUserId) === String(state.session?.user?.userId)) renderPendingMemberships(detail, community.communityId);
   const canWrite = community.membershipStatus === "ACTIVE" || String(community.ownerUserId) === String(state.session?.user?.userId);
   if (canWrite) {
     const form = element("form", "post-compose");
@@ -389,6 +405,58 @@ function renderCommunityDetail(community) {
   append(detail, heading, list, more);
 }
 
+function renderPendingMemberships(detail, rawCommunityId) {
+  const communityId = safeId(rawCommunityId);
+  const session = state.session;
+  const panel = element("section", "membership-panel");
+  const heading = element("div", "subheading");
+  const list = element("div", "membership-list");
+  const more = action("Показать ещё заявки", "button button-quiet", () => load());
+  more.hidden = true;
+  let cursor = null;
+  let loading = false;
+  async function load(reset = false) {
+    if (loading) return;
+    loading = true;
+    more.disabled = true;
+    if (reset) {
+      cursor = null;
+      list.replaceChildren(textBlock("Проверяем заявки…"));
+    }
+    try {
+      const page = await api.request(`/v1/communities/${communityId}/memberships?${encodedQuery({ limit: 20, cursor })}`);
+      if (state.session !== session || state.selectedCommunityId !== communityId || !panel.isConnected) return;
+      if (!Array.isArray(page?.items)) throw new ApiError("Неверный формат заявок.", 0, "BAD_RESPONSE");
+      if (reset) list.replaceChildren();
+      for (const member of page.items) {
+        const card = element("div", "membership-item");
+        const approve = action("Одобрить", "button button-outline button-small", async () => {
+          approve.disabled = true;
+          try {
+            await api.request(`/v1/communities/${communityId}/memberships/${safeId(member.userId)}`, {
+              method: "PATCH", json: { status: "ACTIVE", role: "MEMBER" }
+            });
+            if (state.session !== session || state.selectedCommunityId !== communityId) return;
+            toast("Заявка одобрена.");
+            await load(true);
+          } catch (error) { report(error); }
+          finally { approve.disabled = false; }
+        });
+        append(card, element("span", "", `Пользователь #${member.userId}`), approve);
+        list.append(card);
+      }
+      cursor = page.nextCursor || null;
+      more.hidden = !cursor;
+      if (!list.children.length) list.append(textBlock("Новых заявок нет."));
+    } catch (error) { report(error, list); }
+    finally { loading = false; more.disabled = false; }
+  }
+  append(heading, element("h4", "", "Заявки на вступление"), action("Обновить", "text-button", () => load(true)));
+  append(panel, heading, list, more);
+  detail.append(panel);
+  load(true);
+}
+
 function membershipText(status) {
   return ({ ACTIVE: "Участник", PENDING: "Заявка ожидает", BLOCKED: "Доступ закрыт", NONE: "Не участник", LEFT: "Не участник", REJECTED: "Заявка отклонена", BANNED: "Доступ закрыт" })[status] || "Статус неизвестен";
 }
@@ -399,7 +467,21 @@ async function joinCommunity(rawId) {
     const membership = await api.request(`/v1/communities/${id}/memberships`, { method: "POST" });
     toast(membership?.status === "PENDING" ? "Заявка отправлена. Ожидайте решения." : "Вы вступили в сообщество.");
     await loadCommunities(true);
-    if (membership?.status === "ACTIVE") await selectCommunity(id);
+    if (membership?.status === "ACTIVE") {
+      await selectCommunity(id);
+      await loadFeed();
+    }
+  } catch (error) { report(error); }
+}
+
+async function leaveCommunity(rawId) {
+  if (!window.confirm("Выйти из сообщества? Для повторного вступления в закрытое сообщество потребуется новая заявка.")) return;
+  try {
+    const id = safeId(rawId);
+    await api.request(`/v1/communities/${id}/memberships/current`, { method: "DELETE" });
+    toast("Вы вышли из сообщества.");
+    await loadCommunities(true);
+    await loadFeed();
   } catch (error) { report(error); }
 }
 
@@ -419,6 +501,7 @@ async function publishPost(form, rawId) {
 async function loadPosts(reset = false) {
   requireSession();
   const session = state.session;
+  const version = ++state.postLoadVersion;
   const id = safeId(state.selectedCommunityId);
   const list = $("post-list");
   if (!list) return;
@@ -429,7 +512,7 @@ async function loadPosts(reset = false) {
   }
   const query = encodedQuery({ limit: 20, cursor: state.postCursor });
   const page = await api.request(`/v1/communities/${id}/posts?${query}`);
-  if (state.selectedCommunityId !== id || state.session !== session) return;
+  if (state.selectedCommunityId !== id || state.session !== session || version !== state.postLoadVersion) return;
   if (!Array.isArray(page?.items)) throw new ApiError("Неверный формат публикаций.", 0, "BAD_RESPONSE");
   state.posts.push(...page.items);
   state.postCursor = page.nextCursor || null;
@@ -445,7 +528,7 @@ function renderPost(post) {
   append(header, element("span", "card-kicker", `ПОСТ · #${post.contentId}`), element("time", "", readableTime(post.publishedAt)));
   const body = element("p", "post-body", post.body);
   const footer = element("div", "card-actions");
-  append(footer, element("span", "card-author", `Автор #${post.authorUserId}`));
+  append(footer, authorButton(post.authorUserId));
   footer.append(action("Комментарии", "text-button", () => toggleComments(card, post.contentId)));
   footer.append(action("Полезно", "text-button", () => react(post.contentId)));
   if (String(post.authorUserId) === String(state.session?.user?.userId)) {
@@ -512,7 +595,7 @@ async function toggleComments(card, postId) {
 function renderComment(comment) {
   const item = element("div", "comment-card");
   const top = element("div", "card-topline");
-  append(top, element("span", "card-author", `Автор #${comment.authorUserId}`), element("time", "", readableTime(comment.publishedAt)));
+  append(top, authorButton(comment.authorUserId), element("time", "", readableTime(comment.publishedAt)));
   append(item, top, element("p", "post-body", comment.body));
   const actions = element("div", "card-actions");
   actions.append(action("Полезно", "text-button", () => react(comment.contentId)));
@@ -522,6 +605,45 @@ function renderComment(comment) {
   }
   item.append(actions);
   return item;
+}
+
+function authorButton(rawId) {
+  const id = safeId(rawId);
+  return action(`Автор #${id}`, "card-author author-link", () => openProfile(id));
+}
+
+async function openProfile(rawId) {
+  const id = safeId(rawId);
+  const session = state.session;
+  const dialogVersion = ++state.dialogVersion;
+  const dialog = $("content-dialog");
+  $("dialog-title").textContent = "Профиль";
+  $("dialog-content").replaceChildren(textBlock("Загружаем профиль…"));
+  dialog.showModal();
+  try {
+    const profile = await api.request(`/v1/users/${id}`);
+    if (!dialog.open || state.session !== session || state.dialogVersion !== dialogVersion) return;
+    $("dialog-title").textContent = profile.displayName;
+    const content = element("div", "source-preview");
+    append(content, element("p", "card-kicker", `ПОЛЬЗОВАТЕЛЬ #${id}`), element("p", "", profile.bio || "Пока без описания."));
+    if (id !== String(session.user.userId)) {
+      const follow = action(profile.followedByMe ? "Отписаться" : "Подписаться", "button button-outline", async () => {
+        follow.disabled = true;
+        try {
+          await api.request(`/v1/users/${id}/follow`, { method: profile.followedByMe ? "DELETE" : "PUT" });
+          profile.followedByMe = !profile.followedByMe;
+          if (dialog.open && state.session === session && state.dialogVersion === dialogVersion) {
+            follow.textContent = profile.followedByMe ? "Отписаться" : "Подписаться";
+            toast(profile.followedByMe ? "Подписка оформлена." : "Подписка отменена.");
+            loadFeed();
+          }
+        } catch (error) { report(error); }
+        finally { follow.disabled = false; }
+      });
+      content.append(follow);
+    }
+    $("dialog-content").replaceChildren(content);
+  } catch (error) { report(error, $("dialog-content")); }
 }
 
 async function react(rawId) {
@@ -598,11 +720,12 @@ async function createCommunity(event) {
 async function loadFeed() {
   requireSession();
   const session = state.session;
+  const version = ++state.feedLoadVersion;
   const list = $("feed-list");
   list.replaceChildren(textBlock("Подбираем доступные материалы…"));
   try {
     const response = await api.request("/v1/feed?limit=20");
-    if (state.session !== session) return;
+    if (state.session !== session || version !== state.feedLoadVersion) return;
     if (!Array.isArray(response?.items)) throw new ApiError("Неверный формат ленты.", 0, "BAD_RESPONSE");
     if (!response.items.length) {
       list.replaceChildren(textBlock("Пока нет рекомендаций. Вступите в сообщество или вернитесь позже."));
@@ -613,13 +736,15 @@ async function loadFeed() {
       const content = await api.request(path);
       return { item, content };
     }));
-    if (state.session !== session) return;
+    if (state.session !== session || version !== state.feedLoadVersion) return;
     list.replaceChildren();
     for (const result of details) {
       if (result.status === "fulfilled") list.append(renderFeedItem(result.value.item, result.value.content));
     }
     if (!list.children.length) list.append(textBlock("Материалы ленты стали недоступны. Обновите выдачу."));
-  } catch (error) { report(error, list); }
+  } catch (error) {
+    if (state.session === session && version === state.feedLoadVersion) report(error, list);
+  }
 }
 
 function renderFeedItem(item, content) {
@@ -632,7 +757,7 @@ function renderFeedItem(item, content) {
   const reason = element("div", "reason-line");
   append(reason, element("span", "reason-dot", "↗"), element("span", "", item.reasonText));
   const footer = element("div", "card-actions");
-  append(footer, element("span", "card-author", `Сообщество #${item.communityId}`), action("Открыть", "text-button", () => openSource(item.kind, item.contentId)));
+  append(footer, authorButton(item.authorUserId), element("span", "feed-community", `Сообщество #${item.communityId}`), action("Открыть", "text-button", () => openSource(item.kind, item.contentId)));
   append(card, top, title, body, reason, footer);
   return card;
 }
@@ -640,6 +765,7 @@ function renderFeedItem(item, content) {
 async function loadDocuments(reset = false) {
   requireSession();
   const session = state.session;
+  const version = ++state.documentLoadVersion;
   const communityId = state.documentCommunityId;
   const list = $("document-list");
   if (!communityId) {
@@ -653,7 +779,7 @@ async function loadDocuments(reset = false) {
   }
   const query = encodedQuery({ limit: 20, cursor: state.documentCursor });
   const page = await api.request(`/v1/communities/${safeId(communityId)}/documents?${query}`);
-  if (state.documentCommunityId !== communityId || state.session !== session) return;
+  if (state.documentCommunityId !== communityId || state.session !== session || version !== state.documentLoadVersion) return;
   if (!Array.isArray(page?.items)) throw new ApiError("Неверный формат документов.", 0, "BAD_RESPONSE");
   state.documents.push(...page.items);
   state.documentCursor = page.nextCursor || null;
