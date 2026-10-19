@@ -64,7 +64,7 @@ func (s *server) createRagQuery(w http.ResponseWriter, r *http.Request, p princi
 		return
 	}
 	embedRequest, _ := json.Marshal(map[string]string{"question": input.Question})
-	if len(embedRequest) > 8192 {
+	if s.rag.embeddingURL != "" && len(embedRequest) > 8192 {
 		problem(w, http.StatusBadRequest, "INVALID_QUESTION", "Вопрос слишком велик для модели поиска")
 		return
 	}
@@ -85,27 +85,35 @@ func (s *server) createRagQuery(w http.ResponseWriter, r *http.Request, p princi
 		return
 	}
 	defer s.ragBusy.Store(false)
-	// Both providers must be reachable before any RAG turn is created.
+	// The chat provider must be reachable before any RAG turn is created.
 	if err := s.rag.health(r.Context()); err != nil {
 		s.logger.Warn("RAG chat health check failed", "error", err)
 		problem(w, http.StatusServiceUnavailable, "RAG_UNAVAILABLE", "Модель ответов недоступна")
 		return
 	}
-	embedding, err := s.rag.embedQuestion(r.Context(), input.Question)
-	if err != nil {
-		s.logger.Warn("RAG embedding request failed", "error", err)
-		problem(w, http.StatusServiceUnavailable, "RAG_UNAVAILABLE", "Модель поиска недоступна")
-		return
-	}
-	embeddingJSON, err := json.Marshal(embedding)
-	if err != nil {
-		problem(w, http.StatusInternalServerError, "RAG_ERROR", "Ошибка поискового вектора")
-		return
+	modelVersion := embeddingVersion
+	searchProcedure := "assistant.usp_SearchRag"
+	var embeddingJSON []byte
+	if s.rag.embeddingURL != "" {
+		embedding, err := s.rag.embedQuestion(r.Context(), input.Question)
+		if err != nil {
+			s.logger.Warn("RAG embedding request failed", "error", err)
+			problem(w, http.StatusServiceUnavailable, "RAG_UNAVAILABLE", "Модель поиска недоступна")
+			return
+		}
+		embeddingJSON, err = json.Marshal(embedding)
+		if err != nil {
+			problem(w, http.StatusInternalServerError, "RAG_ERROR", "Ошибка поискового вектора")
+			return
+		}
+	} else {
+		modelVersion = "postgres-lexical-rag-v1"
+		searchProcedure = "assistant.usp_SearchRagLexical"
 	}
 	entityJSON, _ := json.Marshal(questionEntityNames(input.Question))
 
 	var sessionID int64
-	err = s.db.QueryRowContext(r.Context(), "assistant.usp_StartRagSession",
+	err := s.db.QueryRowContext(r.Context(), "assistant.usp_StartRagSession",
 		sql.Named("UserID", p.userID), sql.Named("CommunityID", communityID),
 	).Scan(&sessionID)
 	if err != nil {
@@ -117,7 +125,7 @@ func (s *server) createRagQuery(w http.ResponseWriter, r *http.Request, p princi
 	var scopeCommunity sql.NullInt64
 	err = s.db.QueryRowContext(r.Context(), "assistant.usp_StartRagTurn",
 		sql.Named("SessionID", sessionID), sql.Named("UserID", p.userID),
-		sql.Named("Question", input.Question), sql.Named("ModelVersion", embeddingVersion),
+		sql.Named("Question", input.Question), sql.Named("ModelVersion", modelVersion),
 	).Scan(&turnID, &retrievalRunID, &turnNo, &scopeCommunity)
 	if err != nil {
 		s.sqlProblem(w, err)
@@ -138,11 +146,13 @@ func (s *server) createRagQuery(w http.ResponseWriter, r *http.Request, p princi
 		}
 	}()
 
-	rows, err := s.db.QueryContext(r.Context(), "assistant.usp_SearchRag",
-		sql.Named("UserID", p.userID), sql.Named("Question", input.Question),
-		sql.Named("QueryEmbedding", string(embeddingJSON)), sql.Named("TopK", 5),
-		sql.Named("QueryEntitiesJson", string(entityJSON)), sql.Named("CommunityID", communityID),
-	)
+	searchArgs := []any{sql.Named("UserID", p.userID), sql.Named("Question", input.Question)}
+	if len(embeddingJSON) != 0 {
+		searchArgs = append(searchArgs, sql.Named("QueryEmbedding", string(embeddingJSON)))
+	}
+	searchArgs = append(searchArgs, sql.Named("TopK", 5),
+		sql.Named("QueryEntitiesJson", string(entityJSON)), sql.Named("CommunityID", communityID))
+	rows, err := s.db.QueryContext(r.Context(), searchProcedure, searchArgs...)
 	if err != nil {
 		s.sqlProblem(w, err)
 		return

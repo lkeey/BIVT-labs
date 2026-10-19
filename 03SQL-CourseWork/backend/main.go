@@ -112,7 +112,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	rag, ragErr := newRagProvider()
+	rag, ragErr := newRagProvider(db.isPostgres())
 	if ragErr != nil {
 		logger.Warn("RAG provider configuration is unavailable", "error", ragErr)
 	}

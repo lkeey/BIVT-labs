@@ -33,19 +33,21 @@ type ragProvider struct {
 	client         *http.Client
 }
 
-func newRagProvider() (*ragProvider, error) {
+func newRagProvider(postgres bool) (*ragProvider, error) {
 	embeddingURL := os.Getenv("EMBEDDING_SERVICE_URL")
 	chatURL := os.Getenv("CHAT_COMPLETIONS_URL")
 	chatModel := os.Getenv("CHAT_MODEL")
 	if embeddingURL == "" && chatURL == "" && chatModel == "" {
 		return nil, nil
 	}
-	if embeddingURL == "" || chatURL == "" || chatModel == "" ||
+	if (embeddingURL == "" && !postgres) || chatURL == "" || chatModel == "" ||
 		len(utf16.Encode([]rune(chatModel))) > 120 {
-		return nil, errors.New("EMBEDDING_SERVICE_URL, CHAT_COMPLETIONS_URL and CHAT_MODEL are required for RAG")
+		return nil, errors.New("CHAT_COMPLETIONS_URL and CHAT_MODEL are required; SQL Server also requires EMBEDDING_SERVICE_URL")
 	}
-	if err := validateProviderURL(embeddingURL); err != nil {
-		return nil, fmt.Errorf("embedding URL: %w", err)
+	if embeddingURL != "" {
+		if err := validateProviderURL(embeddingURL); err != nil {
+			return nil, fmt.Errorf("embedding URL: %w", err)
+		}
 	}
 	if err := validateProviderURL(chatURL); err != nil {
 		return nil, fmt.Errorf("chat URL: %w", err)
