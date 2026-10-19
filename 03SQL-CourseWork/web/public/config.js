@@ -2,6 +2,7 @@
 window.COURSEWORK_CONFIG = Object.freeze({
   apiBaseUrl: "/api",
   backendReady: false,
+  maxDocumentBytes: 10 * 1024 * 1024,
   firebaseConfig: Object.freeze({
     apiKey: "AIzaSyDilm6obxFuAeAuqnXEHWvqG21ftGo-REE",
     authDomain: "bivt-labs-sql-coursework.firebaseapp.com",

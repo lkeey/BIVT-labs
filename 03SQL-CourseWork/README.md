@@ -1,8 +1,11 @@
 # Курсовая работа — информационная поддержка социальной сети
 
 Отдельный проект по проектированию базы социальной сети и интеллектуального
-поиска на **SQL Server 2025 и T-SQL**. Он не использует Docker-конфигурацию из
-`03SQL/docker`: та среда закреплена за SQL Server 2019 и лабораторными работами.
+поиска на **SQL Server 2025 и T-SQL**. Это основная реализация для курсовой.
+Для публичной демонстрации того же HTTP API добавляется параллельная версия
+на PostgreSQL; её SQL не подменяет T-SQL в пояснительной записке. Проект не
+использует Docker-конфигурацию из `03SQL/docker`: та среда закреплена за SQL
+Server 2019 и лабораторными работами.
 
 ## Архитектурные решения
 
@@ -29,7 +32,7 @@
 
 | Каталог | Назначение |
 | --- | --- |
-| [`database/`](database/README.md) | Упорядоченные T-SQL-скрипты базы, SQL Graph, ACL, RAG и рекомендаций |
+| [`database/`](database/README.md) | Канонические T-SQL-скрипты базы, SQL Graph, ACL, RAG и рекомендаций; в [`database/postgres/`](database/postgres/) — отдельная PostgreSQL-реализация для демонстрации |
 | [`docs/`](docs/architecture.md) | Архитектура, ER-диаграммы и принятые решения |
 | [`api/`](api/README.md) | Контракт HTTP API v1 на OpenAPI 3.1 и граница доверенного backend |
 | [`backend/`](backend/README.md) | Go API: проверка Firebase ID token, социальные маршруты и SQL-процедуры |
@@ -52,6 +55,8 @@ repo-local Skill в [`.agents/skills/sql-coursework/SKILL.md`](../.agents/skills
 [инструкция Azure SQL Managed Instance Free](docs/azure-mi-free.md).
 Для размещения без банковской карты при наличии постоянно включённого x86-64
 компьютера есть [схема с Tailscale Funnel](docs/self-host.md).
+Сопоставление двух реализаций и порядок запуска PostgreSQL-версии описаны в
+[`docs/postgres-demo.md`](docs/postgres-demo.md).
 
 ## Материалы курсовой
 
@@ -94,6 +99,11 @@ Full-Text Search и примените скрипты 00–17 по порядк�
 ответ только с проверенными цитатами. Если модели не настроены, маршрут
 возвращает `503`; лента, публикации и документы продолжают работать. Полный
 контракт запросов и ответов — в [`api/openapi.yaml`](api/openapi.yaml).
+
+В PostgreSQL-режиме Go API сохраняет тот же контракт, а SQL Graph представлен
+таблицами узлов и рёбер. Поиск использует PostgreSQL full-text и `pgvector`;
+проверка прав и связь цитаты с источником остаются обязательными. Движок
+выбирается строкой подключения backend, а не браузером.
 
 Статический сайт опубликован на [Firebase Hosting](https://bivt-labs-sql-coursework.web.app/),
 а Google Sign-In включён в проекте `bivt-labs-sql-coursework`. Публичные Go API,

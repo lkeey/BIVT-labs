@@ -491,7 +491,7 @@ paths:
     post:
       tags: [Documents]
       summary: Загрузить PDF/DOCX или ввести текст
-      description: Сервер ограничивает размер 10 MiB в байтах, проверяет MIME и содержимое.
+      description: Канонический сервер принимает до 10 MiB; публичный хостинг может задать меньший лимит. MIME и содержимое проверяются сервером.
       x-sql-operation: knowledge.usp_SaveDocumentVersion
       x-implementation-status: implemented
       requestBody:
@@ -731,7 +731,7 @@ components:
             required: [title, text]
             properties:
               title: { type: string, minLength: 1, maxLength: 250 }
-              text: { type: string, minLength: 1, description: UTF-16 размер после кодирования не более 10 MiB }
+              text: { type: string, minLength: 1, description: Размер UTF-16 не более 10 MiB на каноническом сервере; публичное развёртывание может иметь меньший предел }
         multipart/form-data:
           schema:
             type: object
@@ -739,14 +739,14 @@ components:
             required: [title, file]
             properties:
               title: { type: string, minLength: 1, maxLength: 250 }
-              file: { type: string, format: binary, description: PDF или DOCX, не более 10 MiB }
+              file: { type: string, format: binary, description: PDF или DOCX; до 10 MiB на каноническом сервере, с возможным меньшим пределом при публичном размещении }
   responses:
     BadRequest: { description: Некорректные входные данные, content: { application/json: { schema: { $ref: '#/components/schemas/Problem' } } } }
     Unauthorized: { description: Нет действительного Firebase ID token, content: { application/json: { schema: { $ref: '#/components/schemas/Problem' } } } }
     Forbidden: { description: Операция запрещена, content: { application/json: { schema: { $ref: '#/components/schemas/Problem' } } } }
     NotFound: { description: Объект отсутствует или недоступен, content: { application/json: { schema: { $ref: '#/components/schemas/Problem' } } } }
     Conflict: { description: Конфликт текущего состояния, content: { application/json: { schema: { $ref: '#/components/schemas/Problem' } } } }
-    TooLarge: { description: Документ превышает 10 MiB, content: { application/json: { schema: { $ref: '#/components/schemas/Problem' } } } }
+    TooLarge: { description: Документ превышает предел данного развёртывания, content: { application/json: { schema: { $ref: '#/components/schemas/Problem' } } } }
     UnsupportedMedia: { description: Поддерживаются text/plain, PDF и DOCX, content: { application/json: { schema: { $ref: '#/components/schemas/Problem' } } } }
     RetryLater: { description: Временная блокировка SQL; повторите запрос, content: { application/json: { schema: { $ref: '#/components/schemas/Problem' } } } }
   schemas:

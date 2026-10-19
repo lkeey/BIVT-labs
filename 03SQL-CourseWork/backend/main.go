@@ -3,12 +3,14 @@ package main
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"log/slog"
 	"net/http"
 	"net/url"
 	"os"
 	"os/signal"
+	"strconv"
 	"strings"
 	"sync/atomic"
 	"syscall"
@@ -16,26 +18,42 @@ import (
 
 	firebase "firebase.google.com/go/v4"
 	"firebase.google.com/go/v4/auth"
+	_ "github.com/jackc/pgx/v5/stdlib"
 	_ "github.com/microsoft/go-mssqldb"
+	"google.golang.org/api/option"
 )
 
 type server struct {
-	db     *sql.DB
-	auth   *auth.Client
-	logger *slog.Logger
-	origin string
-	rag    *ragProvider
+	db               *appDB
+	auth             *auth.Client
+	logger           *slog.Logger
+	origin           string
+	rag              *ragProvider
+	maxDocumentBytes int64
 	// One in-flight RAG generation per API process bounds CPU and model load.
 	ragBusy atomic.Bool
 }
 
 func main() {
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
-	dsn := os.Getenv("SQLSERVER_DSN")
+	sqlServerDSN := os.Getenv("SQLSERVER_DSN")
+	postgresDSN := os.Getenv("POSTGRES_DSN")
+	if postgresDSN == "" {
+		postgresDSN = os.Getenv("DATABASE_URL")
+	}
 	projectID := os.Getenv("FIREBASE_PROJECT_ID")
 	origin := os.Getenv("CORS_ORIGIN")
-	if dsn == "" || projectID == "" || origin == "" {
-		logger.Error("SQLSERVER_DSN, FIREBASE_PROJECT_ID and CORS_ORIGIN are required")
+	maxDocumentBytes := int64(hardMaxDocumentBytes)
+	if raw := os.Getenv("MAX_DOCUMENT_BYTES"); raw != "" {
+		parsed, err := strconv.ParseInt(raw, 10, 64)
+		if err != nil || parsed < 1 || parsed > hardMaxDocumentBytes {
+			logger.Error("MAX_DOCUMENT_BYTES must be an integer from 1 to 10485760")
+			os.Exit(1)
+		}
+		maxDocumentBytes = parsed
+	}
+	if (sqlServerDSN == "") == (postgresDSN == "") || projectID == "" || origin == "" {
+		logger.Error("set exactly one of SQLSERVER_DSN or POSTGRES_DSN/DATABASE_URL, plus FIREBASE_PROJECT_ID and CORS_ORIGIN")
 		os.Exit(1)
 	}
 	parsedOrigin, err := url.Parse(origin)
@@ -49,7 +67,18 @@ func main() {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
-	app, err := firebase.NewApp(ctx, &firebase.Config{ProjectID: projectID})
+	var firebaseOptions []option.ClientOption
+	if credentials := os.Getenv("FIREBASE_SERVICE_ACCOUNT_JSON"); credentials != "" {
+		var account struct {
+			ProjectID string `json:"project_id"`
+		}
+		if err := json.Unmarshal([]byte(credentials), &account); err != nil || account.ProjectID != projectID {
+			logger.Error("Firebase service account JSON is invalid or belongs to another project")
+			os.Exit(1)
+		}
+		firebaseOptions = append(firebaseOptions, option.WithCredentialsJSON([]byte(credentials)))
+	}
+	app, err := firebase.NewApp(ctx, &firebase.Config{ProjectID: projectID}, firebaseOptions...)
 	if err != nil {
 		logger.Error("Firebase initialization failed", "error", err)
 		os.Exit(1)
@@ -59,17 +88,27 @@ func main() {
 		logger.Error("Firebase Auth initialization failed", "error", err)
 		os.Exit(1)
 	}
-	db, err := sql.Open("sqlserver", dsn)
+	driver, dsn := "sqlserver", sqlServerDSN
+	if postgresDSN != "" {
+		driver, dsn = "pgx", postgresDSN
+	}
+	rawDB, err := sql.Open(driver, dsn)
 	if err != nil {
 		logger.Error("SQL driver initialization failed", "error", err)
 		os.Exit(1)
 	}
+	db := &appDB{DB: rawDB, postgres: driver == "pgx"}
 	defer db.Close()
 	db.SetMaxOpenConns(12)
-	db.SetMaxIdleConns(6)
+	if db.isPostgres() {
+		// Serverless PostgreSQL can suspend when requests stop using connections.
+		db.SetMaxIdleConns(0)
+	} else {
+		db.SetMaxIdleConns(6)
+	}
 	db.SetConnMaxLifetime(30 * time.Minute)
 	if err = db.PingContext(ctx); err != nil {
-		logger.Error("SQL Server is unavailable", "error", err)
+		logger.Error("database is unavailable", "driver", driver, "error", err)
 		os.Exit(1)
 	}
 
@@ -77,10 +116,15 @@ func main() {
 	if ragErr != nil {
 		logger.Warn("RAG provider configuration is unavailable", "error", ragErr)
 	}
-	s := &server{db: db, auth: authClient, logger: logger, origin: origin, rag: rag}
+	s := &server{db: db, auth: authClient, logger: logger, origin: origin, rag: rag,
+		maxDocumentBytes: maxDocumentBytes}
 	addr := os.Getenv("ADDR")
 	if addr == "" {
-		addr = ":8080"
+		port := os.Getenv("PORT")
+		if port == "" {
+			port = "8080"
+		}
+		addr = ":" + port
 	}
 	httpServer := &http.Server{
 		Addr:              addr,

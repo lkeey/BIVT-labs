@@ -51,7 +51,20 @@ func (s *server) getRagTurn(w http.ResponseWriter, r *http.Request, p principal)
 		return
 	}
 	citations := make([]citation, 0)
-	if !rows.NextResultSet() {
+	citationRows := rows
+	if s.db.isPostgres() {
+		if err := rows.Close(); err != nil {
+			s.sqlProblem(w, err)
+			return
+		}
+		citationRows, err = s.db.QueryContext(r.Context(), "assistant.usp_GetRagCitations",
+			sql.Named("UserID", p.userID), sql.Named("TurnID", id))
+		if err != nil {
+			s.sqlProblem(w, err)
+			return
+		}
+		defer citationRows.Close()
+	} else if !rows.NextResultSet() {
 		if err := rows.Err(); err != nil {
 			s.sqlProblem(w, err)
 		} else {
@@ -59,12 +72,12 @@ func (s *server) getRagTurn(w http.ResponseWriter, r *http.Request, p principal)
 		}
 		return
 	}
-	for rows.Next() {
+	for citationRows.Next() {
 		var citationID, chunkID, contentID, authorID, communityID int64
 		var kind, title, quote string
 		var pageNo sql.NullInt64
 		var start, end int
-		if err := rows.Scan(&citationID, &chunkID, &contentID, &kind, &title,
+		if err := citationRows.Scan(&citationID, &chunkID, &contentID, &kind, &title,
 			&authorID, &communityID, &quote, &pageNo, &start, &end); err != nil {
 			s.sqlProblem(w, err)
 			return
@@ -91,7 +104,7 @@ func (s *server) getRagTurn(w http.ResponseWriter, r *http.Request, p principal)
 			})
 		}
 	}
-	if err := rows.Err(); err != nil {
+	if err := citationRows.Err(); err != nil {
 		s.sqlProblem(w, err)
 		return
 	}

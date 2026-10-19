@@ -6,6 +6,10 @@
 `backendReady` в `web/public/config.js` остаётся `false` до проверки
 публичного API.
 
+Параллельный вариант на PostgreSQL для бесплатной публичной демонстрации
+описан в [`postgres-demo.md`](postgres-demo.md). Он использует тот же HTTP
+контракт; нижеследующие шаги относятся к канонической T-SQL-версии курсовой.
+
 ## Что нужно до запуска
 
 1. Отдельный SQL Server 2025 с Full-Text Search, база `SocialNetworkDB` и

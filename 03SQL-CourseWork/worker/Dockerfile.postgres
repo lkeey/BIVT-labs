@@ -1,0 +1,34 @@
+FROM python:3.11-slim-bookworm
+
+ARG DEBIAN_FRONTEND=noninteractive
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    HF_HOME=/var/cache/coursework-hf
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        ca-certificates libgomp1 tesseract-ocr tesseract-ocr-rus \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+COPY requirements-postgres.txt requirements-embed.txt ./
+
+RUN if [ "$(dpkg --print-architecture)" = "amd64" ]; then \
+        python -m pip install --no-cache-dir --disable-pip-version-check \
+            torch --index-url https://download.pytorch.org/whl/cpu; \
+    fi \
+    && python -m pip install --no-cache-dir --disable-pip-version-check \
+        -r requirements-postgres.txt
+
+COPY postgres_index_worker.py embed_service.py pipeline.py ./
+
+RUN groupadd --system --gid 10001 coursework \
+    && useradd --system --uid 10001 --gid coursework \
+        --home-dir /home/coursework --create-home coursework \
+    && install -d -o coursework -g coursework "${HF_HOME}"
+
+USER coursework
+EXPOSE 8765
+
+CMD ["python", "postgres_index_worker.py"]

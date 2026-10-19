@@ -13,6 +13,8 @@ import (
 	"strings"
 	"time"
 	"unicode/utf16"
+
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 type principal struct {
@@ -181,6 +183,26 @@ func nullableString(value sql.NullString) string {
 }
 
 func (s *server) sqlProblem(w http.ResponseWriter, err error) {
+	var pgError *pgconn.PgError
+	if errors.As(err, &pgError) {
+		switch pgError.Code {
+		case "23505", "23P01":
+			problem(w, http.StatusConflict, "CONFLICT", "Операция конфликтует с текущим состоянием")
+		case "P0002":
+			problem(w, http.StatusNotFound, "NOT_FOUND", "Материал отсутствует или недоступен")
+		case "42501":
+			problem(w, http.StatusForbidden, "FORBIDDEN", "Операция запрещена")
+		case "22023", "23514", "22P02":
+			problem(w, http.StatusBadRequest, "INVALID_REQUEST", "Некорректные данные")
+		case "40001", "40P01":
+			problem(w, http.StatusServiceUnavailable, "RETRY_LATER", "Временная блокировка; повторите запрос")
+		default:
+			// Driver errors can include user content or connection details.
+			s.logger.Error("PostgreSQL operation failed", "code", pgError.Code)
+			problem(w, http.StatusInternalServerError, "DATABASE_ERROR", "Ошибка базы данных")
+		}
+		return
+	}
 	var numbered interface{ SQLErrorNumber() int32 }
 	if errors.As(err, &numbered) {
 		switch numbered.SQLErrorNumber() {

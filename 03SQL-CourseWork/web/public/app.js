@@ -2,7 +2,12 @@ import { ApiClient, ApiError } from "./api.js";
 
 const $ = (id) => document.getElementById(id);
 const ID_PATTERN = /^[1-9][0-9]{0,18}$/;
-const MAX_FILE_BYTES = 10 * 1024 * 1024;
+const DEFAULT_MAX_FILE_BYTES = 10 * 1024 * 1024;
+const configuredMaxFileBytes = Number(window.COURSEWORK_CONFIG?.maxDocumentBytes);
+const MAX_FILE_BYTES = Number.isSafeInteger(configuredMaxFileBytes) &&
+  configuredMaxFileBytes > 0 && configuredMaxFileBytes <= DEFAULT_MAX_FILE_BYTES
+  ? configuredMaxFileBytes : DEFAULT_MAX_FILE_BYTES;
+const MAX_FILE_MIB = MAX_FILE_BYTES / (1024 * 1024);
 const views = ["feed", "communities", "documents", "assistant"];
 const state = {
   session: null,
@@ -676,12 +681,16 @@ async function submitDocument(event, mode) {
     let options;
     if (mode === "text") {
       const text = String(data.get("text") || "").trim();
-      if (text.length * 2 > MAX_FILE_BYTES) throw new ApiError("Текст превышает 10 МиБ в UTF-16.", 0, "TOO_LARGE");
-      options = { method: "POST", json: { title, text } };
+      const payload = { title, text };
+      if (text.length * 2 > MAX_FILE_BYTES ||
+          new TextEncoder().encode(JSON.stringify(payload)).byteLength > MAX_FILE_BYTES) {
+        throw new ApiError(`Текст превышает ${MAX_FILE_MIB} МиБ.`, 0, "TOO_LARGE");
+      }
+      options = { method: "POST", json: payload };
     } else {
       const file = $("document-file").files[0];
       if (!file) throw new ApiError("Выберите PDF или DOCX.", 0, "FILE_REQUIRED");
-      if (file.size > MAX_FILE_BYTES) throw new ApiError("Файл превышает 10 МиБ.", 0, "TOO_LARGE");
+      if (file.size > MAX_FILE_BYTES) throw new ApiError(`Файл превышает ${MAX_FILE_MIB} МиБ.`, 0, "TOO_LARGE");
       if (!/\.(pdf|docx)$/i.test(file.name)) throw new ApiError("Поддерживаются PDF и DOCX.", 0, "BAD_FILE_TYPE");
       const payload = new FormData();
       payload.set("title", title);

@@ -4,6 +4,8 @@
 Базовый путь — `/api/v1`. Все маршруты приложения требуют
 `Authorization: Bearer <Firebase ID token>`; исключения `/healthz` и `/readyz`
 описаны в README backend. Браузер не подключается к SQL Server.
+Для публичной копии тот же контракт обслуживает PostgreSQL-адаптер backend;
+курсовая работа остаётся на SQL Server 2025 и T-SQL.
 
 ## Личность и доступ
 

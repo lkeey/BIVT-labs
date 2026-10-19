@@ -1,6 +1,9 @@
 # HTTP API курсовой
 
 Go-сервер соединяет [веб-клиент](../web/README.md) с процедурами SQL Server 2025.
+SQL Server и T-SQL остаются канонической реализацией курсовой. Для публичной
+демонстрации сервер может вместо них вызвать совместимые функции PostgreSQL
+из `database/postgres/`; HTTP-контракт остаётся тем же.
 Браузер получает Firebase ID token; сервер проверяет подпись, срок действия,
 проект и отзыв через Firebase Admin SDK. После проверки `UID` сопоставляется с
 `auth.UserAccount` через `auth.usp_GetOrCreateFirebaseUser`. Пользовательский
@@ -8,25 +11,31 @@ Go-сервер соединяет [веб-клиент](../web/README.md) с п
 
 ## Подготовка
 
-1. Примените скрипты из [database/README.md](../database/README.md), включая
-   `15-api-reads.sql`, `16-index-worker.sql`, `17-auth-and-roles.sql`. Для
-   `06-indexes.sql` нужен установленный SQL Server Full-Text Search.
-2. Создайте отдельного пользователя базы для backend и добавьте его в роль
-   `coursework_api`. Не используйте `sa` и не выдавайте роли прямых прав на
-   таблицы. Изолируйте SQL Server от публичного Интернета; серверу нужен
-   сетевой доступ к нему по TLS с проверкой сертификата.
+1. Для режима SQL Server примените скрипты из
+   [database/README.md](../database/README.md), включая `15-api-reads.sql`,
+   `16-index-worker.sql`, `17-auth-and-roles.sql`. Для `06-indexes.sql` нужен
+   установленный SQL Server Full-Text Search. Для PostgreSQL примените
+   отдельные миграции из `database/postgres/`.
+2. Создайте отдельного пользователя базы для backend. В SQL Server добавьте
+   его в роль `coursework_api`; в PostgreSQL предоставьте только права на
+   необходимые функции. Не используйте учётную запись администратора базы и
+   не выдавайте прямых прав на таблицы. Соединение с базой должно проверять
+   сертификат TLS.
 3. Настройте Firebase Auth и проект. Локально предоставьте Firebase Admin SDK
    Application Default Credentials через `GOOGLE_APPLICATION_CREDENTIALS`
-   (путь к файлу вне репозитория). На хостинге используйте защищённый секрет
-   или штатную identity платформы.
+   (путь к файлу вне репозитория). На хостинге используйте защищённую
+   переменную `FIREBASE_SERVICE_ACCOUNT_JSON` или штатную identity платформы.
 4. Установите переменные окружения:
 
 | Переменная | Назначение |
 | --- | --- |
 | `SQLSERVER_DSN` | Строка подключения `sqlserver://user:password@host:1433?database=SocialNetworkDB&encrypt=true&TrustServerCertificate=false` |
+| `POSTGRES_DSN` или `DATABASE_URL` | Строка подключения PostgreSQL, например Neon `postgresql://...?...sslmode=verify-full`; задавайте вместо `SQLSERVER_DSN` |
 | `FIREBASE_PROJECT_ID` | Идентификатор именно того Firebase-проекта, чьи токены принимаются |
+| `FIREBASE_SERVICE_ACCOUNT_JSON` | JSON ключ сервисного аккаунта Firebase Admin для хостинга без Application Default Credentials; `project_id` должен совпадать с `FIREBASE_PROJECT_ID` |
 | `CORS_ORIGIN` | Точный HTTPS origin веб-сайта, например `https://coursework.web.app`; при локальном запуске по инструкции сайта — `http://localhost:8080` |
-| `ADDR` | Адрес прослушивания, по умолчанию `:8080` |
+| `ADDR` или `PORT` | Адрес прослушивания; `ADDR` имеет приоритет, затем порт из `PORT`, по умолчанию `:8080` |
+| `MAX_DOCUMENT_BYTES` | Необязательный лимит файла/текста в байтах, от 1 до 10485760; по умолчанию 10485760 (10 МиБ) |
 | `EMBEDDING_SERVICE_URL` | Приватный URL сервиса из [worker/embed_service.py](../worker/README.md#приватный-сервис-вектора-вопроса), например `http://127.0.0.1:8765/embed` |
 | `EMBEDDING_SERVICE_TOKEN` | Необязательный Bearer секрет сервиса вектора; соответствует его `COURSEWORK_EMBED_BEARER_TOKEN` |
 | `CHAT_COMPLETIONS_URL` | Доверенный OpenAI-совместимый маршрут, например `http://127.0.0.1:11434/v1/chat/completions` |
@@ -34,7 +43,8 @@ Go-сервер соединяет [веб-клиент](../web/README.md) с п
 | `CHAT_API_KEY` | Необязательный Bearer ключ модели ответа; для локального Ollama может отсутствовать |
 | `CHAT_HEALTH_URL` | Необязательный GET-маршрут доступности; по умолчанию выводится `/v1/models` из `CHAT_COMPLETIONS_URL` |
 
-Секреты держите в окружении хостинга или локальном файле вне Git. Проверка
+Задавайте только один тип подключения к базе. Секреты держите в окружении
+хостинга или локальном файле вне Git. Проверка
 токена с отзывом делает сетевой запрос к Firebase на каждом HTTP-запросе.
 Сервис embedding и модель ответа получают текст вопроса; модель ответа также
 получает до пяти цитат из доступных материалов. Используйте собственный
@@ -55,13 +65,21 @@ go run .
 Если `go` недоступен в `PATH`, в Arcadia-окружении работает `ya tool go run .`.
 Для контейнера предусмотрен [Dockerfile](Dockerfile).
 
+Для [Vercel Go Framework Preset](https://vercel.com/docs/functions/runtimes/go)
+укажите корневой каталог проекта `03SQL-CourseWork/backend`, preset `go` и
+секреты окружения из таблицы выше. `main.go` слушает выданный платформой
+`PORT`; отдельный файл `api/index.go` для этого режима не требуется. При
+развёртывании на Vercel установите `MAX_DOCUMENT_BYTES=4194304` (4 МиБ), чтобы
+загрузка проходила ниже лимита тела запроса платформы; без этой переменной
+локальный SQL Server сохраняет предел 10 МиБ.
+
 Для одновременного локального запуска сайта на `http://localhost:8080`
 и API задайте `ADDR=:8081` и `CORS_ORIGIN=http://localhost:8080`
 при запуске backend. В `web/public/config.js` укажите
 `apiBaseUrl: "http://localhost:8081/api"`. URL HTTP разрешён клиентом только
 для localhost; остальные обязательные переменные окружения остаются нужны.
 
-`GET /healthz` проверяет процесс, `GET /readyz` проверяет SQL Server. Основные
+`GET /healthz` проверяет процесс, `GET /readyz` проверяет выбранную базу. Основные
 маршруты начинаются с `/api/v1`; к ним нужен заголовок
 `Authorization: Bearer <Firebase ID token>`.
 
@@ -83,7 +101,8 @@ URL-safe Base64 от последнего ID. Все чтения материа
 получает объяснимый рейтинг из SQL Graph.
 
 Загрузка документа принимает JSON `{ "title": "...", "text": "..." }` или
-`multipart/form-data` с полями `title` и `file` (PDF/DOCX). Максимум 10 МиБ.
+`multipart/form-data` с полями `title` и `file` (PDF/DOCX). Предел задаётся
+`MAX_DOCUMENT_BYTES` и по умолчанию равен 10 МиБ.
 Статус `PROCESSING` сменится только после работы отдельного индексатора.
 
 `POST /rag/queries` сверяет доступность обоих сервисов до записи запроса в

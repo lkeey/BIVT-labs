@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"database/sql"
 	"errors"
+	"fmt"
 	"io"
 	"mime"
 	"mime/multipart"
@@ -16,7 +17,14 @@ import (
 	mssql "github.com/microsoft/go-mssqldb"
 )
 
-const maxDocumentBytes = 10 << 20
+const hardMaxDocumentBytes int64 = 10 << 20
+
+func documentSizeLimitText(maxBytes int64) string {
+	if maxBytes%(1<<20) == 0 {
+		return fmt.Sprintf("%d МиБ", maxBytes/(1<<20))
+	}
+	return fmt.Sprintf("%d байт", maxBytes)
+}
 
 type documentInput struct {
 	title    string
@@ -26,7 +34,7 @@ type documentInput struct {
 	text     *string
 }
 
-func readDocumentInput(w http.ResponseWriter, r *http.Request) (documentInput, bool) {
+func readDocumentInput(w http.ResponseWriter, r *http.Request, maxBytes int64) (documentInput, bool) {
 	mediaType, params, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
 	if err != nil {
 		problem(w, http.StatusUnsupportedMediaType, "UNSUPPORTED_MEDIA", "Ожидается JSON или multipart/form-data")
@@ -39,7 +47,7 @@ func readDocumentInput(w http.ResponseWriter, r *http.Request) (documentInput, b
 			Title string `json:"title"`
 			Text  string `json:"text"`
 		}
-		if !decodeJSON(w, r, &body, maxDocumentBytes+2048) {
+		if !decodeJSON(w, r, &body, maxBytes+2048) {
 			return documentInput{}, false
 		}
 		input.title = body.Title
@@ -51,7 +59,7 @@ func readDocumentInput(w http.ResponseWriter, r *http.Request) (documentInput, b
 			problem(w, http.StatusBadRequest, "INVALID_MULTIPART", "Отсутствует граница формы")
 			return documentInput{}, false
 		}
-		r.Body = http.MaxBytesReader(w, r.Body, maxDocumentBytes+65536)
+		r.Body = http.MaxBytesReader(w, r.Body, maxBytes+65536)
 		reader := multipart.NewReader(r.Body, boundary)
 		seenFile, seenTitle := false, false
 		for {
@@ -62,7 +70,7 @@ func readDocumentInput(w http.ResponseWriter, r *http.Request) (documentInput, b
 			if err != nil {
 				var tooLarge *http.MaxBytesError
 				if errors.As(err, &tooLarge) {
-					problem(w, http.StatusRequestEntityTooLarge, "DOCUMENT_TOO_LARGE", "Размер запроса превышает 10 МиБ")
+					problem(w, http.StatusRequestEntityTooLarge, "DOCUMENT_TOO_LARGE", "Размер запроса превышает "+documentSizeLimitText(maxBytes))
 					return documentInput{}, false
 				}
 				problem(w, http.StatusBadRequest, "INVALID_MULTIPART", "Некорректная форма")
@@ -88,9 +96,9 @@ func readDocumentInput(w http.ResponseWriter, r *http.Request) (documentInput, b
 				}
 				seenFile = true
 				input.fileName = filepath.Base(strings.ReplaceAll(part.FileName(), "\\", "/"))
-				input.file, err = io.ReadAll(io.LimitReader(part, maxDocumentBytes+1))
-				if err != nil || len(input.file) > maxDocumentBytes {
-					problem(w, http.StatusRequestEntityTooLarge, "DOCUMENT_TOO_LARGE", "Размер файла превышает 10 МиБ")
+				input.file, err = io.ReadAll(io.LimitReader(part, maxBytes+1))
+				if err != nil || int64(len(input.file)) > maxBytes {
+					problem(w, http.StatusRequestEntityTooLarge, "DOCUMENT_TOO_LARGE", "Размер файла превышает "+documentSizeLimitText(maxBytes))
 					return documentInput{}, false
 				}
 			default:
@@ -133,8 +141,8 @@ func readDocumentInput(w http.ResponseWriter, r *http.Request) (documentInput, b
 			problem(w, http.StatusBadRequest, "INVALID_TEXT", "Текст документа не может быть пустым")
 			return documentInput{}, false
 		}
-		if 2*len(utf16.Encode([]rune(*input.text))) > maxDocumentBytes {
-			problem(w, http.StatusRequestEntityTooLarge, "DOCUMENT_TOO_LARGE", "Текст длиннее 10 МиБ в UTF-16")
+		if int64(2*len(utf16.Encode([]rune(*input.text)))) > maxBytes {
+			problem(w, http.StatusRequestEntityTooLarge, "DOCUMENT_TOO_LARGE", "Текст длиннее "+documentSizeLimitText(maxBytes)+" в UTF-16")
 			return documentInput{}, false
 		}
 	}
@@ -188,7 +196,7 @@ func (s *server) createDocumentVersion(w http.ResponseWriter, r *http.Request, p
 }
 
 func (s *server) saveDocument(w http.ResponseWriter, r *http.Request, p principal, communityID int64, existingContentID *int64) {
-	input, ok := readDocumentInput(w, r)
+	input, ok := readDocumentInput(w, r, s.maxDocumentBytes)
 	if !ok {
 		return
 	}
