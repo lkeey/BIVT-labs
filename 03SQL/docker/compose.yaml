@@ -4,6 +4,7 @@ x-sql-server-image: &sql-server-image "mcr.microsoft.com/mssql/server:2019-CU32-
 
 services:
   sqlserver:
+    container_name: adventure-db
     image: *sql-server-image
     platform: linux/amd64
     environment:

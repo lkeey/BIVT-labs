@@ -1,0 +1,20 @@
+{
+  "mssql.connections": [
+    {
+      "profileName": "BIVT-labs AdventureWorksLT2019 (Colima)",
+      "authenticationType": "SqlLogin",
+      "server": "127.0.0.1,1433",
+      "database": "AdventureWorksLT2019",
+      "user": "sa",
+      "password": "",
+      "savePassword": true,
+      "encrypt": "Mandatory",
+      "trustServerCertificate": true
+    }
+  ],
+  "mssql.newEditorConnectionBehavior": "transferActive",
+  "files.associations": {
+    "*.pqsql": "postgres",
+    "03SQL/lab04/*.sql": "postgres"
+  }
+}

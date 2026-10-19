@@ -64,6 +64,7 @@ cd "02C#"
 
 ```bash
 cd 03SQL/docker
+colima start --profile sqlserver
 ./scripts/setup.sh
 ```
 

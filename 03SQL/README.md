@@ -11,18 +11,19 @@ SQL Server 2019 с базой `AdventureWorksLT2019` предназначен д
 
 ## Первый запуск базы данных
 
-Требуются Docker Desktop для Apple Silicon, Rosetta 2, не менее 4 ГиБ памяти для
-Docker и около 10 ГиБ свободного места. Подробная инструкция и описание
-ограничений находятся в [`docker/README.md`](docker/README.md).
+Требуются Colima для Apple Silicon с Docker runtime, VZ и Rosetta для amd64,
+не менее 4 ГиБ памяти и около 10 ГиБ свободного места. Подробная инструкция и
+описание ограничений находятся в [`docker/README.md`](docker/README.md).
 
 ```bash
 cd 03SQL/docker
 ./scripts/setup.sh
 ```
 
-Docker Desktop должен быть запущен. Скрипт создаёт контейнер SQL Server,
-дожидается его готовности и восстанавливает `AdventureWorksLT2019`, если базы
-ещё нет.
+Запустите профиль Colima `sqlserver` командой `colima start --profile sqlserver`.
+Скрипт использует Docker context `colima-sqlserver`. Если контейнер
+`adventure-db` уже существует, скрипт проверяет его и сохраняет текущие данные;
+для новой установки создаёт контейнер и восстанавливает `AdventureWorksLT2019`.
 
 Параметры подключения:
 
@@ -43,35 +44,31 @@ Docker Desktop должен быть запущен. Скрипт создаёт
 
 ```bash
 # Включить ранее остановленную базу
-./03SQL/docker/scripts/compose.sh start
+./03SQL/docker/scripts/colima.sh start
 
 # Выключить базу, сохранив контейнер и все данные
-./03SQL/docker/scripts/compose.sh stop
+./03SQL/docker/scripts/colima.sh stop
 
 # Проверить состояние
-./03SQL/docker/scripts/compose.sh ps -a
+./03SQL/docker/scripts/colima.sh status
 
 # Посмотреть логи
-./03SQL/docker/scripts/compose.sh logs --tail 100 sqlserver
+./03SQL/docker/scripts/colima.sh logs
 ```
 
 После первого запуска для повседневной работы достаточно команд `start` и
-`stop`. При включённой базе в результате `ps -a` будет указано состояние
-`healthy`, а при выключенной — `Exited`.
+`stop`. Остановка контейнера сохраняет базу в Docker volume.
 
 Если контейнер был удалён командой `down`, запустите setup ещё раз:
 
 ```bash
-# Удалить контейнеры, но сохранить базу в Docker volume
-./03SQL/docker/scripts/compose.sh down
-
 # Снова создать контейнер и включить базу
 ./03SQL/docker/scripts/setup.sh
 ```
 
-Команда `./03SQL/docker/scripts/compose.sh down -v` удаляет Docker volume,
-саму базу и все сделанные в ней изменения. Используйте её только для
-осознанного полного сброса.
+Полный сброс базы требует удаления контейнера и volume вручную. Команды,
+удаляющие volume, приведены в [`docker/README.md`](docker/README.md); они
+безвозвратно удаляют все изменения в базе.
 
 ## Как выполнить запрос в Visual Studio Code
 
@@ -79,12 +76,12 @@ Docker Desktop должен быть запущен. Скрипт создаёт
 VS Code весь репозиторий `BIVT-labs`, а затем готовый файл
 [`03SQL/lab01/solution.sql`](lab01/solution.sql). Можно открыть только каталог
 `03SQL`, но тогда в командах терминала опускайте начальную часть `03SQL/`,
-например используйте `./docker/scripts/compose.sh ps -a`.
+например используйте `./docker/scripts/colima.sh status`.
 
-1. Убедитесь, что Docker Desktop и база запущены:
+1. Убедитесь, что профиль Colima и база запущены:
 
    ```bash
-   ./03SQL/docker/scripts/compose.sh ps -a
+   ./03SQL/docker/scripts/colima.sh status
    ```
 
 2. В `solution.sql` нажмите `Cmd+Shift+C` или откройте палитру команд клавишей
@@ -93,12 +90,13 @@ VS Code весь репозиторий `BIVT-labs`, а затем готовы�
    своей локальной конфигурации `03SQL/docker/.env`; не добавляйте его в Git
    и не вставляйте в команды, сохраняемые в истории терминала.
 
-4. Убедитесь, что для редактора выбраны сервер `127.0.0.1,1433` и база
-   `AdventureWorksLT2019`.
-5. Напишите запрос под комментарием нужного задания. Чтобы выполнить только
+4. Напишите запрос под комментарием нужного задания. Чтобы выполнить только
    этот запрос, выделите его и нажмите `Cmd+Shift+E`. Без выделения расширение
    выполнит весь SQL-файл.
-6. Результат появится в панели под редактором.
+5. Результат появится в панели под редактором.
+
+Команды управления базой доступны также из **Terminal → Run Task** под именами
+`AdventureWorks: Start database`, `Stop database`, `Status` и `Logs`.
 
 Подключение назначается конкретному SQL-редактору. Если новый `.sql`-файл не
 подключился автоматически, снова выполните **MS SQL: Connect**.
