@@ -50,6 +50,8 @@ repo-local Skill в [`.agents/skills/sql-coursework/SKILL.md`](../.agents/skills
 [`docs/deployment.md`](docs/deployment.md). Для публичного запуска подготовлены
 [вариант с SQL Server 2025 Express на VPS](docs/vps-express.md) и отдельная
 [инструкция Azure SQL Managed Instance Free](docs/azure-mi-free.md).
+Для размещения без банковской карты при наличии постоянно включённого x86-64
+компьютера есть [схема с Tailscale Funnel](docs/self-host.md).
 
 ## Материалы курсовой
 
