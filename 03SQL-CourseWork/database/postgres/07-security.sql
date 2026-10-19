@@ -1,4 +1,5 @@
--- Apply as the schema owner. Login roles are created separately by the database administrator.
+-- Apply as the schema owner. This migration creates restricted NOLOGIN roles.
+-- Enable LOGIN on these roles after deployment; set passwords outside SQL Editor.
 CREATE OR REPLACE FUNCTION ops.has_pending_index_outbox()
 RETURNS boolean LANGUAGE sql STABLE AS $$
  SELECT EXISTS (SELECT 1 FROM ops.indexoutbox
