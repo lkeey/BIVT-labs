@@ -68,16 +68,17 @@ flowchart LR
 
 Миграция `07-security.sql` создаёт роли `coursework_api` и
 `coursework_worker` без права входа. Это намеренно: миграции можно применять
-без паролей, а приложение не должно входить как владелец схемы. Администратор
-базы отдельно задаёт **разные случайные пароли** этим ролям в защищённой
-консоли SQL:
+без паролей, а приложение не должно входить как владелец схемы. После
+применения миграций администратор один раз разрешает вход этим ролям:
 
 ```sql
-ALTER ROLE coursework_api WITH LOGIN PASSWORD '<случайный-пароль-API>';
-ALTER ROLE coursework_worker WITH LOGIN PASSWORD '<другой-пароль-worker>';
+ALTER ROLE coursework_api WITH LOGIN;
+ALTER ROLE coursework_worker WITH LOGIN;
 ```
 
-Пароли не помещайте в SQL-файлы репозитория, историю терминала, PR или чат.
+В Neon Console на странице **Roles** для каждой роли используйте **Reset
+password** и сохраните два разных случайных пароля в менеджере секретов.
+Пароли не помещайте в SQL Editor, его историю, файлы репозитория, PR или чат.
 Строку подключения Neon для роли `coursework_api` добавьте в Vercel как
 защищённую переменную `DATABASE_URL` проекта API; для GitHub Actions задайте
 **отдельную** строку роли `coursework_worker` в секрете
