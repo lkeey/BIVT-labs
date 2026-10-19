@@ -77,6 +77,14 @@ func (s *server) createRagQuery(w http.ResponseWriter, r *http.Request, p princi
 		}
 		communityID = id
 	}
+	// Authentication and input validation are complete; reject concurrent work
+	// before provider calls or creation of a SQL session and turn.
+	if !s.ragBusy.CompareAndSwap(false, true) {
+		w.Header().Set("Retry-After", "10")
+		problem(w, http.StatusTooManyRequests, "RAG_BUSY", "Помощник занят; повторите запрос позже")
+		return
+	}
+	defer s.ragBusy.Store(false)
 	// Both providers must be reachable before any RAG turn is created.
 	if err := s.rag.health(r.Context()); err != nil {
 		s.logger.Warn("RAG chat health check failed", "error", err)

@@ -1,8 +1,7 @@
 [Unit]
 Description=SQL coursework Go API
-Wants=network-online.target
+Wants=network-online.target mssql-server.service
 After=network-online.target mssql-server.service
-Requires=mssql-server.service
 
 [Service]
 Type=simple

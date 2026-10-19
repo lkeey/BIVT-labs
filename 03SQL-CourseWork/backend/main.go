@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"sync/atomic"
 	"syscall"
 	"time"
 
@@ -24,6 +25,8 @@ type server struct {
 	logger *slog.Logger
 	origin string
 	rag    *ragProvider
+	// One in-flight RAG generation per API process bounds CPU and model load.
+	ragBusy atomic.Bool
 }
 
 func main() {

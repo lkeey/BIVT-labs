@@ -7,6 +7,43 @@ HTTPS-имя API. До запуска нужны готовая база `Social
 Firebase Admin credential и доступная модель ответа. Ни один пример с
 `REPLACE_` не является рабочим секретом.
 
+После установки и настройки SQL Server из корня `03SQL-CourseWork/` примените
+[`tools/apply-vps-database.sh`](../../tools/apply-vps-database.sh). Он принимает
+пароль `sa` из `SQLCMDPASSWORD` или спрашивает его в терминале; пароль не
+передаётся в аргументах `sqlcmd`. Скрипт использует TLS с проверкой
+сертификата для `localhost` и пропускает учебные данные `11-demo.sql`.
+Если база уже существует, скрипт останавливается, чтобы не переиграть
+инициализацию поверх пользовательских данных; после частичного сбоя
+администратор должен осмотреть базу и решить, как восстановить развёртывание.
+Затем администратор создаёт отдельные SQL-логины и пользователей базы для
+двух ролей из `database/17-auth-and-roles.sql`. Имена SQL-логинов совпадают
+с DSN в примерах окружения, а имена пользователей базы отличаются от имён
+ролей, поскольку они находятся в одном пространстве имён:
+
+```sql
+USE master;
+GO
+CREATE LOGIN [coursework_api] WITH PASSWORD = 'REPLACE_WITH_RANDOM_API_PASSWORD', CHECK_POLICY = ON;
+GO
+CREATE LOGIN [coursework_worker] WITH PASSWORD = 'REPLACE_WITH_RANDOM_WORKER_PASSWORD', CHECK_POLICY = ON;
+GO
+USE SocialNetworkDB;
+GO
+CREATE USER [coursework_api_runtime] FOR LOGIN [coursework_api];
+CREATE USER [coursework_worker_runtime] FOR LOGIN [coursework_worker];
+ALTER ROLE [coursework_api] ADD MEMBER [coursework_api_runtime];
+ALTER ROLE [coursework_worker] ADD MEMBER [coursework_worker_runtime];
+GO
+```
+
+Подставьте разные случайные пароли, сохраните их только в соответствующих
+`api.env` и `index.env`, выполняйте SQL через приватное соединение с сервером.
+Пароль API кодируйте как URL-компонент в `SQLSERVER_DSN`; пароль worker
+записывайте с экранированием по правилам ODBC connection string.
+Не передавайте текст `CREATE LOGIN` с паролями в аргументе shell-команды.
+При создании через `sqlcmd` вводите команды в его интерактивном режиме и
+не сохраняйте SQL с подставленными паролями в репозитории.
+
 ## Размещение файлов
 
 Операции выполняются из корня клона репозитория после получения нужного
@@ -17,9 +54,9 @@ Full-Text ставятся отдельно по основной инструк
 не имеют права входа и собственного домашнего каталога:
 
 ```sh
-sudo useradd --system --no-create-home --shell /usr/sbin/nologin coursework-api
-sudo useradd --system --no-create-home --shell /usr/sbin/nologin coursework-index
-sudo useradd --system --no-create-home --shell /usr/sbin/nologin coursework-embed
+sudo useradd --system --user-group --no-create-home --shell /usr/sbin/nologin coursework-api
+sudo useradd --system --user-group --no-create-home --shell /usr/sbin/nologin coursework-index
+sudo useradd --system --user-group --no-create-home --shell /usr/sbin/nologin coursework-embed
 sudo install -d -m 0755 /opt/sql-coursework /opt/sql-coursework/bin /etc/sql-coursework
 git archive --format=tar HEAD 03SQL-CourseWork/backend 03SQL-CourseWork/worker | sudo tar -xf - -C /opt/sql-coursework --strip-components=1
 go -C /opt/sql-coursework/backend build -o /tmp/coursework-api .
@@ -62,8 +99,14 @@ sudo systemctl enable --now coursework-embed coursework-index coursework-api
 ```
 
 Установите [`Caddyfile.example`](Caddyfile.example) как Caddyfile и замените
-`api.example.com` реальным DNS-именем, указывающим на VPS. Разрешите входящие
-80/443; Caddy самостоятельно получает публичный TLS-сертификат. Перед
+`api.example.com` реальным DNS-именем, указывающим на VPS. Для учебной
+демонстрации можно использовать бесплатное имя вида
+`api.<IPv4-адрес-VPS>.sslip.io` без регистрации домена;
+[sslip.io](https://sslip.io/) возвращает адрес, встроенный в имя. Убедитесь,
+что DNS-ответ совпадает с публичным IP VPS. Для постоянного адреса лучше
+собственный домен: имя `sslip.io` зависит от стороннего DNS-сервиса.
+Разрешите входящие 80/443; Caddy самостоятельно получает публичный
+TLS-сертификат. Перед
 перезапуском проверьте `caddy validate --config /etc/caddy/Caddyfile`.
 `reverse_proxy` оставляет путь `/api/v1/...` без изменений и ждёт ответ
 дольше максимальных 90 секунд RAG-маршрута. SQL (1433), Go API (8081),

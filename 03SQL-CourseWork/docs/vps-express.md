@@ -52,7 +52,10 @@ Firebase Hosting. Это самостоятельно администрируе
    [инструкции Full-Text](https://learn.microsoft.com/en-us/sql/linux/install-upgrade/setup-full-text-search?view=sql-server-ver17).
    Ограничьте прослушивание SQL loopback через
    `sudo /opt/mssql/bin/mssql-conf set network.ipaddress 127.0.0.1` и
-   перезапустите `mssql-server`; этот параметр описан в
+   на сервере с 12 ГБ RAM начните с лимита SQL
+   `sudo /opt/mssql/bin/mssql-conf set memory.memorylimitmb 3328`.
+   Затем перезапустите `mssql-server` и скорректируйте лимит по фактическим
+   замерам памяти SQL, Python и модели ответа. Оба параметра описаны в
    [документации Microsoft](https://learn.microsoft.com/en-us/sql/linux/sql-server-linux-configure-mssql-conf?view=sql-server-ver17).
    Установите `sqlcmd`; убедитесь, что версия движка — 17.x, редакция —
    Express, а запросы ниже возвращают `1` и строку Russian/1049:
@@ -69,13 +72,15 @@ Firebase Hosting. Это самостоятельно администрируе
    системные FTS-фильтры этих форматов SQL не требуются.
 3. Настройте [TLS-сертификат SQL Server на Linux](https://learn.microsoft.com/en-us/sql/linux/sql-server-linux-encrypted-connections?view=sql-server-ver17)
    и доверие к нему у Go драйвера и ODBC Driver 18; в строках подключения оставьте `Encrypt=yes`
-   и `TrustServerCertificate=no`. Создайте пустую `SocialNetworkDB`,
-   примените `database/00`–`database/17` **по порядку** через `sqlcmd -b -I`
-   и остановитесь при первой ошибке. Подробности — в
+   и `TrustServerCertificate=no`. Создайте базу и примените скрипты
+   `database/00`–`database/10`, затем `database/12`–`database/17` через
+   [`tools/apply-vps-database.sh`](../tools/apply-vps-database.sh). Скрипт
+   проверит редакцию Express, версию 17.x, Full-Text и русский word breaker,
+   потребует проверяемый TLS-сертификат, пропустит учебные данные `11-demo.sql`
+   и остановится при первой ошибке. Подробности — в
    [database/README.md](../database/README.md). Создайте разные SQL-логины
-   для `coursework_api` и `coursework_worker`, добавьте соответствующих
-   пользователей базы в роли из скрипта 17. Работающие сервисы не должны
-   входить как `sa`.
+   для API и worker, добавьте соответствующих пользователей базы в роли из
+   скрипта 17. Работающие сервисы не должны входить как `sa`.
 4. Подготовьте Firebase Authentication проекта `bivt-labs-sql-coursework` и
    Firebase Admin credential JSON только для Go API. Сохраните его **вне Git**
    с правами `0600`; SQL-пароли, токен embedding-сервиса и ключ LLM храните
@@ -87,7 +92,7 @@ Firebase Hosting. Это самостоятельно администрируе
    Driver 18, Tesseract и русский пакет `tesseract-ocr-rus` для
    [worker](../worker/README.md). Подготовьте отдельные процессы API,
    `index_worker.py --loop --poll-seconds 10` и `embed_service.py` под
-   системным менеджером служб с автозапуском и ограничениями памяти.
+   системным менеджером служб с автозапуском и наблюдением за памятью.
    Для Go API задайте `ADDR=127.0.0.1:8081`, `SQLSERVER_DSN`,
    `GOOGLE_APPLICATION_CREDENTIALS` и `FIREBASE_PROJECT_ID` по инструкции
    backend; worker получает свою отдельную ODBC-строку подключения.

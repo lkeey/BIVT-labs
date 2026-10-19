@@ -596,6 +596,9 @@ paths:
         предварительных проверок дают 503 без создания хода. Если генерация
         сорвалась позже, backend пытается отметить ход FAILED и HTTP также
         возвращает 503. При недоступной БД ход может остаться PENDING.
+        Один экземпляр API выполняет не более одного RAG-запроса одновременно.
+        После аутентификации и проверки входных данных занятый экземпляр
+        возвращает 429 без обращения к моделям и создания SQL-хода.
       x-sql-operations:
         - assistant.usp_StartRagSession
         - assistant.usp_StartRagTurn
@@ -626,6 +629,16 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
         '409': { $ref: '#/components/responses/Conflict' }
+        '429':
+          description: Экземпляр API уже выполняет RAG-запрос; повторите позже
+          headers:
+            Retry-After:
+              description: Рекомендуемая задержка перед повтором в секундах
+              schema: { type: integer, example: 10 }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
         '503':
           description: Сервис embeddings или модель ответа не настроены либо недоступны
           content:
