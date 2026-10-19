@@ -42,10 +42,21 @@
 ```bash
 sqlcmd -S localhost -d master -U sa -C -I -b \
   -Q "IF DB_ID(N'SocialNetworkDB') IS NULL CREATE DATABASE SocialNetworkDB;"
+sql_status=0
 for file in database/[0-1][0-9]-*.sql; do
-  sqlcmd -S localhost -d SocialNetworkDB -U sa -C -I -b -i "$file" || break
+  if ! sqlcmd -S localhost -d SocialNetworkDB -U sa -C -I -b -i "$file"; then
+    sql_status=1
+    break
+  fi
 done
+test "$sql_status" -eq 0
 ```
+
+Для Azure SQL Managed Instance Free используйте отдельную
+[инструкцию развёртывания](../docs/azure-mi-free.md): она задаёт политику
+`SQLServer2025`, доступ по TLS и применение этих же скриптов через endpoint
+MI. Скрипты ранее проверялись на отдельном SQL Server 2025; результат на MI
+пока не подтверждён.
 
 `-b` завершает `sqlcmd` с ошибкой при ошибке SQL, `-I` включает
 `QUOTED_IDENTIFIER` для фильтрованных индексов, а `-C` доверяет сертификату

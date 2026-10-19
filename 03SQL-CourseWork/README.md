@@ -35,7 +35,7 @@
 | [`backend/`](backend/README.md) | Go API: проверка Firebase ID token, социальные маршруты и SQL-процедуры |
 | [`worker/`](worker/README.md) | Обработчик outbox: PDF/DOCX, русский OCR, E5 и граф с источниками |
 | [`web/`](web/README.md) | Адаптивный JavaScript-сайт для Firebase Hosting |
-| [`tools/`](tools/verify_contract.py) | Локальная проверка маршрутов Go и ссылок в OpenAPI |
+| [`tools/`](tools/) | Локальная проверка HTTP-контракта, preflight Azure MI и применение T-SQL |
 | [`compose.yaml`](compose.yaml) | Локальный запуск Go API, индексатора и приватного E5-сервиса при готовом SQL Server |
 
 Диаграммы потоков и правила доступа находятся в
@@ -46,7 +46,9 @@
 описаны в [`AGENTS.md`](AGENTS.md); повторяемая процедура доступна как
 repo-local Skill в [`.agents/skills/sql-coursework/SKILL.md`](../.agents/skills/sql-coursework/SKILL.md).
 Шаги запуска и границы бесплатного размещения описаны в
-[`docs/deployment.md`](docs/deployment.md).
+[`docs/deployment.md`](docs/deployment.md). Для публичного запуска подготовлены
+[вариант с SQL Server 2025 Express на VPS](docs/vps-express.md) и отдельная
+[инструкция Azure SQL Managed Instance Free](docs/azure-mi-free.md).
 
 ## Материалы курсовой
 
