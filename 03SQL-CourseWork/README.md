@@ -108,9 +108,11 @@ Full-Text Search и примените скрипты 00–17 по порядк�
 выбирается строкой подключения backend, а не браузером.
 
 Статический сайт опубликован на [Firebase Hosting](https://bivt-labs-sql-coursework.web.app/),
-а Google Sign-In включён в проекте `bivt-labs-sql-coursework`. Публичные Go API,
-SQL Server, worker и модели пока не размещены, поэтому функции социальной сети
-на этом адресе ещё недоступны. Для демонстрации можно использовать локальный
+а Google Sign-In включён в проекте `bivt-labs-sql-coursework`. Предварительная
+сборка Go API развёрнута на Vercel, но пока не подключена к базе и возвращает
+ошибку готовности. Поэтому функции социальной сети на публичном сайте ещё
+недоступны. Для демонстрации можно использовать локальный
 SQL Server 2025 и [Compose-конфигурацию приложения](docs/deployment.md).
-Публичное размещение требует отдельно доступных SQL Server, worker и модели;
-подробности и ограничения — в [`docs/architecture.md`](docs/architecture.md).
+Порядок подключения PostgreSQL-демонстрации, индексатора и модели ответа — в
+[`docs/postgres-demo.md`](docs/postgres-demo.md); ограничения архитектуры — в
+[`docs/architecture.md`](docs/architecture.md).
