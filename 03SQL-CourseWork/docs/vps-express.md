@@ -43,13 +43,35 @@ Firebase Hosting. Это самостоятельно администрируе
    `1433/tcp`, `8765/tcp` и внутренний порт Go API для Интернета. Разместите
    SQL и прикладные процессы на одном хосте. Для доступа к SQL с рабочего
    компьютера используйте SSH tunnel, а не публичный SQL-порт.
-2. Добавьте официальный репозиторий `mssql-server-2025` для Ubuntu 24.04,
-   установите `mssql-server` по
-   [инструкции Microsoft](https://learn.microsoft.com/en-us/sql/linux/install-upgrade/quickstart-install-ubuntu?view=sql-server-ver17).
-   В `/opt/mssql/bin/mssql-conf setup` выберите **Express**, задайте сильный
-   пароль `sa` и сохраните его вне репозитория. Установите отдельный пакет
-   `mssql-server-fts` по
-   [инструкции Full-Text](https://learn.microsoft.com/en-us/sql/linux/install-upgrade/setup-full-text-search?view=sql-server-ver17).
+2. На чистой Ubuntu 24.04 подключите официальные репозитории SQL Server 2025
+   и инструментов Microsoft по
+   [инструкции Microsoft](https://learn.microsoft.com/en-us/sql/linux/install-upgrade/quickstart-install-ubuntu?view=sql-server-ver17):
+
+   ```sh
+   sudo apt-get update
+   sudo apt-get install -y ca-certificates curl gnupg
+   curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | sudo gpg --batch --yes --dearmor -o /usr/share/keyrings/microsoft-prod.gpg
+   curl -fsSL https://packages.microsoft.com/config/ubuntu/24.04/mssql-server-2025.list | sudo tee /etc/apt/sources.list.d/mssql-server-2025.list
+   curl -fsSL https://packages.microsoft.com/config/ubuntu/24.04/prod.list | sudo tee /etc/apt/sources.list.d/mssql-release.list
+   sudo apt-get update
+   sudo apt-get install -y mssql-server
+   sudo /opt/mssql/bin/mssql-conf setup
+   sudo apt-get install -y mssql-server-fts
+   sudo env ACCEPT_EULA=Y apt-get install -y msodbcsql18 mssql-tools18 unixodbc-dev
+   sudo apt-get install -y python3-venv python3-dev build-essential tesseract-ocr tesseract-ocr-rus caddy
+   export PATH="/opt/mssql-tools18/bin:$PATH"
+   ```
+
+   В `mssql-conf setup` выберите **Express**, задайте сильный пароль `sa` и
+   сохраните его вне репозитория. Отдельный пакет `mssql-server-fts` нужен для
+   [Full-Text](https://learn.microsoft.com/en-us/sql/linux/install-upgrade/setup-full-text-search?view=sql-server-ver17).
+   Последняя строка кода добавляет `sqlcmd` в `PATH` текущей сессии;
+   скрипт применения схемы вызывает его по имени. `msodbcsql18` нужен
+   Python worker. Пакеты Python venv, русского Tesseract и Caddy ставятся
+   последней строкой. Если образ Ubuntu не включает репозиторий `universe`,
+   включите его перед установкой Caddy. Go API собирайте Go версии **1.25 или новее** из
+   [официального дистрибутива](https://go.dev/dl/): Go из стандартного
+   репозитория Ubuntu 24.04 может быть старее версии `backend/go.mod`.
    Ограничьте прослушивание SQL loopback через
    `sudo /opt/mssql/bin/mssql-conf set network.ipaddress 127.0.0.1` и
    на сервере с 12 ГБ RAM начните с лимита SQL
@@ -71,7 +93,16 @@ Firebase Hosting. Это самостоятельно администрируе
    установку схемы. Для бинарных PDF/DOCX курсовая извлекает текст в worker;
    системные FTS-фильтры этих форматов SQL не требуются.
 3. Настройте [TLS-сертификат SQL Server на Linux](https://learn.microsoft.com/en-us/sql/linux/sql-server-linux-encrypted-connections?view=sql-server-ver17)
-   и доверие к нему у Go драйвера и ODBC Driver 18; в строках подключения оставьте `Encrypt=yes`
+   и доверие к нему у Go драйвера и ODBC Driver 18. Для экземпляра,
+   доступного только через loopback, подготовлен
+   [`deploy/vps/setup-loopback-tls.sh`](../deploy/vps/setup-loopback-tls.sh):
+   запустите `sudo bash 03SQL-CourseWork/deploy/vps/setup-loopback-tls.sh`
+   из корня клона после установки SQL Server. Он создаёт локальный CA и
+   серверный сертификат с SAN `localhost` и `127.0.0.1`, добавляет CA в
+   системное доверие и перезапускает SQL. Скрипт не перезаписывает уже
+   созданные ключи; храните `/etc/sql-coursework/sql-local-ca.key` только на
+   сервере с правами root. Для вынесенного SQL-сервера нужен сертификат его
+   настоящего DNS-имени. В строках подключения оставьте `Encrypt=yes`
    и `TrustServerCertificate=no`. Создайте базу и примените скрипты
    `database/00`–`database/10`, затем `database/12`–`database/17` через
    [`tools/apply-vps-database.sh`](../tools/apply-vps-database.sh). Скрипт
@@ -83,7 +114,9 @@ Firebase Hosting. Это самостоятельно администрируе
    скрипта 17. Работающие сервисы не должны входить как `sa`.
 4. Подготовьте Firebase Authentication проекта `bivt-labs-sql-coursework` и
    Firebase Admin credential JSON только для Go API. Сохраните его **вне Git**
-   с правами `0600`; SQL-пароли, токен embedding-сервиса и ключ LLM храните
+   с владельцем `root:coursework-api` и правами `0640`, чтобы процесс под
+   пользователем `coursework-api` мог его прочитать; SQL-пароли, токен
+   embedding-сервиса и ключ LLM храните
    в секретах сервера с доступом лишь служебным пользователям. Переменные
    приведены в [`.env.example`](../.env.example). Для соединений через
    `localhost` сертификат SQL должен содержать `localhost` в SAN, а его

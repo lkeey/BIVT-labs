@@ -73,7 +73,8 @@ sudo /opt/sql-coursework/venv/bin/python -m pip install -r /opt/sql-coursework/w
 `api.env` задайте `root:coursework-api`, для `index.env` —
 `root:coursework-index`, для `embed.env` — `root:coursework-embed`; режим каждого
 файла — `0640`, каталог `/etc/sql-coursework` — `0755`. Замените все примеры
-паролей и имён модели. Firebase Admin JSON разместите в
+паролей; указанную в образце модель загрузите перед запуском API. Firebase
+Admin JSON разместите в
 `/etc/sql-coursework/firebase-admin.json` с владельцем
 `root:coursework-api` и режимом `0640`. Не печатайте секреты в истории shell
 или журнале. Сертификат, которому доверяют Go и ODBC, должен соответствовать
@@ -114,10 +115,25 @@ embedding (8765) и локальная LLM (если есть) доступны 
 Задайте `network.ipaddress=127.0.0.1` для SQL Server через `mssql-conf` и
 перезапустите его; дополнительно запретите внешний 1433 в firewall хостинга.
 
-Если используется локальный Ollama, установите его как отдельную службу,
-загрузите выбранную модель и слушайте только `127.0.0.1:11434`. Пример
-`api.env` направляет запросы на его OpenAI-совместимый маршрут. Подберите
-модель по фактическому объёму RAM и проверьте доступность `/v1/models`.
+Если используется локальный Ollama, установите его как отдельную службу и
+слушайте только `127.0.0.1:11434`. Стартовый выбор для сервера с 12 ГБ RAM —
+[`qwen3:4b-instruct-2507-q4_K_M`](https://ollama.com/library/qwen3:4b-instruct-2507-q4_K_M)
+(вес файла около 2,5 ГБ): выполните `ollama pull qwen3:4b-instruct-2507-q4_K_M`.
+Именно это имя уже указано в образце `api.env`, который направляет
+запросы на OpenAI-совместимый маршрут Ollama. Проверьте, что имя присутствует
+в `/v1/models`, и выполните короткий пробный `POST /v1/chat/completions`
+до запуска API: ответ должен успевать за 45 секунд, отведённых backend на
+генерацию:
+
+```sh
+curl --fail-with-body --max-time 45 -sS http://127.0.0.1:11434/v1/chat/completions \
+  -H 'Content-Type: application/json' \
+  -d '{"model":"qwen3:4b-instruct-2507-q4_K_M","messages":[{"role":"user","content":"Ответь одним предложением по-русски."}],"max_tokens":100,"stream":false}'
+```
+
+Размер файла модели не равен её полному потреблению RAM; если
+памяти или скорости не хватает, используйте меньшую модель либо внешний
+HTTPS endpoint.
 Внешняя LLM требует HTTPS endpoint и отдельного ключа в `api.env`.
 
 Публичную конфигурацию [сайта](../../web/public/config.js) переключайте на

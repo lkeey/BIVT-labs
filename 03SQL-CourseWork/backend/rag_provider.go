@@ -114,6 +114,22 @@ func (p *ragProvider) health(ctx context.Context) error {
 	if response.StatusCode < 200 || response.StatusCode >= 300 {
 		return fmt.Errorf("chat health returned HTTP %d", response.StatusCode)
 	}
+	if strings.HasSuffix(p.chatHealthURL, "/models") {
+		var models struct {
+			Data []struct {
+				ID string `json:"id"`
+			} `json:"data"`
+		}
+		if err := decodeProviderJSON(response.Body, 1<<20, &models, false); err != nil {
+			return err
+		}
+		for _, model := range models.Data {
+			if model.ID == p.chatModel {
+				return nil
+			}
+		}
+		return fmt.Errorf("configured chat model %q is absent from /models", p.chatModel)
+	}
 	_, _ = io.Copy(io.Discard, io.LimitReader(response.Body, 1024))
 	return nil
 }
