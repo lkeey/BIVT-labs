@@ -50,6 +50,10 @@ Firebase Hosting. Это самостоятельно администрируе
    пароль `sa` и сохраните его вне репозитория. Установите отдельный пакет
    `mssql-server-fts` по
    [инструкции Full-Text](https://learn.microsoft.com/en-us/sql/linux/install-upgrade/setup-full-text-search?view=sql-server-ver17).
+   Ограничьте прослушивание SQL loopback через
+   `sudo /opt/mssql/bin/mssql-conf set network.ipaddress 127.0.0.1` и
+   перезапустите `mssql-server`; этот параметр описан в
+   [документации Microsoft](https://learn.microsoft.com/en-us/sql/linux/sql-server-linux-configure-mssql-conf?view=sql-server-ver17).
    Установите `sqlcmd`; убедитесь, что версия движка — 17.x, редакция —
    Express, а запросы ниже возвращают `1` и строку Russian/1049:
 
@@ -90,8 +94,12 @@ Firebase Hosting. Это самостоятельно администрируе
    Закреплённую E5-модель загрузите в постоянный `HF_HOME` до приёма
    документов; для индексации и вопроса должна использоваться одна ревизия
    модели и размерность 384. Приватный embedding-сервис слушает
-   `127.0.0.1:8765`; Go API подключается к нему с тем же случайным Bearer
-   токеном длиной не менее 32 символов.
+   `127.0.0.1:8765`; на одном хосте доступ ограничен loopback. Если сервис
+   вынесен в приватную сеть, задайте ему и Go API одинаковый случайный Bearer
+   токен длиной не менее 32 символов.
+   Для размещения всех процессов на одном хосте подготовлены
+   [unit-файлы systemd, образцы окружения и Caddyfile](../deploy/vps/README.md).
+   Их loopback embedding-сервис не требует Bearer-токен.
 6. Для полного RAG задайте `CHAT_COMPLETIONS_URL` и `CHAT_MODEL`. Внешний
    OpenAI-совместимый endpoint должен использовать HTTPS и иметь право
    получать тексты доступных пользователю фрагментов. Альтернатива —

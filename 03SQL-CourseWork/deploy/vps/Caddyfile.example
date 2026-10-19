@@ -1,0 +1,9 @@
+# Replace api.example.com with the DNS name pointing to the VPS.
+api.example.com {
+    encode zstd gzip
+    reverse_proxy 127.0.0.1:8081 {
+        transport http {
+            read_timeout 120s
+        }
+    }
+}

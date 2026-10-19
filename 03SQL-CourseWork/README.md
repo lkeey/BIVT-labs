@@ -34,6 +34,7 @@
 | [`api/`](api/README.md) | Контракт HTTP API v1 на OpenAPI 3.1 и граница доверенного backend |
 | [`backend/`](backend/README.md) | Go API: проверка Firebase ID token, социальные маршруты и SQL-процедуры |
 | [`worker/`](worker/README.md) | Обработчик outbox: PDF/DOCX, русский OCR, E5 и граф с источниками |
+| [`deploy/vps/`](deploy/vps/README.md) | Шаблоны systemd, окружения и HTTPS proxy для одного VPS |
 | [`web/`](web/README.md) | Адаптивный JavaScript-сайт для Firebase Hosting |
 | [`tools/`](tools/) | Локальная проверка HTTP-контракта, preflight Azure MI и применение T-SQL |
 | [`compose.yaml`](compose.yaml) | Локальный запуск Go API, индексатора и приватного E5-сервиса при готовом SQL Server |
