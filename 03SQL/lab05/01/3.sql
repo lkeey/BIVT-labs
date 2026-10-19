@@ -1,4 +1,4 @@
-SELECT 
+SELECT
     product.ProductCategoryID,
     LEFT(category_db.Name, 2) AS "SHORT NAME"
 FROM SalesLT.Product AS product

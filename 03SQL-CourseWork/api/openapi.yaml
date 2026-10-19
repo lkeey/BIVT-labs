@@ -1,0 +1,959 @@
+openapi: 3.1.0
+info:
+  title: SocialNetworkDB API
+  version: 0.2.0
+  description: |
+    Контракт Go API курсовой. Сервер проверяет Firebase ID token и права при
+    каждом запросе; браузер никогда не подключается к SQL Server напрямую.
+    RAG использует приватный сервис embeddings и OpenAI-совместимую модель
+    ответа; без их настройки запрос на генерацию возвращает 503.
+servers:
+  - url: /api
+    description: Относительный путь Go backend; публичный домен задаётся при размещении
+tags:
+  - name: Session
+  - name: Communities
+  - name: Social
+  - name: Content
+  - name: Documents
+  - name: Assistant
+security:
+  - firebaseIdToken: []
+paths:
+  /v1/auth/sessions/current:
+    get:
+      tags: [Session]
+      summary: Текущий пользователь по проверенному Firebase ID token
+      x-implementation-status: implemented
+      responses:
+        '200':
+          description: Активная учётная запись
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionIdentity'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /v1/communities:
+    get:
+      tags: [Communities]
+      summary: Доступные сообщества
+      description: Чужие закрытые сообщества в выдачу не попадают.
+      x-implementation-status: implemented
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: Страница сообществ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommunityPage'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    post:
+      tags: [Communities]
+      summary: Создать сообщество
+      x-sql-operation: social.usp_CreateCommunity
+      x-implementation-status: implemented
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommunityCreate'
+      responses:
+        '201':
+          description: Сообщество создано; автор стал владельцем
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Community'
+        '200':
+          description: Повторный запрос вернул уже существующее сообщество с тем же slug и определением
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Community'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '503': { $ref: '#/components/responses/RetryLater' }
+  /v1/communities/{communityId}:
+    parameters:
+      - $ref: '#/components/parameters/CommunityId'
+    get:
+      tags: [Communities]
+      summary: Сообщество, доступное текущему пользователю
+      x-implementation-status: implemented
+      responses:
+        '200':
+          description: Сообщество
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Community'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /v1/communities/{communityId}/memberships:
+    parameters:
+      - $ref: '#/components/parameters/CommunityId'
+    get:
+      tags: [Communities]
+      summary: Ожидающие рассмотрения заявки на вступление
+      description: |
+        Только владелец или администратор сообщества может получить список
+        заявок PENDING. Курсор и фильтрация применяются после проверки роли;
+        для остальных пользователей данные о заявителях недоступны.
+      x-sql-operation: social.usp_ListPendingMemberships
+      x-implementation-status: implemented
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: Страница ожидающих заявок
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MembershipPage'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '503': { $ref: '#/components/responses/RetryLater' }
+    post:
+      tags: [Communities]
+      summary: Вступить или подать заявку на вступление
+      description: |
+        Открытое сообщество даёт ACTIVE, закрытое создаёт PENDING.
+        PENDING не открывает доступ к материалам. Для закрытого сообщества
+        пользователь получает communityId из ссылки-приглашения, которую
+        владелец передаёт вне API; список и карточка скрывают такое сообщество
+        до подтверждения членства. Токены приглашения в v1 не предусмотрены.
+      x-sql-operation: social.usp_RequestMembership
+      x-implementation-status: implemented
+      responses:
+        '201':
+          description: Членство или заявка создана
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Membership'
+        '200':
+          description: Повторный запрос вернул существующее членство или заявку
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Membership'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '503': { $ref: '#/components/responses/RetryLater' }
+  /v1/communities/{communityId}/memberships/current:
+    parameters:
+      - $ref: '#/components/parameters/CommunityId'
+    delete:
+      tags: [Communities]
+      summary: Отозвать заявку или выйти из сообщества
+      description: Владелец не может выйти из сообщества в v1; передача владения пока не реализована.
+      x-sql-operation: social.usp_LeaveCommunity
+      x-implementation-status: implemented
+      responses:
+        '204': { description: Заявка отозвана или членство завершено; повторный запрос ничего не меняет }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '503': { $ref: '#/components/responses/RetryLater' }
+  /v1/communities/{communityId}/memberships/{userId}:
+    parameters:
+      - $ref: '#/components/parameters/CommunityId'
+      - $ref: '#/components/parameters/UserId'
+    patch:
+      tags: [Communities]
+      summary: Рассмотреть заявку или заблокировать участника
+      description: Только владелец или администратор; блокировка запрещает чтение и в открытом сообществе.
+      x-sql-operation: social.usp_SetMembership
+      x-implementation-status: implemented
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [status]
+              properties:
+                status: { type: string, enum: [PENDING, ACTIVE, BLOCKED] }
+                role: { type: string, enum: [ADMIN, MODERATOR, MEMBER], default: MEMBER }
+      responses:
+        '200':
+          description: Новое состояние членства
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Membership'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '503': { $ref: '#/components/responses/RetryLater' }
+  /v1/users/{userId}:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+    get:
+      tags: [Social]
+      summary: Публичный профиль пользователя
+      description: PRIVATE-профиль выдаётся только владельцу.
+      x-implementation-status: implemented
+      responses:
+        '200':
+          description: Профиль
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /v1/users/{userId}/follow:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+    put:
+      tags: [Social]
+      summary: Подписаться на пользователя
+      description: Повторный PUT идемпотентен; на себя подписаться нельзя.
+      x-sql-operation: social.usp_SetFollow
+      x-implementation-status: implemented
+      responses:
+        '204': { description: Подписка существует }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '503': { $ref: '#/components/responses/RetryLater' }
+    delete:
+      tags: [Social]
+      summary: Отписаться от пользователя
+      x-sql-operation: social.usp_SetFollow
+      x-implementation-status: implemented
+      responses:
+        '204': { description: Подписки нет }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '503': { $ref: '#/components/responses/RetryLater' }
+  /v1/communities/{communityId}/posts:
+    parameters:
+      - $ref: '#/components/parameters/CommunityId'
+    get:
+      tags: [Content]
+      summary: Доступные опубликованные посты сообщества
+      x-implementation-status: implemented
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: Страница постов
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostPage'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    post:
+      tags: [Content]
+      summary: Опубликовать пост
+      x-sql-operation: social.usp_PublishContent
+      x-implementation-status: implemented
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TextCreate'
+      responses:
+        '201':
+          description: Пост опубликован; индексирование поставлено в очередь
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContentWrite'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '503': { $ref: '#/components/responses/RetryLater' }
+  /v1/posts/{postId}:
+    parameters:
+      - $ref: '#/components/parameters/PostId'
+    get:
+      tags: [Content]
+      summary: Текущая опубликованная версия поста
+      x-implementation-status: implemented
+      responses:
+        '200':
+          description: Пост
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Post'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    patch:
+      tags: [Content]
+      summary: Создать новую редакцию своего поста
+      x-sql-operation: social.usp_PublishContent
+      x-implementation-status: implemented
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TextCreate'
+      responses:
+        '200':
+          description: Новая редакция опубликована
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContentWrite'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '503': { $ref: '#/components/responses/RetryLater' }
+    delete:
+      tags: [Content]
+      summary: Скрыть свой пост и отозвать его из RAG
+      description: Backend вызывает процедуру с ExpectedKind=POST; ID комментария или документа здесь отклоняется.
+      x-sql-operation: assistant.usp_RevokeContentAccess
+      x-implementation-status: implemented
+      responses:
+        '204': { description: Пост скрыт }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /v1/posts/{postId}/comments:
+    parameters:
+      - $ref: '#/components/parameters/PostId'
+    get:
+      tags: [Content]
+      summary: Видимые комментарии доступного поста
+      x-implementation-status: implemented
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: Страница комментариев
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommentPage'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    post:
+      tags: [Content]
+      summary: Ответить на пост
+      x-sql-operation: social.usp_PublishContent
+      x-implementation-status: implemented
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TextCreate'
+      responses:
+        '201':
+          description: Комментарий опубликован; индексирование поставлено в очередь
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContentWrite'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '503': { $ref: '#/components/responses/RetryLater' }
+  /v1/comments/{commentId}:
+    parameters:
+      - $ref: '#/components/parameters/CommentId'
+    get:
+      tags: [Content]
+      summary: Текущая видимая версия комментария
+      x-implementation-status: implemented
+      responses:
+        '200':
+          description: Комментарий
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Comment'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    patch:
+      tags: [Content]
+      summary: Создать новую редакцию своего комментария
+      x-sql-operation: social.usp_PublishContent
+      x-implementation-status: implemented
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TextCreate'
+      responses:
+        '200':
+          description: Новая редакция опубликована
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContentWrite'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '503': { $ref: '#/components/responses/RetryLater' }
+    delete:
+      tags: [Content]
+      summary: Скрыть свой комментарий и отозвать его из RAG
+      description: Backend вызывает процедуру с ExpectedKind=COMMENT; ID поста или документа здесь отклоняется.
+      x-sql-operation: assistant.usp_RevokeContentAccess
+      x-implementation-status: implemented
+      responses:
+        '204': { description: Комментарий скрыт }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /v1/content/{contentId}/moderation/hide:
+    parameters:
+      - $ref: '#/components/parameters/ContentId'
+    put:
+      tags: [Content]
+      summary: Скрыть материал по решению модератора
+      description: |
+        Доступно владельцу, администратору или модератору сообщества. Можно
+        скрыть пост, комментарий или документ; скрытие поста скрывает также его
+        комментарии. Повторный PUT идемпотентен. Материал немедленно исчезает
+        из чтения, ленты и RAG, затем удаляется из производных индексов.
+      x-sql-operation: social.usp_ModerateContent
+      x-implementation-status: implemented
+      responses:
+        '204': { description: Материал скрыт }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '503': { $ref: '#/components/responses/RetryLater' }
+  /v1/content/{contentId}/reaction:
+    parameters:
+      - $ref: '#/components/parameters/ContentId'
+    put:
+      tags: [Social]
+      summary: Поставить или заменить свою реакцию
+      description: Одна реакция пользователя на доступный пост, комментарий или готовый документ.
+      x-sql-operation: social.usp_SetReaction
+      x-implementation-status: implemented
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [type]
+              properties:
+                type: { type: string, enum: [LIKE, HELPFUL, INSIGHTFUL] }
+      responses:
+        '204': { description: Реакция сохранена }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '503': { $ref: '#/components/responses/RetryLater' }
+    delete:
+      tags: [Social]
+      summary: Убрать свою реакцию
+      x-sql-operation: social.usp_SetReaction
+      x-implementation-status: implemented
+      responses:
+        '204': { description: Реакции нет }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '503': { $ref: '#/components/responses/RetryLater' }
+  /v1/communities/{communityId}/documents:
+    parameters:
+      - $ref: '#/components/parameters/CommunityId'
+    get:
+      tags: [Documents]
+      summary: Готовые доступные документы сообщества
+      x-implementation-status: implemented
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: Страница документов
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentPage'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    post:
+      tags: [Documents]
+      summary: Загрузить PDF/DOCX или ввести текст
+      description: Канонический сервер принимает до 10 MiB; публичный хостинг может задать меньший лимит. MIME и содержимое проверяются сервером.
+      x-sql-operation: knowledge.usp_SaveDocumentVersion
+      x-implementation-status: implemented
+      requestBody:
+        $ref: '#/components/requestBodies/DocumentPayload'
+      responses:
+        '202':
+          description: Версия сохранена; OCR и индексирование выполняются асинхронно
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentWrite'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '413': { $ref: '#/components/responses/TooLarge' }
+        '415': { $ref: '#/components/responses/UnsupportedMedia' }
+        '503': { $ref: '#/components/responses/RetryLater' }
+  /v1/documents/{documentId}:
+    parameters:
+      - $ref: '#/components/parameters/DocumentId'
+    get:
+      tags: [Documents]
+      summary: Текущая версия документа и состояние обработки
+      description: |
+        Автор видит PROCESSING/FAILED. Остальные получают документ только после
+        READY и при текущем доступе к сообществу.
+      x-implementation-status: implemented
+      responses:
+        '200':
+          description: Документ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /v1/documents/{documentId}/versions:
+    parameters:
+      - $ref: '#/components/parameters/DocumentId'
+    post:
+      tags: [Documents]
+      summary: Заменить содержимое своего документа новой версией
+      x-sql-operation: knowledge.usp_SaveDocumentVersion
+      x-implementation-status: implemented
+      requestBody:
+        $ref: '#/components/requestBodies/DocumentPayload'
+      responses:
+        '202':
+          description: Новая версия сохранена и ожидает обработки
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentWrite'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '413': { $ref: '#/components/responses/TooLarge' }
+        '415': { $ref: '#/components/responses/UnsupportedMedia' }
+        '503': { $ref: '#/components/responses/RetryLater' }
+  /v1/documents/{documentId}/file:
+    parameters:
+      - $ref: '#/components/parameters/DocumentId'
+    get:
+      tags: [Documents]
+      summary: Скачать текущий текст, PDF или DOCX
+      description: |
+        knowledge.usp_GetDocumentFile проверяет текущий доступ, опубликованный
+        статус и READY для актуальной версии перед возвратом FileBytes или PlainText.
+        Автор может видеть статус PROCESSING или FAILED в карточке, но скачать
+        такой файл через этот маршрут нельзя. Текстовый документ выдаётся как UTF-8 text/plain.
+      x-sql-operation: knowledge.usp_GetDocumentFile
+      x-implementation-status: implemented
+      responses:
+        '200':
+          description: Текущая готовая версия документа
+          headers:
+            Content-Disposition:
+              schema: { type: string }
+              description: attachment с безопасным именем файла
+          content:
+            application/pdf:
+              schema: { type: string, format: binary }
+            application/vnd.openxmlformats-officedocument.wordprocessingml.document:
+              schema: { type: string, format: binary }
+            text/plain:
+              schema: { type: string }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /v1/rag/queries:
+    post:
+      tags: [Assistant]
+      summary: Создать ответ на вопрос по доступным источникам
+      description: |
+        Backend проверяет доступность сервиса модели ответа и получает закреплённый
+        embedding до создания SQL-хода. Затем вызывает гибридный поиск,
+        фиксирует доступные фрагменты и передаёт LLM максимум пять источников.
+        Ответ должен содержать ссылки [1]..[N]; в SQL сохраняются только
+        фактически упомянутые цитаты после повторной проверки доступа.
+        Обработка завершается до HTTP-ответа; для долгого запроса прокси
+        нужен таймаут больше 90 секунд. Отсутствующая конфигурация или сбой
+        предварительных проверок дают 503 без создания хода. Если генерация
+        сорвалась позже, backend пытается отметить ход FAILED и HTTP также
+        возвращает 503. При недоступной БД ход может остаться PENDING.
+        Один экземпляр API выполняет не более одного RAG-запроса одновременно.
+        После аутентификации и проверки входных данных занятый экземпляр
+        возвращает 429 без обращения к моделям и создания SQL-хода.
+      x-sql-operations:
+        - assistant.usp_StartRagSession
+        - assistant.usp_StartRagTurn
+        - assistant.usp_SearchRag
+        - assistant.usp_RecordRetrievedChunks
+        - assistant.usp_SaveRagAnswer
+        - assistant.usp_SaveRagNoSources
+        - assistant.usp_FailRagTurn
+      x-implementation-status: implemented
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RagQuestion'
+      responses:
+        '201':
+          description: Ответ сохранён либо подтверждено отсутствие источников; Location указывает на сохранённый ход
+          headers:
+            Location:
+              schema: { type: string }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RagCreated'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '429':
+          description: Экземпляр API уже выполняет RAG-запрос; повторите позже
+          headers:
+            Retry-After:
+              description: Рекомендуемая задержка перед повтором в секундах
+              schema: { type: integer, example: 10 }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '503':
+          description: Сервис embeddings или модель ответа не настроены либо недоступны
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /v1/rag/queries/{queryId}:
+    parameters:
+      - $ref: '#/components/parameters/QueryId'
+    get:
+      tags: [Assistant]
+      summary: Состояние запроса, ответ и проверенные цитаты
+      description: |
+        Выдавать только собственный запрос. Перед выдачей завершённого ответа
+        assistant.usp_GetRagTurn возвращает состояние PENDING, COMPLETED,
+        NO_SOURCES или FAILED и проверяет отзыв доступа ко ВСЕМ переданным LLM
+        фрагментам. Только для разрешённого COMPLETED процедура возвращает
+        цитаты через assistant.vAnswerWithCitations. При отзыве доступа к источнику не
+        отдавать ни сохранённый ответ, ни цитаты (410).
+      x-sql-operations:
+        - assistant.usp_GetRagTurn
+        - assistant.vAnswerWithCitations
+      x-implementation-status: implemented
+      responses:
+        '200':
+          description: Текущее состояние; завершённый ответ содержит цитаты
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RagResult'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '410':
+          description: Источник ранее сохранённого ответа больше недоступен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /v1/feed:
+    get:
+      tags: [Assistant]
+      summary: Персональная лента доступных постов и документов
+      description: Результат дополнительно фильтруется vRecommendationFeed при чтении.
+      x-sql-operation: assistant.usp_GenerateRecommendations
+      x-implementation-status: implemented
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 50, default: 20 }
+      responses:
+        '200':
+          description: Рекомендации и понятные причины
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/FeedItem' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+components:
+  securitySchemes:
+    firebaseIdToken:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Firebase ID token; Go API проверяет подпись, проект, срок и отзыв через Admin SDK при каждом запросе.
+  parameters:
+    CommunityId: { name: communityId, in: path, required: true, schema: { $ref: '#/components/schemas/Id' } }
+    UserId: { name: userId, in: path, required: true, schema: { $ref: '#/components/schemas/Id' } }
+    ContentId: { name: contentId, in: path, required: true, schema: { $ref: '#/components/schemas/Id' } }
+    PostId: { name: postId, in: path, required: true, schema: { $ref: '#/components/schemas/Id' } }
+    CommentId: { name: commentId, in: path, required: true, schema: { $ref: '#/components/schemas/Id' } }
+    DocumentId: { name: documentId, in: path, required: true, schema: { $ref: '#/components/schemas/Id' } }
+    QueryId: { name: queryId, in: path, required: true, schema: { $ref: '#/components/schemas/Id' } }
+    Limit: { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 50, default: 20 } }
+    Cursor: { name: cursor, in: query, description: Непрозрачный курсор следующей страницы, schema: { type: string } }
+  requestBodies:
+    DocumentPayload:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            additionalProperties: false
+            required: [title, text]
+            properties:
+              title: { type: string, minLength: 1, maxLength: 250 }
+              text: { type: string, minLength: 1, description: Размер UTF-16 не более 10 MiB на каноническом сервере; публичное развёртывание может иметь меньший предел }
+        multipart/form-data:
+          schema:
+            type: object
+            additionalProperties: false
+            required: [title, file]
+            properties:
+              title: { type: string, minLength: 1, maxLength: 250 }
+              file: { type: string, format: binary, description: PDF или DOCX; до 10 MiB на каноническом сервере, с возможным меньшим пределом при публичном размещении }
+  responses:
+    BadRequest: { description: Некорректные входные данные, content: { application/json: { schema: { $ref: '#/components/schemas/Problem' } } } }
+    Unauthorized: { description: Нет действительного Firebase ID token, content: { application/json: { schema: { $ref: '#/components/schemas/Problem' } } } }
+    Forbidden: { description: Операция запрещена, content: { application/json: { schema: { $ref: '#/components/schemas/Problem' } } } }
+    NotFound: { description: Объект отсутствует или недоступен, content: { application/json: { schema: { $ref: '#/components/schemas/Problem' } } } }
+    Conflict: { description: Конфликт текущего состояния, content: { application/json: { schema: { $ref: '#/components/schemas/Problem' } } } }
+    TooLarge: { description: Документ превышает предел данного развёртывания, content: { application/json: { schema: { $ref: '#/components/schemas/Problem' } } } }
+    UnsupportedMedia: { description: Поддерживаются text/plain, PDF и DOCX, content: { application/json: { schema: { $ref: '#/components/schemas/Problem' } } } }
+    RetryLater: { description: Временная блокировка SQL; повторите запрос, content: { application/json: { schema: { $ref: '#/components/schemas/Problem' } } } }
+  schemas:
+    Id:
+      type: string
+      pattern: '^[1-9][0-9]*$'
+      maxLength: 19
+      description: Положительный SQL bigint как строка, чтобы JavaScript не потерял точность.
+    Problem:
+      type: object
+      additionalProperties: false
+      required: [code, message]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        requestId: { type: string }
+    SessionIdentity:
+      type: object
+      additionalProperties: false
+      required: [expiresAt, user]
+      properties:
+        expiresAt: { type: string, format: date-time }
+        user: { $ref: '#/components/schemas/UserProfile' }
+    UserProfile:
+      type: object
+      additionalProperties: false
+      required: [userId, displayName]
+      properties:
+        userId: { $ref: '#/components/schemas/Id' }
+        displayName: { type: string }
+        bio: { type: [string, 'null'] }
+        followedByMe: { type: boolean }
+    CommunityCreate:
+      type: object
+      additionalProperties: false
+      required: [slug, name, visibility]
+      properties:
+        slug: { type: string, pattern: '^[a-z0-9-]{3,100}$' }
+        name: { type: string, minLength: 1, maxLength: 160 }
+        description: { type: string, maxLength: 1000 }
+        visibility: { type: string, enum: [PUBLIC, PRIVATE] }
+    Community:
+      type: object
+      additionalProperties: false
+      required: [communityId, slug, name, visibility, ownerUserId, membershipStatus]
+      properties:
+        communityId: { $ref: '#/components/schemas/Id' }
+        slug: { type: string }
+        name: { type: string }
+        description: { type: [string, 'null'] }
+        visibility: { type: string, enum: [PUBLIC, PRIVATE] }
+        ownerUserId: { $ref: '#/components/schemas/Id' }
+        membershipStatus: { type: string, enum: [NONE, PENDING, ACTIVE, BLOCKED, REJECTED, BANNED, LEFT] }
+    Membership:
+      type: object
+      additionalProperties: false
+      required: [communityId, userId, status, role]
+      properties:
+        communityId: { $ref: '#/components/schemas/Id' }
+        userId: { $ref: '#/components/schemas/Id' }
+        status: { type: string, enum: [PENDING, ACTIVE, BLOCKED, REJECTED, BANNED, LEFT] }
+        role: { type: string, enum: [OWNER, ADMIN, MODERATOR, MEMBER] }
+    MembershipPage:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/Membership' }
+        nextCursor: { type: [string, 'null'] }
+    TextCreate:
+      type: object
+      additionalProperties: false
+      required: [body]
+      properties:
+        body: { type: string, minLength: 1 }
+    ContentWrite:
+      type: object
+      additionalProperties: false
+      required: [contentId, sourceRevisionId, indexStatus]
+      properties:
+        contentId: { $ref: '#/components/schemas/Id' }
+        sourceRevisionId: { $ref: '#/components/schemas/Id' }
+        indexStatus: { type: string, enum: [PENDING] }
+    Post:
+      type: object
+      additionalProperties: false
+      required: [contentId, communityId, authorUserId, body, publishedAt]
+      properties:
+        contentId: { $ref: '#/components/schemas/Id' }
+        communityId: { $ref: '#/components/schemas/Id' }
+        authorUserId: { $ref: '#/components/schemas/Id' }
+        body: { type: string }
+        publishedAt: { type: string, format: date-time }
+    Comment:
+      type: object
+      additionalProperties: false
+      required: [contentId, postId, authorUserId, body, publishedAt]
+      properties:
+        contentId: { $ref: '#/components/schemas/Id' }
+        postId: { $ref: '#/components/schemas/Id' }
+        authorUserId: { $ref: '#/components/schemas/Id' }
+        body: { type: string }
+        publishedAt: { type: string, format: date-time }
+    DocumentWrite:
+      type: object
+      additionalProperties: false
+      required: [contentId, documentVersionId, sourceRevisionId, processingStatus]
+      properties:
+        contentId: { $ref: '#/components/schemas/Id' }
+        documentVersionId: { $ref: '#/components/schemas/Id' }
+        sourceRevisionId: { $ref: '#/components/schemas/Id' }
+        processingStatus: { type: string, enum: [PROCESSING] }
+    Document:
+      type: object
+      additionalProperties: false
+      required: [contentId, communityId, authorUserId, title, mimeType, versionNo, processingStatus]
+      properties:
+        contentId: { $ref: '#/components/schemas/Id' }
+        communityId: { $ref: '#/components/schemas/Id' }
+        authorUserId: { $ref: '#/components/schemas/Id' }
+        title: { type: string }
+        mimeType: { type: string, enum: [text/plain, application/pdf, application/vnd.openxmlformats-officedocument.wordprocessingml.document] }
+        versionNo: { type: integer, minimum: 1 }
+        processingStatus: { type: string, enum: [PROCESSING, READY, FAILED] }
+    RagQuestion:
+      type: object
+      additionalProperties: false
+      required: [question]
+      properties:
+        question: { type: string, minLength: 1, maxLength: 2000 }
+        communityId:
+          description: Если не задано, поиск по всем доступным сообществам.
+          $ref: '#/components/schemas/Id'
+    RagCreated:
+      type: object
+      additionalProperties: false
+      required: [queryId, status]
+      properties:
+        queryId: { $ref: '#/components/schemas/Id' }
+        status: { type: string, enum: [COMPLETED, NO_SOURCES] }
+    RagResult:
+      type: object
+      additionalProperties: false
+      required: [queryId, status, question, citations]
+      properties:
+        queryId: { $ref: '#/components/schemas/Id' }
+        status: { type: string, enum: [PENDING, COMPLETED, NO_SOURCES, FAILED] }
+        question: { type: string }
+        answer: { type: [string, 'null'], description: Только при COMPLETED или NO_SOURCES }
+        citations:
+          type: array
+          items: { $ref: '#/components/schemas/Citation' }
+    Citation:
+      type: object
+      additionalProperties: false
+      required: [citationId, contentId, kind, title, authorUserId, quote, startOffset, endOffset, sourcePath]
+      properties:
+        citationId: { $ref: '#/components/schemas/Id' }
+        contentId: { $ref: '#/components/schemas/Id' }
+        kind: { type: string, enum: [POST, COMMENT, DOCUMENT] }
+        title: { type: string }
+        authorUserId: { $ref: '#/components/schemas/Id' }
+        quote: { type: string }
+        pageNo: { type: [integer, 'null'], minimum: 1 }
+        startOffset: { type: integer, minimum: 0 }
+        endOffset: { type: integer, minimum: 1 }
+        sourcePath: { type: string, description: Относительный API-путь к доступному источнику }
+    FeedItem:
+      type: object
+      additionalProperties: false
+      required: [rank, contentId, kind, communityId, authorUserId, score, reasonCode, reasonText]
+      properties:
+        rank: { type: integer, minimum: 1 }
+        contentId: { $ref: '#/components/schemas/Id' }
+        kind: { type: string, enum: [POST, DOCUMENT] }
+        communityId: { $ref: '#/components/schemas/Id' }
+        authorUserId: { $ref: '#/components/schemas/Id' }
+        score: { type: number, minimum: 0, maximum: 1 }
+        reasonCode: { type: string, enum: [RELATED_TOPIC, FOLLOWED_AUTHOR, MEMBER_COMMUNITY, SIMILAR_INTEREST, POPULAR, FRESH] }
+        reasonText: { type: string }
+    CommunityPage:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/Community' } }
+        nextCursor: { type: [string, 'null'] }
+    PostPage:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/Post' } }
+        nextCursor: { type: [string, 'null'] }
+    CommentPage:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/Comment' } }
+        nextCursor: { type: [string, 'null'] }
+    DocumentPage:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/Document' } }
+        nextCursor: { type: [string, 'null'] }

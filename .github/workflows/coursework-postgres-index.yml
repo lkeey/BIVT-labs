@@ -1,0 +1,68 @@
+name: Coursework PostgreSQL indexing
+
+on:
+  schedule:
+    - cron: "17,47 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: coursework-postgres-index
+  cancel-in-progress: false
+
+jobs:
+  index:
+    if: vars.COURSEWORK_POSTGRES_INDEX_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      COURSEWORK_POSTGRES_DSN: ${{ secrets.COURSEWORK_POSTGRES_DSN }}
+      HF_HOME: ${{ github.workspace }}/.cache/huggingface
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: |
+            03SQL-CourseWork/worker/requirements-postgres.txt
+            03SQL-CourseWork/worker/requirements-embed.txt
+      - name: Install small PostgreSQL client
+        run: python -m pip install 'psycopg[binary]>=3.2,<4'
+      - name: Check whether indexing is needed
+        id: pending
+        run: |
+          python - <<'PY'
+          import os
+          import psycopg
+
+          dsn = os.environ.get("COURSEWORK_POSTGRES_DSN")
+          if not dsn:
+              raise SystemExit("COURSEWORK_POSTGRES_DSN secret is required")
+          with psycopg.connect(dsn, connect_timeout=15) as connection:
+              with connection.cursor() as cursor:
+                  cursor.execute("SELECT ops.has_pending_index_outbox()")
+                  pending = bool(cursor.fetchone()[0])
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
+              output.write(f"has_work={str(pending).lower()}\n")
+          PY
+      - uses: actions/cache@v4
+        if: steps.pending.outputs.has_work == 'true'
+        with:
+          path: ${{ env.HF_HOME }}
+          key: coursework-e5-small-fd1525a9
+      - name: Install Russian OCR
+        if: steps.pending.outputs.has_work == 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y tesseract-ocr tesseract-ocr-rus
+      - name: Install indexer dependencies
+        if: steps.pending.outputs.has_work == 'true'
+        working-directory: 03SQL-CourseWork/worker
+        run: python -m pip install -r requirements-postgres.txt
+      - name: Process queued revisions
+        if: steps.pending.outputs.has_work == 'true'
+        working-directory: 03SQL-CourseWork/worker
+        run: python postgres_index_worker.py --max-jobs 20

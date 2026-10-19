@@ -11,11 +11,11 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Reject tracked generated files
+      - name: Reject tracked local configuration and generated files
         shell: bash
         run: |
-          blocked="$(git ls-files | grep -E '(^|/)(\.DS_Store$|bin/|obj/)' || true)"
+          blocked="$(git ls-files | grep -E '(^|/)(\.DS_Store|__pycache__|\.pytest_cache|\.ruff_cache|\.venv|\.env|bin|obj|\.gradle|build|htmlcov)(/|$)|(^|/)\.coverage(\.[^/]*)?$|(^|/)[^/]+\.py[cod]$|(^|/)opencode\.json$' || true)"
           if [[ -n "${blocked}" ]]; then
-            printf 'Generated files are tracked:\n%s\n' "${blocked}" >&2
+            printf 'Local or generated files are tracked:\n%s\n' "${blocked}" >&2
             exit 1
           fi

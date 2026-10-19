@@ -11,6 +11,26 @@
 **/build/
 **/.kotlin/
 
+# Python artifacts
+**/__pycache__/
+**/.pytest_cache/
+**/.ruff_cache/
+*.py[cod]
+.coverage
+.coverage.*
+htmlcov/
+**/.venv/
+
+# Firebase CLI local cache and debug output
+**/.firebase/
+**/firebase-debug.log
+
+# Local coursework credentials
+03SQL-CourseWork/.env
+
+# Local agent configuration
+/opencode.json
+
 # IDE
 .vs/
 .vscode/

@@ -7,12 +7,14 @@ SELECT
     detail.ProductID,
     detail.SalesOrderID,
     detail.SalesOrderDetailID,
-    SUM(detail.LineTotal) AS TotalRevenueForProduct
-    
+    SUM(detail.LineTotal) AS TotalRevenueForProduct,
+    ROW_NUMBER() OVER (
+        ORDER BY detail.LineTotal DESC, detail.SalesOrderDetailID
+    ) AS RowNumberWithinProduct
 FROM SalesLT.SalesOrderDetail AS detail
 JOIN SalesLT.Product AS product
     ON product.ProductID = detail.ProductID
-GROUP BY 
+GROUP BY
     detail.ProductID,
     detail.LineTotal,
     product.Name,
