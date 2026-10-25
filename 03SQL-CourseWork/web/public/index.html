@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f6f4ee">
+  <meta name="description" content="Информационная поддержка социальной сети: публикации, документы, рекомендации и ответы с проверяемыми источниками.">
+  <title>Контекст — социальная сеть знаний</title>
+  <link rel="icon" href="./icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./styles.css">
+  <script src="./config.js"></script>
+  <script type="module" src="./app.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Перейти к содержимому</a>
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="brand" aria-label="Контекст">
+        <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
+        <span>контекст<span class="brand-period">.</span></span>
+      </div>
+      <div class="header-actions">
+        <span id="connection-status" class="status-pill" role="status">Нет сессии</span>
+        <span id="current-user" class="user-label" hidden></span>
+        <button id="sign-out" class="button button-quiet button-small" type="button" hidden>Выйти</button>
+      </div>
+    </div>
+  </header>
+
+  <main id="main" class="page-shell">
+    <section class="intro" aria-labelledby="page-title">
+      <div class="intro-copy">
+        <p class="eyebrow"><span class="eyebrow-line"></span> СООБЩЕСТВА · ЗНАНИЯ · ИСТОЧНИКИ</p>
+        <h1 id="page-title">Место, где разговор<br><em>становится знанием.</em></h1>
+        <p class="intro-description">Читайте публикации, делитесь документами и задавайте вопросы материалам доступных вам сообществ. Каждый ответ помощника ведёт к первоисточнику.</p>
+      </div>
+      <div class="intro-visual" aria-hidden="true">
+        <span class="visual-label visual-label-top">сообщество</span>
+        <span class="visual-node visual-node-one"></span><span class="visual-node visual-node-two"></span><span class="visual-node visual-node-three"></span>
+        <span class="visual-line visual-line-one"></span><span class="visual-line visual-line-two"></span><span class="visual-line visual-line-three"></span>
+        <span class="visual-center"><span>↗</span><small>знание<br>со связями</small></span>
+        <span class="visual-label visual-label-bottom">источник → ответ</span>
+      </div>
+    </section>
+
+    <section id="connection-panel" class="connection-card" aria-labelledby="connection-title">
+      <div class="section-heading compact">
+        <div>
+          <p class="eyebrow">01 / ПОДКЛЮЧЕНИЕ</p>
+          <h2 id="connection-title">Начните с защищённой сессии</h2>
+        </div>
+        <span class="outline-tag">API v1</span>
+      </div>
+      <p class="muted">Backend проверяет Firebase ID token при каждом запросе. Когда Firebase Auth настроен, войдите через Google; для интеграции можно вставить действующий ID token вручную. Токен хранится только в памяти этой вкладки.</p>
+      <p id="deployment-notice" class="hint" role="status" hidden></p>
+      <button id="firebase-signin" class="button button-outline firebase-button" type="button" hidden>Войти через Google</button>
+      <p id="auth-alternative" class="hint" hidden>Или подключитесь вручную с действующим Firebase ID token:</p>
+      <form id="session-form" class="connection-form">
+        <label class="field wide" for="api-base"><span>Адрес API</span><input id="api-base" name="apiBase" type="text" spellcheck="false" autocomplete="off" required aria-describedby="api-base-help"><small id="api-base-help">Например, /api для общего домена или https://api.example.org/api</small></label>
+        <label class="field wide" for="identity-token"><span>Firebase ID token</span><input id="identity-token" name="identityToken" type="password" autocomplete="off" spellcheck="false" required></label>
+        <button class="button button-primary" type="submit">Подключиться <span aria-hidden="true">↗</span></button>
+      </form>
+      <p id="connection-feedback" class="form-feedback" role="status" aria-live="polite"></p>
+    </section>
+
+    <div id="workspace" hidden>
+      <nav class="workspace-nav" aria-label="Разделы">
+        <button class="nav-button is-active" data-view="feed" type="button" aria-current="page"><span>01</span> Лента</button>
+        <button class="nav-button" data-view="communities" type="button"><span>02</span> Сообщества</button>
+        <button class="nav-button" data-view="documents" type="button"><span>03</span> Документы</button>
+        <button class="nav-button" data-view="assistant" type="button"><span>04</span> Спросить</button>
+      </nav>
+
+      <section id="view-feed" class="workspace-view" aria-labelledby="feed-title">
+        <div class="section-heading"><div><p class="eyebrow">ВАШЕ ПРОСТРАНСТВО</p><h2 id="feed-title">Лента рекомендаций</h2><p>Публикации и документы из доступных вам сообществ, с понятной причиной выбора.</p></div><button id="refresh-feed" class="button button-outline" type="button">Обновить ленту</button></div>
+        <div id="feed-list" class="card-list" aria-live="polite"></div>
+      </section>
+
+      <section id="view-communities" class="workspace-view" aria-labelledby="communities-title" hidden>
+        <div class="section-heading"><div><p class="eyebrow">ЛЮДИ И ТЕМЫ</p><h2 id="communities-title">Сообщества</h2><p>Открытые и те закрытые сообщества, к которым у вас есть доступ.</p></div><button id="refresh-communities" class="button button-outline" type="button">Обновить</button></div>
+        <div class="community-layout">
+          <aside class="community-sidebar" aria-label="Выбор сообщества">
+            <div id="community-list" class="community-list" aria-live="polite"></div>
+            <button id="more-communities" class="button button-quiet full" type="button" hidden>Показать ещё</button>
+            <details class="side-detail"><summary>Создать сообщество <span aria-hidden="true">+</span></summary>
+              <form id="create-community-form" class="stack-form">
+                <label class="field" for="community-name"><span>Название</span><input id="community-name" name="name" maxlength="160" required></label>
+                <label class="field" for="community-slug"><span>Адрес (slug)</span><input id="community-slug" name="slug" minlength="3" maxlength="100" pattern="[a-z0-9-]{3,100}" spellcheck="false" required></label>
+                <label class="field" for="community-description"><span>Описание</span><textarea id="community-description" name="description" maxlength="1000" rows="3"></textarea></label>
+                <label class="field" for="community-visibility"><span>Доступ</span><select id="community-visibility" name="visibility"><option value="PUBLIC">Открытое</option><option value="PRIVATE">Закрытое</option></select></label>
+                <button class="button button-primary full" type="submit">Создать</button>
+              </form>
+            </details>
+            <details class="side-detail"><summary>Вступить по ID <span aria-hidden="true">↗</span></summary>
+              <form id="join-by-id-form" class="stack-form">
+                <label class="field" for="join-community-id"><span>ID сообщества</span><input id="join-community-id" name="communityId" inputmode="numeric" pattern="[1-9][0-9]*" required></label>
+                <p class="hint">Для закрытого сообщества ID сообщает владелец. Материалы будут доступны после одобрения заявки.</p>
+                <button class="button button-primary full" type="submit">Вступить или подать заявку</button>
+              </form>
+            </details>
+          </aside>
+          <div id="community-detail" class="community-detail" aria-live="polite"></div>
+        </div>
+      </section>
+
+      <section id="view-documents" class="workspace-view" aria-labelledby="documents-title" hidden>
+        <div class="section-heading"><div><p class="eyebrow">МАТЕРИАЛЫ</p><h2 id="documents-title">Документы</h2><p>Текст, PDF и DOCX становятся доступными после обработки. Сканированные PDF распознаются на русском языке.</p></div></div>
+        <div class="document-layout">
+          <div class="panel">
+            <label class="field" for="document-community"><span>Сообщество</span><select id="document-community"></select></label>
+            <p id="document-write-hint" class="hint" hidden>Чтобы добавить документ, нужно быть активным участником этого сообщества.</p>
+            <div class="mode-switch" role="group" aria-label="Способ добавления"><button id="mode-text" class="mode-button is-active" type="button" aria-pressed="true">Вставить текст</button><button id="mode-file" class="mode-button" type="button" aria-pressed="false">Загрузить файл</button></div>
+            <form id="document-text-form" class="stack-form">
+              <label class="field" for="document-text-title"><span>Название</span><input id="document-text-title" name="title" maxlength="250" required></label>
+              <label class="field" for="document-text-body"><span>Текст</span><textarea id="document-text-body" name="text" rows="8" required></textarea></label>
+              <button class="button button-primary" type="submit">Добавить документ <span aria-hidden="true">↗</span></button>
+            </form>
+            <form id="document-file-form" class="stack-form" hidden>
+              <label class="field" for="document-file-title"><span>Название</span><input id="document-file-title" name="title" maxlength="250" required></label>
+              <label class="field" for="document-file"><span id="document-file-label">PDF или DOCX</span><input id="document-file" name="file" type="file" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" required></label>
+              <button class="button button-primary" type="submit">Загрузить файл <span aria-hidden="true">↗</span></button>
+            </form>
+          </div>
+          <div class="panel panel-secondary">
+            <h3>Материалы сообщества</h3>
+            <p class="muted">В списке — готовые документы. После загрузки следите за обработкой по ID.</p>
+            <div id="document-list" class="card-list compact-list" aria-live="polite"></div>
+            <button id="more-documents" class="button button-quiet" type="button" hidden>Показать ещё</button>
+            <form id="document-lookup-form" class="inline-form">
+              <label class="field" for="document-lookup-id"><span>Проверить статус по ID</span><input id="document-lookup-id" name="documentId" inputmode="numeric" pattern="[1-9][0-9]*" required></label>
+              <button class="button button-outline" type="submit">Проверить</button>
+            </form>
+            <div id="document-status" aria-live="polite"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-assistant" class="workspace-view" aria-labelledby="assistant-title" hidden>
+        <div class="section-heading"><div><p class="eyebrow">ПОИСК С ИСТОЧНИКАМИ</p><h2 id="assistant-title">Спросите материалы</h2><p>Помощник ищет только в доступных вам материалах и показывает проверяемые цитаты.</p></div></div>
+        <div class="assistant-layout">
+          <form id="rag-form" class="panel stack-form">
+            <p class="hint">Для ответа нужны индексированные материалы, сервис embeddings и модель ответа. Если модели недоступны, сервер вернёт 503.</p>
+            <label class="field" for="rag-question"><span>Ваш вопрос</span><textarea id="rag-question" name="question" maxlength="2000" rows="5" placeholder="Например: какие решения приняли по проекту?" required></textarea></label>
+            <label class="field" for="rag-community"><span>Где искать</span><select id="rag-community"><option value="">Во всех доступных сообществах</option></select></label>
+            <div class="assistant-form-footer"><span class="hint">Ответ может занять некоторое время.</span><button class="button button-primary" type="submit">Найти ответ <span aria-hidden="true">↗</span></button></div>
+          </form>
+          <div id="rag-result" class="answer-panel" aria-live="polite"><div class="answer-placeholder"><span aria-hidden="true">✳</span><h3>Ответ появится здесь</h3><p>Источники и выдержки будут показаны рядом с ним.</p></div></div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+  <dialog id="content-dialog" class="content-dialog" aria-labelledby="dialog-title"><div class="dialog-header"><h2 id="dialog-title">Источник</h2><button id="dialog-close" class="button button-quiet button-small" type="button" aria-label="Закрыть">✕</button></div><div id="dialog-content"></div></dialog>
+  <footer class="site-footer"><span>КОНТЕКСТ · КУРСОВАЯ РАБОТА</span><span>Ответы опираются на доступные источники</span></footer>
+</body>
+</html>

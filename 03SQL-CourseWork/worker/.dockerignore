@@ -1,0 +1,10 @@
+*
+!Dockerfile
+!Dockerfile.postgres
+!requirements.txt
+!requirements-postgres.txt
+!requirements-embed.txt
+!index_worker.py
+!postgres_index_worker.py
+!embed_service.py
+!pipeline.py

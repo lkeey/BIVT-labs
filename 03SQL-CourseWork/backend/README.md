@@ -1,0 +1,158 @@
+# HTTP API курсовой
+
+Go-сервер соединяет [веб-клиент](../web/README.md) с процедурами SQL Server 2025.
+SQL Server и T-SQL остаются канонической реализацией курсовой. Для публичной
+демонстрации сервер может вместо них вызвать совместимые функции PostgreSQL
+из `database/postgres/`; HTTP-контракт остаётся тем же.
+Браузер получает Firebase ID token; сервер проверяет подпись по открытым ключам
+Google, срок действия, проект и отзыв через Firebase Auth REST API. Ключ
+сервисного аккаунта для этой проверки не требуется. После проверки `UID` сопоставляется с
+`auth.UserAccount` через `auth.usp_GetOrCreateFirebaseUser`. Пользовательский
+`UserID` из JSON и URL никогда не служит личностью вызывающего.
+
+## Подготовка
+
+1. Для режима SQL Server примените скрипты из
+   [database/README.md](../database/README.md), включая `15-api-reads.sql`,
+   `16-index-worker.sql`, `17-auth-and-roles.sql`. Для `06-indexes.sql` нужен
+   установленный SQL Server Full-Text Search. Для PostgreSQL примените
+   отдельные миграции из `database/postgres/`.
+2. Создайте отдельного пользователя базы для backend. В SQL Server добавьте
+   его в роль `coursework_api`; в PostgreSQL предоставьте только права на
+   необходимые функции. Не используйте учётную запись администратора базы и
+   не выдавайте прямых прав на таблицы. Соединение с базой должно проверять
+   сертификат TLS. Для публичной копии порядок настройки ограниченных ролей
+   описан в [инструкции по PostgreSQL](../docs/postgres-demo.md#подключение-с-минимальными-правами).
+3. Настройте Firebase Auth и проект. Используйте Web API key из конфигурации
+   Firebase веб-приложения для запроса сведений о текущем пользователе.
+   Ограничьте его применимость Firebase API в настройках Google Cloud.
+4. Установите переменные окружения:
+
+| Переменная | Назначение |
+| --- | --- |
+| `SQLSERVER_DSN` | Строка подключения `sqlserver://user:password@host:1433?database=SocialNetworkDB&encrypt=true&TrustServerCertificate=false` |
+| `POSTGRES_DSN` или `DATABASE_URL` | Строка подключения PostgreSQL, например Neon `postgresql://...?...sslmode=verify-full`; задавайте вместо `SQLSERVER_DSN` |
+| `FIREBASE_PROJECT_ID` | Идентификатор именно того Firebase-проекта, чьи токены принимаются |
+| `FIREBASE_WEB_API_KEY` | Публичный Web API key того же Firebase-проекта; используется только с Firebase Auth `accounts:lookup` |
+| `CORS_ORIGIN` | Точный HTTPS origin веб-сайта, например `https://coursework.web.app`; при локальном запуске по инструкции сайта — `http://localhost:8080` |
+| `ADDR` или `PORT` | Адрес прослушивания; `ADDR` имеет приоритет, затем порт из `PORT`, по умолчанию `:8080` |
+| `MAX_DOCUMENT_BYTES` | Необязательный лимит файла/текста в байтах, от 1 до 10485760; по умолчанию 10485760 (10 МиБ) |
+| `EMBEDDING_SERVICE_URL` | URL сервиса из [worker/embed_service.py](../worker/README.md#приватный-сервис-вектора-вопроса), например `http://127.0.0.1:8765/embed`; обязателен для SQL Server, а PostgreSQL без него использует полнотекстовый поиск и граф |
+| `EMBEDDING_SERVICE_TOKEN` | Необязательный Bearer секрет сервиса вектора; соответствует его `COURSEWORK_EMBED_BEARER_TOKEN` |
+| `CHAT_COMPLETIONS_URL` | Доверенный OpenAI-совместимый маршрут, например `http://127.0.0.1:11434/v1/chat/completions` |
+| `CHAT_MODEL` | Название доступной модели ответа, максимум 120 символов |
+| `CHAT_API_KEY` | Необязательный Bearer ключ модели ответа; для локального Ollama может отсутствовать |
+| `CHAT_HEALTH_URL` | Необязательный GET-маршрут доступности; по умолчанию выводится `/v1/models` из `CHAT_COMPLETIONS_URL` |
+
+Задавайте только один тип подключения к базе. Секреты держите в окружении
+хостинга или локальном файле вне Git. Firebase Web API key сам по себе не даёт
+доступ к данным: права задаются Firebase и SQL. Проверка токена с отзывом
+делает сетевой запрос к Firebase на каждом HTTP-запросе: после проверки JWT
+сервер вызывает `accounts:lookup`, сверяет UID, `auth_time` с `validSince` и
+отклоняет заблокированную учётную запись. Ошибка Firebase закрывает доступ.
+Сервис embedding и модель ответа получают текст вопроса; модель ответа также
+получает до пяти цитат из доступных материалов. Используйте собственный
+доверенный endpoint или провайдера, которому можно передавать эти данные.
+Для HTTP без TLS код допускает только `localhost` или буквальный приватный IP.
+Для остальных адресов требуется HTTPS. `CHAT_HEALTH_URL` должен иметь тот же
+origin, что `CHAT_COMPLETIONS_URL`, поскольку проверка передаёт ключ модели.
+
+## Запуск
+
+Из этой папки:
+
+```sh
+go mod download
+go run .
+```
+
+Если `go` недоступен в `PATH`, в Arcadia-окружении работает `ya tool go run .`.
+Для контейнера предусмотрен [Dockerfile](Dockerfile).
+
+Для [Vercel Go Framework Preset](https://vercel.com/docs/functions/runtimes/go)
+укажите корневой каталог проекта `03SQL-CourseWork/backend`, preset `go` и
+секреты окружения из таблицы выше. `main.go` слушает выданный платформой
+`PORT`; отдельный файл `api/index.go` для этого режима не требуется. При
+развёртывании на Vercel установите `MAX_DOCUMENT_BYTES=4194304` (4 МиБ), чтобы
+загрузка проходила ниже лимита тела запроса платформы; без этой переменной
+локальный SQL Server сохраняет предел 10 МиБ.
+
+Для одновременного локального запуска сайта на `http://localhost:8080`
+и API задайте `ADDR=:8081` и `CORS_ORIGIN=http://localhost:8080`
+при запуске backend. В `web/public/config.js` укажите
+`apiBaseUrl: "http://localhost:8081/api"`. URL HTTP разрешён клиентом только
+для localhost; остальные обязательные переменные окружения остаются нужны.
+
+`GET /healthz` проверяет процесс, `GET /readyz` проверяет выбранную базу. Основные
+маршруты начинаются с `/api/v1`; к ним нужен заголовок
+`Authorization: Bearer <Firebase ID token>`.
+
+## Реализованные маршруты
+
+| Раздел | Маршруты |
+| --- | --- |
+| Личность | `GET /auth/sessions/current`, `GET /users/{userId}` |
+| Сообщества | `GET, POST /communities`, `GET /communities/{communityId}`, `GET, POST /communities/{communityId}/memberships`, `PATCH /communities/{communityId}/memberships/{userId}`, `DELETE /communities/{communityId}/memberships/current` |
+| Подписки | `PUT, DELETE /users/{userId}/follow` |
+| Контент | `GET, POST /communities/{communityId}/posts`, `GET, PATCH, DELETE /posts/{postId}`, `GET, POST /posts/{postId}/comments`, `GET, PATCH, DELETE /comments/{commentId}`, `PUT, DELETE /content/{contentId}/reaction`, `PUT /content/{contentId}/moderation/hide` |
+| Документы | `GET, POST /communities/{communityId}/documents`, `GET /documents/{documentId}`, `POST /documents/{documentId}/versions`, `GET /documents/{documentId}/file` |
+| Помощник | `GET /feed`, `POST /rag/queries`, `GET /rag/queries/{queryId}` |
+
+Полный контракт и схемы ответов описаны в [OpenAPI](../api/openapi.yaml).
+Большие SQL `bigint` передаются в JSON как строки, курсор страницы —
+URL-safe Base64 от последнего ID. Все чтения материалов выполняются через
+процедуры, которые проверяют текущие права и актуальную редакцию. `GET /feed`
+получает объяснимый рейтинг из SQL Graph.
+
+Загрузка документа принимает JSON `{ "title": "...", "text": "..." }` или
+`multipart/form-data` с полями `title` и `file` (PDF/DOCX). Предел задаётся
+`MAX_DOCUMENT_BYTES` и по умолчанию равен 10 МиБ.
+Статус `PROCESSING` сменится только после работы отдельного индексатора.
+
+`POST /rag/queries` проверяет модель ответа и, если настроен, сервис embeddings
+до записи запроса в SQL. Если обязательная зависимость недоступна, возвращает
+**503 `RAG_UNAVAILABLE`** без создания хода. В PostgreSQL можно оставить
+`EMBEDDING_SERVICE_URL` пустым после миграции 08: поиск будет использовать
+русский полнотекстовый индекс и граф, а ответ с цитатами по-прежнему создаст
+LLM. Канонический SQL Server и гибридный PostgreSQL-режим используют векторный
+поиск. При работающих сервисах backend:
+
+1. В гибридном режиме получает закреплённый 384-мерный `query:`-вектор из
+   embedding-сервиса и проверяет имя модели, SHA ревизии, размерность и норму.
+   В запасном PostgreSQL-режиме пропускает этот шаг.
+2. Создаёт SQL-сессию и ход, запускает гибридный поиск с графовыми именами
+   вопроса. SQL фильтрует источники по текущим правам пользователя.
+3. Повторно фиксирует максимум пять доступных фрагментов через
+   `assistant.usp_RecordRetrievedChunks`; только после этого передаёт их
+   модели ответа. Тексты материалов рассматриваются как данные, не инструкции.
+4. Проверяет ссылки `[1]`…`[5]` в ответе: ответ без ссылок, с неверным номером
+   или повреждённым форматом отвергается. Сохраняет только упомянутые цитаты
+   из точных подстрок с исходными координатами.
+   `assistant.usp_SaveRagAnswer` сверяет цитаты и права ещё раз. Если
+   источников нет, сохраняет `NO_SOURCES` без вызова модели ответа; при сбое
+   отмечает ход как `FAILED`.
+
+Маршрут дожидается завершения обработки (до 90 секунд) и затем возвращает
+`201` с `queryId`, текущим статусом и заголовком `Location`; веб-клиент читает результат через
+`GET /rag/queries/{queryId}`. Для хостинга нужен HTTP timeout больше 100
+секунд. Сейчас нет отдельной долговечной очереди генерации, поэтому после
+обрыва процесса между созданием хода и записью результата возможен ход
+`PENDING` до ручного восстановления. Число одновременно выполняемых запросов
+ограничивайте на входном reverse proxy.
+
+`GET /rag/queries/{queryId}` повторно проверяет все источники; при отзыве
+доступа возвращает 410 без текста ответа и цитат. Обмен токена на собственную
+сессию (`POST /auth/sessions`) и серверный logout не реализованы: Firebase
+ID token передаётся как Bearer на каждом запросе, а клиент при выходе
+удаляет его из памяти и завершает Firebase-сессию.
+
+## Проверка
+
+```sh
+go build ./...
+go vet ./...
+```
+
+Сборка и статический анализ проверяют Go-код; проверка маршрутов с живой БД
+требует SQL Server 2025 с Full-Text Search, применённых миграций и Firebase
+Auth проекта. Контейнерный образ из `Dockerfile` здесь отдельно не проверялся.

@@ -1,0 +1,22 @@
+[Unit]
+Description=SQL coursework Go API
+Wants=network-online.target mssql-server.service
+After=network-online.target mssql-server.service
+
+[Service]
+Type=simple
+User=coursework-api
+Group=coursework-api
+WorkingDirectory=/opt/sql-coursework/backend
+EnvironmentFile=/etc/sql-coursework/api.env
+ExecStart=/opt/sql-coursework/bin/coursework-api
+Restart=on-failure
+RestartSec=5s
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+
+[Install]
+WantedBy=multi-user.target

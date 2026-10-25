@@ -1,0 +1,4 @@
+interface:
+  display_name: "SQL-курсовая"
+  short_description: "Схема и запросы курсовой по социальной сети"
+  default_prompt: "Используй $sql-coursework для проектирования или ревью базы данных курсовой."

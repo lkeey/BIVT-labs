@@ -6,14 +6,20 @@ blocked=()
 
 while IFS= read -r -d '' path; do
   case "/${path}/" in
-    */.DS_Store/*|*/bin/*|*/obj/*)
+    */.DS_Store/*|*/__pycache__/*|*/.pytest_cache/*|*/.ruff_cache/*|*/.venv/*|*/.env/*|*/bin/*|*/obj/*|*/.gradle/*|*/build/*|*/htmlcov/*|*/opencode.json/*)
+      blocked+=("${path}")
+      ;;
+  esac
+
+  case "${path}" in
+    *.pyc|*.pyo|*.pyd|.coverage|*/.coverage|.coverage.*|*/.coverage.*|opencode.json|*/opencode.json)
       blocked+=("${path}")
       ;;
   esac
 done < <(git diff --cached --name-only --diff-filter=ACMR -z)
 
 if (( ${#blocked[@]} > 0 )); then
-  printf 'Commit rejected: generated files must not be tracked:\n' >&2
+  printf 'Commit rejected: local configuration and generated files must not be tracked:\n' >&2
   printf '  %s\n' "${blocked[@]}" >&2
   printf 'Remove them from the index with: git rm --cached -- <path>\n' >&2
   exit 1
