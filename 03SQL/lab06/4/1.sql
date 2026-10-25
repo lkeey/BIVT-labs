@@ -1,0 +1,28 @@
+USE AdventureWorksLT2019;
+GO
+
+IF OBJECT_ID(N'lab6.AuditLog', N'U') IS NULL
+    CREATE TABLE lab6.AuditLog
+    (
+        LogID INT NOT NULL PRIMARY KEY,
+        Message NVARCHAR(100)
+    );
+GO
+
+BEGIN TRANSACTION;
+INSERT INTO lab6.AuditLog (LogID, Message)
+VALUES (1, N'Первое'), (2, N'Второе'), (3, N'Третье');
+DELETE FROM lab6.AuditLog WHERE LogID IN (1, 2, 3);
+SELECT COUNT(*) AS RemainingRows FROM lab6.AuditLog;
+ROLLBACK TRANSACTION;
+GO
+
+BEGIN TRANSACTION;
+BEGIN TRY
+    TRUNCATE TABLE lab6.Orders;
+END TRY
+BEGIN CATCH
+    SELECT ERROR_NUMBER() AS ErrorNumber, ERROR_MESSAGE() AS ErrorMessage;
+END CATCH;
+IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
+GO

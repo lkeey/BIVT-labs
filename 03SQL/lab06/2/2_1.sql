@@ -1,0 +1,2 @@
+ALTER TABLE lab6.Customer
+    ADD Phone NVARCHAR(20) NULL;

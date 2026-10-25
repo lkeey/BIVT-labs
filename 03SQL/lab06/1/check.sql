@@ -1,0 +1,1 @@
+SELECT * FROM lab06.Lab06_DDL;
