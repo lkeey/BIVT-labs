@@ -1,7 +1,7 @@
--- CompanyName, TotalDue (Revenue), 
+-- CompanyName, TotalDue (Revenue),
 -- ранг (по уменьшению значений TotalDue) from SalesOrderHeader RankByRevenue
 
-SELECT 
+SELECT
     CompanyName,
     customer.CustomerID
     ,order_model.TotalDue AS 'Revenue'

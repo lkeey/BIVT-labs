@@ -1,0 +1,24 @@
+[Unit]
+Description=SQL coursework private question embedding service
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=coursework-embed
+Group=coursework-embed
+WorkingDirectory=/opt/sql-coursework/worker
+EnvironmentFile=/etc/sql-coursework/embed.env
+Environment=HF_HOME=/var/cache/sql-coursework-embed
+CacheDirectory=sql-coursework-embed
+ExecStart=/opt/sql-coursework/venv/bin/python /opt/sql-coursework/worker/embed_service.py --host 127.0.0.1
+Restart=on-failure
+RestartSec=10s
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+
+[Install]
+WantedBy=multi-user.target

@@ -5,11 +5,11 @@
 
 SELECT
     product_model.Name AS 'Name'
-    ,COUNT(*) AS 'Count of models'
+    ,product_model.ListPrice AS 'Price per model'
     ,SUM(order_detail.LineTotal) AS 'TotalRevenue'
 FROM SalesLT.Product AS product_model
 JOIN SalesLT.SalesOrderDetail AS order_detail
     ON order_detail.ProductID = product_model.ProductID
 WHERE product_model.ListPrice > 1000
-GROUP BY order_detail.ProductID, product_model.Name
+GROUP BY order_detail.ProductID, product_model.Name, product_model.ListPrice
 ORDER BY TotalRevenue DESC
