@@ -59,8 +59,8 @@ cd "02C#"
 
 ### SQL
 
-Для среды SQL Server лабораторных 01–03 и 05 нужны Docker Desktop и настройки
-из `03SQL/docker/README.md`:
+Для среды SQL Server лабораторных 01–03 и 05 нужны Colima и Docker CLI.
+Настройки приведены в `03SQL/docker/README.md`:
 
 ```bash
 cd 03SQL/docker
