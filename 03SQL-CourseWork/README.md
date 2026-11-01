@@ -32,7 +32,7 @@ Server 2019 и лабораторными работами.
 
 | Каталог | Назначение |
 | --- | --- |
-| [`architecture/`](architecture/README.md) | Общая карта системы и отдельная [понятная модель базы](architecture/database-model.md): таблицы, небольшие диаграммы и объяснение для защиты |
+| [`architecture/`](architecture/README.md) | Общая карта системы и отдельная [модель базы](architecture/database-model.md): поля, ключи и небольшие диаграммы для защиты |
 | [`database/`](database/README.md) | Канонические T-SQL-скрипты базы, SQL Graph, ACL, RAG и рекомендаций; в [`database/postgres/`](database/postgres/) — отдельная PostgreSQL-реализация для демонстрации |
 | [`docs/`](docs/architecture.md) | Архитектура, ER-диаграммы и принятые решения |
 | [`api/`](api/README.md) | Контракт HTTP API v1 на OpenAPI 3.1 и граница доверенного backend |
