@@ -1,5 +1,8 @@
 # Модель данных и ER-связи
 
+Единая компактная карта всех 33 таблиц, графа и API — в
+[architecture/README.md](../architecture/README.md).
+
 Источник проектных решений — [раздел 11 документа в Google Drive](https://docs.google.com/document/d/187AqSxvD9fiTLw3ExvQa6wspBZPqk7LPda7mL57pLCg/edit?usp=drivesdk).
 Все объекты находятся в **одной** базе `SocialNetworkDB` на SQL Server 2025.
 Префикс до точки обозначает схему SQL, а не отдельную базу. Архитектурные
