@@ -1,0 +1,781 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2440" height="2892" viewBox="0 0 2440 2892" role="img" aria-label="Все 33 таблицы SocialNetworkDB, их поля и связи">
+<defs>
+<marker id="fk-arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M 0 0 L 8 4 L 0 8 z" fill="#66789f"/></marker>
+<marker id="graph-arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M 0 0 L 8 4 L 0 8 z" fill="#219186"/></marker>
+</defs>
+<style>
+.canvas{fill:#fbfcff}.card{fill:#fff;stroke:#abb5c6;stroke-width:1.4}.header-rule{stroke:#cbd2de;stroke-width:1}
+.title{font:700 17px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:#1f2937;text-anchor:middle}
+.field-name{font:500 13px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:#283342}
+.field-type{font:400 12.5px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;fill:#526277}
+.field-flags{font:600 11px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;fill:#6d59a1}
+.fk-link{fill:none;stroke:#66789f;stroke-width:1.6;stroke-opacity:.43;marker-end:url(#fk-arrow)}
+.graph-link{fill:none;stroke:#219186;stroke-width:1.7;stroke-dasharray:6 4;stroke-opacity:.55;marker-end:url(#graph-arrow)}
+.fk-link:hover,.graph-link:hover{stroke-width:3;stroke-opacity:1}
+</style>
+<rect class="canvas" width="2440" height="2892"/>
+<g id="connections">
+<path class="fk-link" d="M 525 454.5 C 563 454.5, 563 182.5, 525 182.5"><title>FK: auth.UserProfile.UserID → auth.UserAccount.UserID</title></path>
+<path class="fk-link" d="M 525 995.5 C 571 995.5, 571 182.5, 525 182.5"><title>FK: social.Community.OwnerUserID → auth.UserAccount.UserID</title></path>
+<path class="fk-link" d="M 1145 992.5 C 1199 992.5, 1199 182.5, 1145 182.5"><title>FK: social.PostRevision.ContentID → social.ContentItem.ContentID</title></path>
+<path class="fk-link" d="M 675 1092.5 C 600 1092.5, 600 182.5, 525 182.5"><title>FK: social.PostRevision.EditedByUserID → auth.UserAccount.UserID</title></path>
+<path class="fk-link" d="M 1145 1289.5 C 1215 1289.5, 1215 182.5, 1145 182.5"><title>FK: social.CommentRevision.ContentID → social.ContentItem.ContentID</title></path>
+<path class="fk-link" d="M 1145 1536.5 C 1223 1536.5, 1223 182.5, 1145 182.5"><title>FK: social.DocumentDetail.ContentID → social.ContentItem.ContentID</title></path>
+<path class="fk-link" d="M 1145 1758.5 C 1231 1758.5, 1231 1536.5, 1145 1536.5"><title>FK: knowledge.DocumentVersion.ContentID → social.DocumentDetail.ContentID</title></path>
+<path class="fk-link" d="M 1295 207.5 C 1205 207.5, 1205 182.5, 1145 182.5"><title>FK: knowledge.SourceRevision.ContentID → social.ContentItem.ContentID</title></path>
+<path class="fk-link" d="M 1295 207.5 C 1210 207.5, 1210 992.5, 1145 992.5"><title>FK: knowledge.SourceRevision.ContentID → social.PostRevision.ContentID</title></path>
+<path class="fk-link" d="M 1295 232.5 C 1215 232.5, 1215 967.5, 1145 967.5"><title>FK: knowledge.SourceRevision.PostRevisionID → social.PostRevision.RevisionID</title></path>
+<path class="fk-link" d="M 1295 207.5 C 1220 207.5, 1220 1289.5, 1145 1289.5"><title>FK: knowledge.SourceRevision.ContentID → social.CommentRevision.ContentID</title></path>
+<path class="fk-link" d="M 1295 257.5 C 1225 257.5, 1225 1264.5, 1145 1264.5"><title>FK: knowledge.SourceRevision.CommentRevisionID → social.CommentRevision.RevisionID</title></path>
+<path class="fk-link" d="M 1295 207.5 C 1230 207.5, 1230 1758.5, 1145 1758.5"><title>FK: knowledge.SourceRevision.ContentID → knowledge.DocumentVersion.ContentID</title></path>
+<path class="fk-link" d="M 1295 282.5 C 1235 282.5, 1235 1733.5, 1145 1733.5"><title>FK: knowledge.SourceRevision.DocumentVersionID → knowledge.DocumentVersion.DocumentVersionID</title></path>
+<path class="fk-link" d="M 1765 579.5 C 1843 579.5, 1843 182.5, 1765 182.5"><title>FK: knowledge.Chunk.SourceRevisionID → knowledge.SourceRevision.SourceRevisionID</title></path>
+<path class="fk-link" d="M 1765 2111.5 C 1851 2111.5, 1851 554.5, 1765 554.5"><title>FK: knowledge.ChunkEmbedding.ChunkID → knowledge.Chunk.ChunkID</title></path>
+<path class="fk-link" d="M 1765 2136.5 C 1859 2136.5, 1859 1839.5, 1765 1839.5"><title>FK: knowledge.ChunkEmbedding.ModelID → knowledge.EmbeddingModel.ModelID</title></path>
+<path class="fk-link" d="M 1765 1245.5 C 1867 1245.5, 1867 554.5, 1765 554.5"><title>FK: knowledge.Mentions.EvidenceChunkID → knowledge.Chunk.ChunkID</title></path>
+<path class="fk-link" d="M 1765 1567.5 C 1803 1567.5, 1803 554.5, 1765 554.5"><title>FK: knowledge.EntityRelation.EvidenceChunkID → knowledge.Chunk.ChunkID</title></path>
+<path class="fk-link" d="M 1915 207.5 H 1875 V 52 H 565 V 182.5 H 525"><title>FK: assistant.RagSession.UserID → auth.UserAccount.UserID</title></path>
+<path class="fk-link" d="M 1915 257.5 H 1895 V 58 H 545 V 970.5 H 525"><title>FK: assistant.RagSession.CommunityID → social.Community.CommunityID</title></path>
+<path class="fk-link" d="M 2385 429.5 C 2447 429.5, 2447 182.5, 2385 182.5"><title>FK: assistant.RagTurn.SessionID → assistant.RagSession.SessionID</title></path>
+<path class="fk-link" d="M 2385 751.5 C 2455 751.5, 2455 404.5, 2385 404.5"><title>FK: assistant.RetrievalRun.TurnID → assistant.RagTurn.TurnID</title></path>
+<path class="fk-link" d="M 2385 973.5 C 2463 973.5, 2463 726.5, 2385 726.5"><title>FK: assistant.RetrievedChunk.RetrievalRunID → assistant.RetrievalRun.RetrievalRunID</title></path>
+<path class="fk-link" d="M 1915 998.5 C 1840 998.5, 1840 554.5, 1765 554.5"><title>FK: assistant.RetrievedChunk.ChunkID → knowledge.Chunk.ChunkID</title></path>
+<path class="fk-link" d="M 2385 1270.5 C 2479 1270.5, 2479 973.5, 2385 973.5"><title>FK: assistant.AnswerCitation.RetrievalRunID → assistant.RetrievedChunk.RetrievalRunID</title></path>
+<path class="fk-link" d="M 2385 1295.5 C 2487 1295.5, 2487 998.5, 2385 998.5"><title>FK: assistant.AnswerCitation.ChunkID → assistant.RetrievedChunk.ChunkID</title></path>
+<path class="fk-link" d="M 2385 1517.5 C 2423 1517.5, 2423 404.5, 2385 404.5"><title>FK: assistant.TurnFeedback.TurnID → assistant.RagTurn.TurnID</title></path>
+<path class="fk-link" d="M 1915 1542.5 H 1880 V 22 H 560 V 182.5 H 525"><title>FK: assistant.TurnFeedback.UserID → auth.UserAccount.UserID</title></path>
+<path class="fk-link" d="M 1915 1764.5 H 1875 V 28 H 565 V 182.5 H 525"><title>FK: assistant.RecommendationBatch.UserID → auth.UserAccount.UserID</title></path>
+<path class="fk-link" d="M 2385 1936.5 C 2447 1936.5, 2447 1739.5, 2385 1739.5"><title>FK: assistant.RecommendationItem.BatchID → assistant.RecommendationBatch.BatchID</title></path>
+<path class="fk-link" d="M 1915 1961.5 H 1890 V 40 H 1170 V 182.5 H 1145"><title>FK: assistant.RecommendationItem.ContentID → social.ContentItem.ContentID</title></path>
+<path class="fk-link" d="M 1915 2208.5 C 1845 2208.5, 1845 182.5, 1765 182.5"><title>FK: ops.IndexOutbox.SourceRevisionID → knowledge.SourceRevision.SourceRevisionID</title></path>
+<path class="fk-link" d="M 1915 2233.5 C 1850 2233.5, 1850 1839.5, 1765 1839.5"><title>FK: ops.IndexOutbox.ModelID → knowledge.EmbeddingModel.ModelID</title></path>
+<path class="fk-link" d="M 1915 2605.5 H 1875 V 58 H 565 V 182.5 H 525"><title>FK: ops.AuditEvent.ActorUserID → auth.UserAccount.UserID</title></path>
+<path class="fk-link" d="M 525 701.5 C 627 701.5, 627 182.5, 525 182.5"><title>FK: auth.ExternalIdentity.UserID → auth.UserAccount.UserID</title></path>
+<path class="graph-link" d="M 1765 554.5 C 1803 554.5, 1803 869.0, 1765 869.0"><title>knowledge.Chunk → knowledge.ChunkOf</title></path>
+<path class="graph-link" d="M 1295 869.0 C 1215 869.0, 1215 182.5, 1145 182.5"><title>knowledge.ChunkOf → social.ContentItem</title></path>
+<path class="graph-link" d="M 1765 554.5 C 1819 554.5, 1819 1188.0, 1765 1188.0"><title>knowledge.Chunk → knowledge.Mentions</title></path>
+<path class="graph-link" d="M 1765 1188.0 C 1827 1188.0, 1827 998.5, 1765 998.5"><title>knowledge.Mentions → knowledge.KnowledgeEntity</title></path>
+<path class="graph-link" d="M 1765 994.5 C 1835 994.5, 1835 1489.0, 1765 1489.0"><title>knowledge.KnowledgeEntity → knowledge.EntityRelation</title></path>
+<path class="graph-link" d="M 1295 1489.0 C 1217 1489.0, 1217 994.5, 1295 994.5"><title>knowledge.EntityRelation → knowledge.KnowledgeEntity</title></path>
+<path class="graph-link" d="M 525 178.5 C 611 178.5, 611 820.0, 525 820.0"><title>auth.UserAccount → social.Follows</title></path>
+<path class="graph-link" d="M 55 820.0 C -39 820.0, -39 178.5, 55 178.5"><title>social.Follows → auth.UserAccount</title></path>
+<path class="graph-link" d="M 525 182.5 C 627 182.5, 627 1235.0, 525 1235.0"><title>auth.UserAccount → social.MemberOf</title></path>
+<path class="graph-link" d="M 525 1235.0 C 563 1235.0, 563 970.5, 525 970.5"><title>social.MemberOf → social.Community</title></path>
+<path class="graph-link" d="M 525 182.5 C 605 182.5, 605 422.0, 675 422.0"><title>auth.UserAccount → social.Authored</title></path>
+<path class="graph-link" d="M 1145 422.0 C 1199 422.0, 1199 182.5, 1145 182.5"><title>social.Authored → social.ContentItem</title></path>
+<path class="graph-link" d="M 1145 182.5 C 1207 182.5, 1207 544.0, 1145 544.0"><title>social.ContentItem → social.PublishedIn</title></path>
+<path class="graph-link" d="M 675 544.0 C 585 544.0, 585 970.5, 525 970.5"><title>social.PublishedIn → social.Community</title></path>
+<path class="graph-link" d="M 1145 178.5 C 1223 178.5, 1223 670.0, 1145 670.0"><title>social.ContentItem → social.CommentOn</title></path>
+<path class="graph-link" d="M 675 670.0 C 589 670.0, 589 178.5, 675 178.5"><title>social.CommentOn → social.ContentItem</title></path>
+<path class="graph-link" d="M 525 182.5 C 600 182.5, 600 788.0, 675 788.0"><title>auth.UserAccount → social.ReactTo</title></path>
+<path class="graph-link" d="M 1145 788.0 C 1247 788.0, 1247 182.5, 1145 182.5"><title>social.ReactTo → social.ContentItem</title></path>
+</g>
+<g class="table" id="auth.UserAccount" data-kind="NODE">
+<rect class="card" x="55" y="130" width="470" height="224" rx="9"/>
+<path d="M 64 130 H 516 Q 525 130 525 139 V 170 H 55 V 139 Q 55 130 64 130 Z" fill="#eef3ff"/>
+<path d="M 56 170 H 524" class="header-rule"/>
+<rect x="55" y="130" width="4" height="224" rx="2" fill="#4870b8"/>
+<text class="title" x="290" y="156.0" >auth.UserAccount</text>
+<text class="field-name" x="69" y="188.0" >UserID</text>
+<text class="field-type" x="271" y="188.0" >BIGINT</text>
+<text class="field-flags" x="421" y="188.0" >PK</text>
+<text class="field-name" x="69" y="213.0" >Login</text>
+<text class="field-type" x="271" y="213.0" >NVARCHAR(80)</text>
+<text class="field-name" x="69" y="238.0" >EmailNormalized</text>
+<text class="field-type" x="271" y="238.0" >NVARCHAR(254)</text>
+<text class="field-name" x="69" y="263.0" >PasswordHash</text>
+<text class="field-type" x="271" y="263.0" >VARBINARY(64)</text>
+<text class="field-flags" x="421" y="263.0" >NULL</text>
+<text class="field-name" x="69" y="288.0" >AccountStatus</text>
+<text class="field-type" x="271" y="288.0" >VARCHAR(12)</text>
+<text class="field-name" x="69" y="313.0" >CreatedAt</text>
+<text class="field-type" x="271" y="313.0" >DATETIME2(3)</text>
+<text class="field-name" x="69" y="338.0" >UpdatedAt</text>
+<text class="field-type" x="271" y="338.0" >DATETIME2(3)</text>
+</g>
+<g class="table" id="auth.UserProfile" data-kind="TABLE">
+<rect class="card" x="55" y="402" width="470" height="174" rx="9"/>
+<path d="M 64 402 H 516 Q 525 402 525 411 V 442 H 55 V 411 Q 55 402 64 402 Z" fill="#eef3ff"/>
+<path d="M 56 442 H 524" class="header-rule"/>
+<rect x="55" y="402" width="4" height="174" rx="2" fill="#4870b8"/>
+<text class="title" x="290" y="428.0" >auth.UserProfile</text>
+<text class="field-name" x="69" y="460.0" >UserID</text>
+<text class="field-type" x="271" y="460.0" >BIGINT</text>
+<text class="field-flags" x="421" y="460.0" >PK FK</text>
+<text class="field-name" x="69" y="485.0" >DisplayName</text>
+<text class="field-type" x="271" y="485.0" >NVARCHAR(120)</text>
+<text class="field-name" x="69" y="510.0" >Bio</text>
+<text class="field-type" x="271" y="510.0" >NVARCHAR(1000)</text>
+<text class="field-flags" x="421" y="510.0" >NULL</text>
+<text class="field-name" x="69" y="535.0" >ProfileVisibility</text>
+<text class="field-type" x="271" y="535.0" >VARCHAR(8)</text>
+<text class="field-name" x="69" y="560.0" >UpdatedAt</text>
+<text class="field-type" x="271" y="560.0" >DATETIME2(3)</text>
+</g>
+<g class="table" id="auth.ExternalIdentity" data-kind="TABLE">
+<rect class="card" x="55" y="624" width="470" height="124" rx="9"/>
+<path d="M 64 624 H 516 Q 525 624 525 633 V 664 H 55 V 633 Q 55 624 64 624 Z" fill="#eef3ff"/>
+<path d="M 56 664 H 524" class="header-rule"/>
+<rect x="55" y="624" width="4" height="124" rx="2" fill="#4870b8"/>
+<text class="title" x="290" y="650.0" >auth.ExternalIdentity</text>
+<text class="field-name" x="69" y="682.0" >FirebaseUID</text>
+<text class="field-type" x="271" y="682.0" >NVARCHAR(128)</text>
+<text class="field-flags" x="421" y="682.0" >PK</text>
+<text class="field-name" x="69" y="707.0" >UserID</text>
+<text class="field-type" x="271" y="707.0" >BIGINT</text>
+<text class="field-flags" x="421" y="707.0" >FK</text>
+<text class="field-name" x="69" y="732.0" >CreatedAt</text>
+<text class="field-type" x="271" y="732.0" >DATETIME2(3)</text>
+</g>
+<g class="table" id="social.Follows" data-kind="EDGE">
+<rect class="card" x="55" y="796" width="470" height="74" rx="9"/>
+<path d="M 64 796 H 516 Q 525 796 525 805 V 836 H 55 V 805 Q 55 796 64 796 Z" fill="#edf8f6"/>
+<path d="M 56 836 H 524" class="header-rule"/>
+<rect x="55" y="796" width="4" height="74" rx="2" fill="#25847d"/>
+<text class="title" x="290" y="822.0" >social.Follows</text>
+<text class="field-name" x="69" y="854.0" >CreatedAt</text>
+<text class="field-type" x="271" y="854.0" >DATETIME2(3)</text>
+</g>
+<g class="table" id="social.Community" data-kind="NODE">
+<rect class="card" x="55" y="918" width="470" height="249" rx="9"/>
+<path d="M 64 918 H 516 Q 525 918 525 927 V 958 H 55 V 927 Q 55 918 64 918 Z" fill="#edf8f6"/>
+<path d="M 56 958 H 524" class="header-rule"/>
+<rect x="55" y="918" width="4" height="249" rx="2" fill="#25847d"/>
+<text class="title" x="290" y="944.0" >social.Community</text>
+<text class="field-name" x="69" y="976.0" >CommunityID</text>
+<text class="field-type" x="271" y="976.0" >BIGINT</text>
+<text class="field-flags" x="421" y="976.0" >PK</text>
+<text class="field-name" x="69" y="1001.0" >OwnerUserID</text>
+<text class="field-type" x="271" y="1001.0" >BIGINT</text>
+<text class="field-flags" x="421" y="1001.0" >FK</text>
+<text class="field-name" x="69" y="1026.0" >Slug</text>
+<text class="field-type" x="271" y="1026.0" >NVARCHAR(100)</text>
+<text class="field-name" x="69" y="1051.0" >CommunityName</text>
+<text class="field-type" x="271" y="1051.0" >NVARCHAR(160)</text>
+<text class="field-name" x="69" y="1076.0" >Description</text>
+<text class="field-type" x="271" y="1076.0" >NVARCHAR(1000)</text>
+<text class="field-flags" x="421" y="1076.0" >NULL</text>
+<text class="field-name" x="69" y="1101.0" >Visibility</text>
+<text class="field-type" x="271" y="1101.0" >VARCHAR(8)</text>
+<text class="field-name" x="69" y="1126.0" >Status</text>
+<text class="field-type" x="271" y="1126.0" >VARCHAR(12)</text>
+<text class="field-name" x="69" y="1151.0" >CreatedAt</text>
+<text class="field-type" x="271" y="1151.0" >DATETIME2(3)</text>
+</g>
+<g class="table" id="social.MemberOf" data-kind="EDGE">
+<rect class="card" x="55" y="1215" width="470" height="174" rx="9"/>
+<path d="M 64 1215 H 516 Q 525 1215 525 1224 V 1255 H 55 V 1224 Q 55 1215 64 1215 Z" fill="#edf8f6"/>
+<path d="M 56 1255 H 524" class="header-rule"/>
+<rect x="55" y="1215" width="4" height="174" rx="2" fill="#25847d"/>
+<text class="title" x="290" y="1241.0" >social.MemberOf</text>
+<text class="field-name" x="69" y="1273.0" >MembershipID</text>
+<text class="field-type" x="271" y="1273.0" >BIGINT</text>
+<text class="field-flags" x="421" y="1273.0" >PK</text>
+<text class="field-name" x="69" y="1298.0" >MemberStatus</text>
+<text class="field-type" x="271" y="1298.0" >VARCHAR(8)</text>
+<text class="field-name" x="69" y="1323.0" >Role</text>
+<text class="field-type" x="271" y="1323.0" >VARCHAR(10)</text>
+<text class="field-name" x="69" y="1348.0" >JoinedAt</text>
+<text class="field-type" x="271" y="1348.0" >DATETIME2(3)</text>
+<text class="field-name" x="69" y="1373.0" >EndedAt</text>
+<text class="field-type" x="271" y="1373.0" >DATETIME2(3)</text>
+<text class="field-flags" x="421" y="1373.0" >NULL</text>
+</g>
+<g class="table" id="social.ContentItem" data-kind="NODE">
+<rect class="card" x="675" y="130" width="470" height="224" rx="9"/>
+<path d="M 684 130 H 1136 Q 1145 130 1145 139 V 170 H 675 V 139 Q 675 130 684 130 Z" fill="#edf8f6"/>
+<path d="M 676 170 H 1144" class="header-rule"/>
+<rect x="675" y="130" width="4" height="224" rx="2" fill="#25847d"/>
+<text class="title" x="910" y="156.0" >social.ContentItem</text>
+<text class="field-name" x="689" y="188.0" >ContentID</text>
+<text class="field-type" x="891" y="188.0" >BIGINT</text>
+<text class="field-flags" x="1041" y="188.0" >PK</text>
+<text class="field-name" x="689" y="213.0" >Kind</text>
+<text class="field-type" x="891" y="213.0" >VARCHAR(8)</text>
+<text class="field-name" x="689" y="238.0" >ContentStatus</text>
+<text class="field-type" x="891" y="238.0" >VARCHAR(12)</text>
+<text class="field-name" x="689" y="263.0" >AllowRag</text>
+<text class="field-type" x="891" y="263.0" >BIT</text>
+<text class="field-name" x="689" y="288.0" >CreatedAt</text>
+<text class="field-type" x="891" y="288.0" >DATETIME2(3)</text>
+<text class="field-name" x="689" y="313.0" >UpdatedAt</text>
+<text class="field-type" x="891" y="313.0" >DATETIME2(3)</text>
+<text class="field-name" x="689" y="338.0" >PublishedAt</text>
+<text class="field-type" x="891" y="338.0" >DATETIME2(3)</text>
+<text class="field-flags" x="1041" y="338.0" >NULL</text>
+</g>
+<g class="table" id="social.Authored" data-kind="EDGE">
+<rect class="card" x="675" y="402" width="470" height="74" rx="9"/>
+<path d="M 684 402 H 1136 Q 1145 402 1145 411 V 442 H 675 V 411 Q 675 402 684 402 Z" fill="#edf8f6"/>
+<path d="M 676 442 H 1144" class="header-rule"/>
+<rect x="675" y="402" width="4" height="74" rx="2" fill="#25847d"/>
+<text class="title" x="910" y="428.0" >social.Authored</text>
+<text class="field-name" x="689" y="460.0" >CreatedAt</text>
+<text class="field-type" x="891" y="460.0" >DATETIME2(3)</text>
+</g>
+<g class="table" id="social.PublishedIn" data-kind="EDGE">
+<rect class="card" x="675" y="524" width="470" height="74" rx="9"/>
+<path d="M 684 524 H 1136 Q 1145 524 1145 533 V 564 H 675 V 533 Q 675 524 684 524 Z" fill="#edf8f6"/>
+<path d="M 676 564 H 1144" class="header-rule"/>
+<rect x="675" y="524" width="4" height="74" rx="2" fill="#25847d"/>
+<text class="title" x="910" y="550.0" >social.PublishedIn</text>
+<text class="field-name" x="689" y="582.0" >CreatedAt</text>
+<text class="field-type" x="891" y="582.0" >DATETIME2(3)</text>
+</g>
+<g class="table" id="social.CommentOn" data-kind="EDGE">
+<rect class="card" x="675" y="646" width="470" height="74" rx="9"/>
+<path d="M 684 646 H 1136 Q 1145 646 1145 655 V 686 H 675 V 655 Q 675 646 684 646 Z" fill="#edf8f6"/>
+<path d="M 676 686 H 1144" class="header-rule"/>
+<rect x="675" y="646" width="4" height="74" rx="2" fill="#25847d"/>
+<text class="title" x="910" y="672.0" >social.CommentOn</text>
+<text class="field-name" x="689" y="704.0" >CreatedAt</text>
+<text class="field-type" x="891" y="704.0" >DATETIME2(3)</text>
+</g>
+<g class="table" id="social.ReactTo" data-kind="EDGE">
+<rect class="card" x="675" y="768" width="470" height="99" rx="9"/>
+<path d="M 684 768 H 1136 Q 1145 768 1145 777 V 808 H 675 V 777 Q 675 768 684 768 Z" fill="#edf8f6"/>
+<path d="M 676 808 H 1144" class="header-rule"/>
+<rect x="675" y="768" width="4" height="99" rx="2" fill="#25847d"/>
+<text class="title" x="910" y="794.0" >social.ReactTo</text>
+<text class="field-name" x="689" y="826.0" >ReactionType</text>
+<text class="field-type" x="891" y="826.0" >VARCHAR(12)</text>
+<text class="field-name" x="689" y="851.0" >CreatedAt</text>
+<text class="field-type" x="891" y="851.0" >DATETIME2(3)</text>
+</g>
+<g class="table" id="social.PostRevision" data-kind="TABLE">
+<rect class="card" x="675" y="915" width="470" height="249" rx="9"/>
+<path d="M 684 915 H 1136 Q 1145 915 1145 924 V 955 H 675 V 924 Q 675 915 684 915 Z" fill="#edf8f6"/>
+<path d="M 676 955 H 1144" class="header-rule"/>
+<rect x="675" y="915" width="4" height="249" rx="2" fill="#25847d"/>
+<text class="title" x="910" y="941.0" >social.PostRevision</text>
+<text class="field-name" x="689" y="973.0" >RevisionID</text>
+<text class="field-type" x="891" y="973.0" >BIGINT</text>
+<text class="field-flags" x="1041" y="973.0" >PK</text>
+<text class="field-name" x="689" y="998.0" >ContentID</text>
+<text class="field-type" x="891" y="998.0" >BIGINT</text>
+<text class="field-flags" x="1041" y="998.0" >FK</text>
+<text class="field-name" x="689" y="1023.0" >RevisionNo</text>
+<text class="field-type" x="891" y="1023.0" >INT</text>
+<text class="field-name" x="689" y="1048.0" >Body</text>
+<text class="field-type" x="891" y="1048.0" >NVARCHAR(MAX)</text>
+<text class="field-name" x="689" y="1073.0" >ContentHash</text>
+<text class="field-type" x="891" y="1073.0" >BINARY(32)</text>
+<text class="field-name" x="689" y="1098.0" >EditedByUserID</text>
+<text class="field-type" x="891" y="1098.0" >BIGINT</text>
+<text class="field-flags" x="1041" y="1098.0" >FK</text>
+<text class="field-name" x="689" y="1123.0" >IsCurrent</text>
+<text class="field-type" x="891" y="1123.0" >BIT</text>
+<text class="field-name" x="689" y="1148.0" >ChangedAt</text>
+<text class="field-type" x="891" y="1148.0" >DATETIME2(3)</text>
+</g>
+<g class="table" id="social.CommentRevision" data-kind="TABLE">
+<rect class="card" x="675" y="1212" width="470" height="224" rx="9"/>
+<path d="M 684 1212 H 1136 Q 1145 1212 1145 1221 V 1252 H 675 V 1221 Q 675 1212 684 1212 Z" fill="#edf8f6"/>
+<path d="M 676 1252 H 1144" class="header-rule"/>
+<rect x="675" y="1212" width="4" height="224" rx="2" fill="#25847d"/>
+<text class="title" x="910" y="1238.0" >social.CommentRevision</text>
+<text class="field-name" x="689" y="1270.0" >RevisionID</text>
+<text class="field-type" x="891" y="1270.0" >BIGINT</text>
+<text class="field-flags" x="1041" y="1270.0" >PK</text>
+<text class="field-name" x="689" y="1295.0" >ContentID</text>
+<text class="field-type" x="891" y="1295.0" >BIGINT</text>
+<text class="field-flags" x="1041" y="1295.0" >FK</text>
+<text class="field-name" x="689" y="1320.0" >RevisionNo</text>
+<text class="field-type" x="891" y="1320.0" >INT</text>
+<text class="field-name" x="689" y="1345.0" >Body</text>
+<text class="field-type" x="891" y="1345.0" >NVARCHAR(MAX)</text>
+<text class="field-name" x="689" y="1370.0" >CommentStatus</text>
+<text class="field-type" x="891" y="1370.0" >VARCHAR(8)</text>
+<text class="field-name" x="689" y="1395.0" >IsCurrent</text>
+<text class="field-type" x="891" y="1395.0" >BIT</text>
+<text class="field-name" x="689" y="1420.0" >ChangedAt</text>
+<text class="field-type" x="891" y="1420.0" >DATETIME2(3)</text>
+</g>
+<g class="table" id="social.DocumentDetail" data-kind="TABLE">
+<rect class="card" x="675" y="1484" width="470" height="149" rx="9"/>
+<path d="M 684 1484 H 1136 Q 1145 1484 1145 1493 V 1524 H 675 V 1493 Q 675 1484 684 1484 Z" fill="#edf8f6"/>
+<path d="M 676 1524 H 1144" class="header-rule"/>
+<rect x="675" y="1484" width="4" height="149" rx="2" fill="#25847d"/>
+<text class="title" x="910" y="1510.0" >social.DocumentDetail</text>
+<text class="field-name" x="689" y="1542.0" >ContentID</text>
+<text class="field-type" x="891" y="1542.0" >BIGINT</text>
+<text class="field-flags" x="1041" y="1542.0" >PK FK</text>
+<text class="field-name" x="689" y="1567.0" >Title</text>
+<text class="field-type" x="891" y="1567.0" >NVARCHAR(250)</text>
+<text class="field-name" x="689" y="1592.0" >Description</text>
+<text class="field-type" x="891" y="1592.0" >NVARCHAR(2000)</text>
+<text class="field-flags" x="1041" y="1592.0" >NULL</text>
+<text class="field-name" x="689" y="1617.0" >DocumentStatus</text>
+<text class="field-type" x="891" y="1617.0" >VARCHAR(12)</text>
+</g>
+<g class="table" id="knowledge.DocumentVersion" data-kind="TABLE">
+<rect class="card" x="675" y="1681" width="470" height="399" rx="9"/>
+<path d="M 684 1681 H 1136 Q 1145 1681 1145 1690 V 1721 H 675 V 1690 Q 675 1681 684 1681 Z" fill="#f3f0ff"/>
+<path d="M 676 1721 H 1144" class="header-rule"/>
+<rect x="675" y="1681" width="4" height="399" rx="2" fill="#7653aa"/>
+<text class="title" x="910" y="1707.0" >knowledge.DocumentVersion</text>
+<text class="field-name" x="689" y="1739.0" >DocumentVersionID</text>
+<text class="field-type" x="891" y="1739.0" >BIGINT</text>
+<text class="field-flags" x="1041" y="1739.0" >PK</text>
+<text class="field-name" x="689" y="1764.0" >ContentID</text>
+<text class="field-type" x="891" y="1764.0" >BIGINT</text>
+<text class="field-flags" x="1041" y="1764.0" >FK</text>
+<text class="field-name" x="689" y="1789.0" >VersionNo</text>
+<text class="field-type" x="891" y="1789.0" >INT</text>
+<text class="field-name" x="689" y="1814.0" >FileName</text>
+<text class="field-type" x="891" y="1814.0" >NVARCHAR(260)</text>
+<text class="field-flags" x="1041" y="1814.0" >NULL</text>
+<text class="field-name" x="689" y="1839.0" >MimeType</text>
+<text class="field-type" x="891" y="1839.0" >VARCHAR(127)</text>
+<text class="field-name" x="689" y="1864.0" >FileBytes</text>
+<text class="field-type" x="891" y="1864.0" >VARBINARY(MAX)</text>
+<text class="field-flags" x="1041" y="1864.0" >NULL</text>
+<text class="field-name" x="689" y="1889.0" >PlainText</text>
+<text class="field-type" x="891" y="1889.0" >NVARCHAR(MAX)</text>
+<text class="field-flags" x="1041" y="1889.0" >NULL</text>
+<text class="field-name" x="689" y="1914.0" >SizeBytes</text>
+<text class="field-type" x="891" y="1914.0" >BIGINT</text>
+<text class="field-name" x="689" y="1939.0" >SHA256</text>
+<text class="field-type" x="891" y="1939.0" >BINARY(32)</text>
+<text class="field-name" x="689" y="1964.0" >IsCurrent</text>
+<text class="field-type" x="891" y="1964.0" >BIT</text>
+<text class="field-name" x="689" y="1989.0" >UploadStatus</text>
+<text class="field-type" x="891" y="1989.0" >VARCHAR(8)</text>
+<text class="field-name" x="689" y="2014.0" >OCRStatus</text>
+<text class="field-type" x="891" y="2014.0" >VARCHAR(10)</text>
+<text class="field-name" x="689" y="2039.0" >OcrEngineVersion</text>
+<text class="field-type" x="891" y="2039.0" >NVARCHAR(80)</text>
+<text class="field-flags" x="1041" y="2039.0" >NULL</text>
+<text class="field-name" x="689" y="2064.0" >CreatedAt</text>
+<text class="field-type" x="891" y="2064.0" >DATETIME2(3)</text>
+</g>
+<g class="table" id="knowledge.SourceRevision" data-kind="TABLE">
+<rect class="card" x="1295" y="130" width="470" height="324" rx="9"/>
+<path d="M 1304 130 H 1756 Q 1765 130 1765 139 V 170 H 1295 V 139 Q 1295 130 1304 130 Z" fill="#f3f0ff"/>
+<path d="M 1296 170 H 1764" class="header-rule"/>
+<rect x="1295" y="130" width="4" height="324" rx="2" fill="#7653aa"/>
+<text class="title" x="1530" y="156.0" >knowledge.SourceRevision</text>
+<text class="field-name" x="1309" y="188.0" >SourceRevisionID</text>
+<text class="field-type" x="1511" y="188.0" >BIGINT</text>
+<text class="field-flags" x="1661" y="188.0" >PK</text>
+<text class="field-name" x="1309" y="213.0" >ContentID</text>
+<text class="field-type" x="1511" y="213.0" >BIGINT</text>
+<text class="field-flags" x="1661" y="213.0" >FK</text>
+<text class="field-name" x="1309" y="238.0" >PostRevisionID</text>
+<text class="field-type" x="1511" y="238.0" >BIGINT</text>
+<text class="field-flags" x="1661" y="238.0" >FK NULL</text>
+<text class="field-name" x="1309" y="263.0" >CommentRevisionID</text>
+<text class="field-type" x="1511" y="263.0" >BIGINT</text>
+<text class="field-flags" x="1661" y="263.0" >FK NULL</text>
+<text class="field-name" x="1309" y="288.0" >DocumentVersionID</text>
+<text class="field-type" x="1511" y="288.0" >BIGINT</text>
+<text class="field-flags" x="1661" y="288.0" >FK NULL</text>
+<text class="field-name" x="1309" y="313.0" >IsCurrent</text>
+<text class="field-type" x="1511" y="313.0" >BIT</text>
+<text class="field-name" x="1309" y="338.0" >ProcessingStatus</text>
+<text class="field-type" x="1511" y="338.0" >VARCHAR(10)</text>
+<text class="field-name" x="1309" y="363.0" >ExtractedText</text>
+<text class="field-type" x="1511" y="363.0" >NVARCHAR(MAX)</text>
+<text class="field-flags" x="1661" y="363.0" >NULL</text>
+<text class="field-name" x="1309" y="388.0" >TextHash</text>
+<text class="field-type" x="1511" y="388.0" >BINARY(32)</text>
+<text class="field-flags" x="1661" y="388.0" >NULL</text>
+<text class="field-name" x="1309" y="413.0" >CreatedAt</text>
+<text class="field-type" x="1511" y="413.0" >DATETIME2(3)</text>
+<text class="field-name" x="1309" y="438.0" >ProcessedAt</text>
+<text class="field-type" x="1511" y="438.0" >DATETIME2(3)</text>
+<text class="field-flags" x="1661" y="438.0" >NULL</text>
+</g>
+<g class="table" id="knowledge.Chunk" data-kind="NODE">
+<rect class="card" x="1295" y="502" width="470" height="299" rx="9"/>
+<path d="M 1304 502 H 1756 Q 1765 502 1765 511 V 542 H 1295 V 511 Q 1295 502 1304 502 Z" fill="#f3f0ff"/>
+<path d="M 1296 542 H 1764" class="header-rule"/>
+<rect x="1295" y="502" width="4" height="299" rx="2" fill="#7653aa"/>
+<text class="title" x="1530" y="528.0" >knowledge.Chunk</text>
+<text class="field-name" x="1309" y="560.0" >ChunkID</text>
+<text class="field-type" x="1511" y="560.0" >BIGINT</text>
+<text class="field-flags" x="1661" y="560.0" >PK</text>
+<text class="field-name" x="1309" y="585.0" >SourceRevisionID</text>
+<text class="field-type" x="1511" y="585.0" >BIGINT</text>
+<text class="field-flags" x="1661" y="585.0" >FK</text>
+<text class="field-name" x="1309" y="610.0" >ChunkNo</text>
+<text class="field-type" x="1511" y="610.0" >INT</text>
+<text class="field-name" x="1309" y="635.0" >ChunkText</text>
+<text class="field-type" x="1511" y="635.0" >NVARCHAR(MAX)</text>
+<text class="field-name" x="1309" y="660.0" >PageNo</text>
+<text class="field-type" x="1511" y="660.0" >INT</text>
+<text class="field-flags" x="1661" y="660.0" >NULL</text>
+<text class="field-name" x="1309" y="685.0" >StartOffset</text>
+<text class="field-type" x="1511" y="685.0" >INT</text>
+<text class="field-name" x="1309" y="710.0" >EndOffset</text>
+<text class="field-type" x="1511" y="710.0" >INT</text>
+<text class="field-name" x="1309" y="735.0" >ChunkHash</text>
+<text class="field-type" x="1511" y="735.0" >BINARY(32)</text>
+<text class="field-name" x="1309" y="760.0" >ChunkStatus</text>
+<text class="field-type" x="1511" y="760.0" >VARCHAR(8)</text>
+<text class="field-name" x="1309" y="785.0" >CreatedAt</text>
+<text class="field-type" x="1511" y="785.0" >DATETIME2(3)</text>
+</g>
+<g class="table" id="knowledge.ChunkOf" data-kind="EDGE">
+<rect class="card" x="1295" y="849" width="470" height="49" rx="9"/>
+<path d="M 1304 849 H 1756 Q 1765 849 1765 858 V 889 H 1295 V 858 Q 1295 849 1304 849 Z" fill="#f3f0ff"/>
+<path d="M 1296 889 H 1764" class="header-rule"/>
+<rect x="1295" y="849" width="4" height="49" rx="2" fill="#7653aa"/>
+<text class="title" x="1530" y="875.0" >knowledge.ChunkOf</text>
+</g>
+<g class="table" id="knowledge.KnowledgeEntity" data-kind="NODE">
+<rect class="card" x="1295" y="946" width="470" height="174" rx="9"/>
+<path d="M 1304 946 H 1756 Q 1765 946 1765 955 V 986 H 1295 V 955 Q 1295 946 1304 946 Z" fill="#f3f0ff"/>
+<path d="M 1296 986 H 1764" class="header-rule"/>
+<rect x="1295" y="946" width="4" height="174" rx="2" fill="#7653aa"/>
+<text class="title" x="1530" y="972.0" >knowledge.KnowledgeEntity</text>
+<text class="field-name" x="1309" y="1004.0" >EntityID</text>
+<text class="field-type" x="1511" y="1004.0" >BIGINT</text>
+<text class="field-flags" x="1661" y="1004.0" >PK</text>
+<text class="field-name" x="1309" y="1029.0" >EntityType</text>
+<text class="field-type" x="1511" y="1029.0" >VARCHAR(14)</text>
+<text class="field-name" x="1309" y="1054.0" >EntityName</text>
+<text class="field-type" x="1511" y="1054.0" >NVARCHAR(500)</text>
+<text class="field-name" x="1309" y="1079.0" >ExtractorVersion</text>
+<text class="field-type" x="1511" y="1079.0" >NVARCHAR(80)</text>
+<text class="field-name" x="1309" y="1104.0" >CreatedAt</text>
+<text class="field-type" x="1511" y="1104.0" >DATETIME2(3)</text>
+</g>
+<g class="table" id="knowledge.Mentions" data-kind="EDGE">
+<rect class="card" x="1295" y="1168" width="470" height="249" rx="9"/>
+<path d="M 1304 1168 H 1756 Q 1765 1168 1765 1177 V 1208 H 1295 V 1177 Q 1295 1168 1304 1168 Z" fill="#f3f0ff"/>
+<path d="M 1296 1208 H 1764" class="header-rule"/>
+<rect x="1295" y="1168" width="4" height="249" rx="2" fill="#7653aa"/>
+<text class="title" x="1530" y="1194.0" >knowledge.Mentions</text>
+<text class="field-name" x="1309" y="1226.0" >MentionID</text>
+<text class="field-type" x="1511" y="1226.0" >BIGINT</text>
+<text class="field-flags" x="1661" y="1226.0" >PK</text>
+<text class="field-name" x="1309" y="1251.0" >EvidenceChunkID</text>
+<text class="field-type" x="1511" y="1251.0" >BIGINT</text>
+<text class="field-flags" x="1661" y="1251.0" >FK</text>
+<text class="field-name" x="1309" y="1276.0" >StartOffset</text>
+<text class="field-type" x="1511" y="1276.0" >INT</text>
+<text class="field-name" x="1309" y="1301.0" >EndOffset</text>
+<text class="field-type" x="1511" y="1301.0" >INT</text>
+<text class="field-name" x="1309" y="1326.0" >EvidenceText</text>
+<text class="field-type" x="1511" y="1326.0" >NVARCHAR(1000)</text>
+<text class="field-name" x="1309" y="1351.0" >Confidence</text>
+<text class="field-type" x="1511" y="1351.0" >DECIMAL(4,3)</text>
+<text class="field-name" x="1309" y="1376.0" >ExtractorVersion</text>
+<text class="field-type" x="1511" y="1376.0" >NVARCHAR(80)</text>
+<text class="field-name" x="1309" y="1401.0" >ExtractedAt</text>
+<text class="field-type" x="1511" y="1401.0" >DATETIME2(3)</text>
+</g>
+<g class="table" id="knowledge.EntityRelation" data-kind="EDGE">
+<rect class="card" x="1295" y="1465" width="470" height="274" rx="9"/>
+<path d="M 1304 1465 H 1756 Q 1765 1465 1765 1474 V 1505 H 1295 V 1474 Q 1295 1465 1304 1465 Z" fill="#f3f0ff"/>
+<path d="M 1296 1505 H 1764" class="header-rule"/>
+<rect x="1295" y="1465" width="4" height="274" rx="2" fill="#7653aa"/>
+<text class="title" x="1530" y="1491.0" >knowledge.EntityRelation</text>
+<text class="field-name" x="1309" y="1523.0" >RelationID</text>
+<text class="field-type" x="1511" y="1523.0" >BIGINT</text>
+<text class="field-flags" x="1661" y="1523.0" >PK</text>
+<text class="field-name" x="1309" y="1548.0" >PredicateCode</text>
+<text class="field-type" x="1511" y="1548.0" >VARCHAR(20)</text>
+<text class="field-name" x="1309" y="1573.0" >EvidenceChunkID</text>
+<text class="field-type" x="1511" y="1573.0" >BIGINT</text>
+<text class="field-flags" x="1661" y="1573.0" >FK</text>
+<text class="field-name" x="1309" y="1598.0" >StartOffset</text>
+<text class="field-type" x="1511" y="1598.0" >INT</text>
+<text class="field-name" x="1309" y="1623.0" >EndOffset</text>
+<text class="field-type" x="1511" y="1623.0" >INT</text>
+<text class="field-name" x="1309" y="1648.0" >EvidenceText</text>
+<text class="field-type" x="1511" y="1648.0" >NVARCHAR(1000)</text>
+<text class="field-name" x="1309" y="1673.0" >Confidence</text>
+<text class="field-type" x="1511" y="1673.0" >DECIMAL(4,3)</text>
+<text class="field-name" x="1309" y="1698.0" >ExtractorVersion</text>
+<text class="field-type" x="1511" y="1698.0" >NVARCHAR(80)</text>
+<text class="field-name" x="1309" y="1723.0" >ExtractedAt</text>
+<text class="field-type" x="1511" y="1723.0" >DATETIME2(3)</text>
+</g>
+<g class="table" id="knowledge.EmbeddingModel" data-kind="TABLE">
+<rect class="card" x="1295" y="1787" width="470" height="224" rx="9"/>
+<path d="M 1304 1787 H 1756 Q 1765 1787 1765 1796 V 1827 H 1295 V 1796 Q 1295 1787 1304 1787 Z" fill="#f3f0ff"/>
+<path d="M 1296 1827 H 1764" class="header-rule"/>
+<rect x="1295" y="1787" width="4" height="224" rx="2" fill="#7653aa"/>
+<text class="title" x="1530" y="1813.0" >knowledge.EmbeddingModel</text>
+<text class="field-name" x="1309" y="1845.0" >ModelID</text>
+<text class="field-type" x="1511" y="1845.0" >INT</text>
+<text class="field-flags" x="1661" y="1845.0" >PK</text>
+<text class="field-name" x="1309" y="1870.0" >Provider</text>
+<text class="field-type" x="1511" y="1870.0" >NVARCHAR(80)</text>
+<text class="field-name" x="1309" y="1895.0" >ModelName</text>
+<text class="field-type" x="1511" y="1895.0" >NVARCHAR(200)</text>
+<text class="field-name" x="1309" y="1920.0" >ModelVersion</text>
+<text class="field-type" x="1511" y="1920.0" >NVARCHAR(80)</text>
+<text class="field-name" x="1309" y="1945.0" >Dimensions</text>
+<text class="field-type" x="1511" y="1945.0" >INT</text>
+<text class="field-name" x="1309" y="1970.0" >IsActive</text>
+<text class="field-type" x="1511" y="1970.0" >BIT</text>
+<text class="field-name" x="1309" y="1995.0" >CreatedAt</text>
+<text class="field-type" x="1511" y="1995.0" >DATETIME2(3)</text>
+</g>
+<g class="table" id="knowledge.ChunkEmbedding" data-kind="TABLE">
+<rect class="card" x="1295" y="2059" width="470" height="149" rx="9"/>
+<path d="M 1304 2059 H 1756 Q 1765 2059 1765 2068 V 2099 H 1295 V 2068 Q 1295 2059 1304 2059 Z" fill="#f3f0ff"/>
+<path d="M 1296 2099 H 1764" class="header-rule"/>
+<rect x="1295" y="2059" width="4" height="149" rx="2" fill="#7653aa"/>
+<text class="title" x="1530" y="2085.0" >knowledge.ChunkEmbedding</text>
+<text class="field-name" x="1309" y="2117.0" >ChunkID</text>
+<text class="field-type" x="1511" y="2117.0" >BIGINT</text>
+<text class="field-flags" x="1661" y="2117.0" >PK FK</text>
+<text class="field-name" x="1309" y="2142.0" >ModelID</text>
+<text class="field-type" x="1511" y="2142.0" >INT</text>
+<text class="field-flags" x="1661" y="2142.0" >PK FK</text>
+<text class="field-name" x="1309" y="2167.0" >Embedding</text>
+<text class="field-type" x="1511" y="2167.0" >VECTOR(384)</text>
+<text class="field-name" x="1309" y="2192.0" >CreatedAt</text>
+<text class="field-type" x="1511" y="2192.0" >DATETIME2(3)</text>
+</g>
+<g class="table" id="assistant.RagSession" data-kind="TABLE">
+<rect class="card" x="1915" y="130" width="470" height="174" rx="9"/>
+<path d="M 1924 130 H 2376 Q 2385 130 2385 139 V 170 H 1915 V 139 Q 1915 130 1924 130 Z" fill="#fff4eb"/>
+<path d="M 1916 170 H 2384" class="header-rule"/>
+<rect x="1915" y="130" width="4" height="174" rx="2" fill="#ad6a34"/>
+<text class="title" x="2150" y="156.0" >assistant.RagSession</text>
+<text class="field-name" x="1929" y="188.0" >SessionID</text>
+<text class="field-type" x="2131" y="188.0" >BIGINT</text>
+<text class="field-flags" x="2281" y="188.0" >PK</text>
+<text class="field-name" x="1929" y="213.0" >UserID</text>
+<text class="field-type" x="2131" y="213.0" >BIGINT</text>
+<text class="field-flags" x="2281" y="213.0" >FK</text>
+<text class="field-name" x="1929" y="238.0" >Scope</text>
+<text class="field-type" x="2131" y="238.0" >VARCHAR(16)</text>
+<text class="field-name" x="1929" y="263.0" >CommunityID</text>
+<text class="field-type" x="2131" y="263.0" >BIGINT</text>
+<text class="field-flags" x="2281" y="263.0" >FK NULL</text>
+<text class="field-name" x="1929" y="288.0" >CreatedAt</text>
+<text class="field-type" x="2131" y="288.0" >DATETIME2(3)</text>
+</g>
+<g class="table" id="assistant.RagTurn" data-kind="TABLE">
+<rect class="card" x="1915" y="352" width="470" height="274" rx="9"/>
+<path d="M 1924 352 H 2376 Q 2385 352 2385 361 V 392 H 1915 V 361 Q 1915 352 1924 352 Z" fill="#fff4eb"/>
+<path d="M 1916 392 H 2384" class="header-rule"/>
+<rect x="1915" y="352" width="4" height="274" rx="2" fill="#ad6a34"/>
+<text class="title" x="2150" y="378.0" >assistant.RagTurn</text>
+<text class="field-name" x="1929" y="410.0" >TurnID</text>
+<text class="field-type" x="2131" y="410.0" >BIGINT</text>
+<text class="field-flags" x="2281" y="410.0" >PK</text>
+<text class="field-name" x="1929" y="435.0" >SessionID</text>
+<text class="field-type" x="2131" y="435.0" >BIGINT</text>
+<text class="field-flags" x="2281" y="435.0" >FK</text>
+<text class="field-name" x="1929" y="460.0" >TurnNo</text>
+<text class="field-type" x="2131" y="460.0" >INT</text>
+<text class="field-name" x="1929" y="485.0" >QuestionText</text>
+<text class="field-type" x="2131" y="485.0" >NVARCHAR(2000)</text>
+<text class="field-name" x="1929" y="510.0" >AnswerText</text>
+<text class="field-type" x="2131" y="510.0" >NVARCHAR(MAX)</text>
+<text class="field-flags" x="2281" y="510.0" >NULL</text>
+<text class="field-name" x="1929" y="535.0" >AnswerModel</text>
+<text class="field-type" x="2131" y="535.0" >NVARCHAR(120)</text>
+<text class="field-flags" x="2281" y="535.0" >NULL</text>
+<text class="field-name" x="1929" y="560.0" >GenerationStatus</text>
+<text class="field-type" x="2131" y="560.0" >VARCHAR(12)</text>
+<text class="field-name" x="1929" y="585.0" >CreatedAt</text>
+<text class="field-type" x="2131" y="585.0" >DATETIME2(3)</text>
+<text class="field-name" x="1929" y="610.0" >CompletedAt</text>
+<text class="field-type" x="2131" y="610.0" >DATETIME2(3)</text>
+<text class="field-flags" x="2281" y="610.0" >NULL</text>
+</g>
+<g class="table" id="assistant.RetrievalRun" data-kind="TABLE">
+<rect class="card" x="1915" y="674" width="470" height="199" rx="9"/>
+<path d="M 1924 674 H 2376 Q 2385 674 2385 683 V 714 H 1915 V 683 Q 1915 674 1924 674 Z" fill="#fff4eb"/>
+<path d="M 1916 714 H 2384" class="header-rule"/>
+<rect x="1915" y="674" width="4" height="199" rx="2" fill="#ad6a34"/>
+<text class="title" x="2150" y="700.0" >assistant.RetrievalRun</text>
+<text class="field-name" x="1929" y="732.0" >RetrievalRunID</text>
+<text class="field-type" x="2131" y="732.0" >BIGINT</text>
+<text class="field-flags" x="2281" y="732.0" >PK</text>
+<text class="field-name" x="1929" y="757.0" >TurnID</text>
+<text class="field-type" x="2131" y="757.0" >BIGINT</text>
+<text class="field-flags" x="2281" y="757.0" >FK</text>
+<text class="field-name" x="1929" y="782.0" >RetrievalMode</text>
+<text class="field-type" x="2131" y="782.0" >VARCHAR(16)</text>
+<text class="field-name" x="1929" y="807.0" >AccessPolicyVersion</text>
+<text class="field-type" x="2131" y="807.0" >NVARCHAR(40)</text>
+<text class="field-name" x="1929" y="832.0" >ModelVersion</text>
+<text class="field-type" x="2131" y="832.0" >NVARCHAR(120)</text>
+<text class="field-name" x="1929" y="857.0" >CreatedAt</text>
+<text class="field-type" x="2131" y="857.0" >DATETIME2(3)</text>
+</g>
+<g class="table" id="assistant.RetrievedChunk" data-kind="TABLE">
+<rect class="card" x="1915" y="921" width="470" height="224" rx="9"/>
+<path d="M 1924 921 H 2376 Q 2385 921 2385 930 V 961 H 1915 V 930 Q 1915 921 1924 921 Z" fill="#fff4eb"/>
+<path d="M 1916 961 H 2384" class="header-rule"/>
+<rect x="1915" y="921" width="4" height="224" rx="2" fill="#ad6a34"/>
+<text class="title" x="2150" y="947.0" >assistant.RetrievedChunk</text>
+<text class="field-name" x="1929" y="979.0" >RetrievalRunID</text>
+<text class="field-type" x="2131" y="979.0" >BIGINT</text>
+<text class="field-flags" x="2281" y="979.0" >PK FK</text>
+<text class="field-name" x="1929" y="1004.0" >ChunkID</text>
+<text class="field-type" x="2131" y="1004.0" >BIGINT</text>
+<text class="field-flags" x="2281" y="1004.0" >PK FK</text>
+<text class="field-name" x="1929" y="1029.0" >Rank</text>
+<text class="field-type" x="2131" y="1029.0" >INT</text>
+<text class="field-name" x="1929" y="1054.0" >VectorScore</text>
+<text class="field-type" x="2131" y="1054.0" >DECIMAL(9,6)</text>
+<text class="field-flags" x="2281" y="1054.0" >NULL</text>
+<text class="field-name" x="1929" y="1079.0" >TextScore</text>
+<text class="field-type" x="2131" y="1079.0" >DECIMAL(9,6)</text>
+<text class="field-flags" x="2281" y="1079.0" >NULL</text>
+<text class="field-name" x="1929" y="1104.0" >GraphScore</text>
+<text class="field-type" x="2131" y="1104.0" >DECIMAL(9,6)</text>
+<text class="field-flags" x="2281" y="1104.0" >NULL</text>
+<text class="field-name" x="1929" y="1129.0" >Snippet</text>
+<text class="field-type" x="2131" y="1129.0" >NVARCHAR(1000)</text>
+</g>
+<g class="table" id="assistant.AnswerCitation" data-kind="TABLE">
+<rect class="card" x="1915" y="1193" width="470" height="224" rx="9"/>
+<path d="M 1924 1193 H 2376 Q 2385 1193 2385 1202 V 1233 H 1915 V 1202 Q 1915 1193 1924 1193 Z" fill="#fff4eb"/>
+<path d="M 1916 1233 H 2384" class="header-rule"/>
+<rect x="1915" y="1193" width="4" height="224" rx="2" fill="#ad6a34"/>
+<text class="title" x="2150" y="1219.0" >assistant.AnswerCitation</text>
+<text class="field-name" x="1929" y="1251.0" >CitationID</text>
+<text class="field-type" x="2131" y="1251.0" >BIGINT</text>
+<text class="field-flags" x="2281" y="1251.0" >PK</text>
+<text class="field-name" x="1929" y="1276.0" >RetrievalRunID</text>
+<text class="field-type" x="2131" y="1276.0" >BIGINT</text>
+<text class="field-flags" x="2281" y="1276.0" >FK</text>
+<text class="field-name" x="1929" y="1301.0" >ChunkID</text>
+<text class="field-type" x="2131" y="1301.0" >BIGINT</text>
+<text class="field-flags" x="2281" y="1301.0" >FK</text>
+<text class="field-name" x="1929" y="1326.0" >QuoteText</text>
+<text class="field-type" x="2131" y="1326.0" >NVARCHAR(1000)</text>
+<text class="field-name" x="1929" y="1351.0" >PageNo</text>
+<text class="field-type" x="2131" y="1351.0" >INT</text>
+<text class="field-flags" x="2281" y="1351.0" >NULL</text>
+<text class="field-name" x="1929" y="1376.0" >StartOffset</text>
+<text class="field-type" x="2131" y="1376.0" >INT</text>
+<text class="field-name" x="1929" y="1401.0" >EndOffset</text>
+<text class="field-type" x="2131" y="1401.0" >INT</text>
+</g>
+<g class="table" id="assistant.TurnFeedback" data-kind="TABLE">
+<rect class="card" x="1915" y="1465" width="470" height="174" rx="9"/>
+<path d="M 1924 1465 H 2376 Q 2385 1465 2385 1474 V 1505 H 1915 V 1474 Q 1915 1465 1924 1465 Z" fill="#fff4eb"/>
+<path d="M 1916 1505 H 2384" class="header-rule"/>
+<rect x="1915" y="1465" width="4" height="174" rx="2" fill="#ad6a34"/>
+<text class="title" x="2150" y="1491.0" >assistant.TurnFeedback</text>
+<text class="field-name" x="1929" y="1523.0" >TurnID</text>
+<text class="field-type" x="2131" y="1523.0" >BIGINT</text>
+<text class="field-flags" x="2281" y="1523.0" >PK FK</text>
+<text class="field-name" x="1929" y="1548.0" >UserID</text>
+<text class="field-type" x="2131" y="1548.0" >BIGINT</text>
+<text class="field-flags" x="2281" y="1548.0" >FK</text>
+<text class="field-name" x="1929" y="1573.0" >Rating</text>
+<text class="field-type" x="2131" y="1573.0" >SMALLINT</text>
+<text class="field-name" x="1929" y="1598.0" >Comment</text>
+<text class="field-type" x="2131" y="1598.0" >NVARCHAR(1000)</text>
+<text class="field-flags" x="2281" y="1598.0" >NULL</text>
+<text class="field-name" x="1929" y="1623.0" >SubmittedAt</text>
+<text class="field-type" x="2131" y="1623.0" >DATETIME2(3)</text>
+</g>
+<g class="table" id="assistant.RecommendationBatch" data-kind="TABLE">
+<rect class="card" x="1915" y="1687" width="470" height="149" rx="9"/>
+<path d="M 1924 1687 H 2376 Q 2385 1687 2385 1696 V 1727 H 1915 V 1696 Q 1915 1687 1924 1687 Z" fill="#fff4eb"/>
+<path d="M 1916 1727 H 2384" class="header-rule"/>
+<rect x="1915" y="1687" width="4" height="149" rx="2" fill="#ad6a34"/>
+<text class="title" x="2150" y="1713.0" >assistant.RecommendationBatch</text>
+<text class="field-name" x="1929" y="1745.0" >BatchID</text>
+<text class="field-type" x="2131" y="1745.0" >BIGINT</text>
+<text class="field-flags" x="2281" y="1745.0" >PK</text>
+<text class="field-name" x="1929" y="1770.0" >UserID</text>
+<text class="field-type" x="2131" y="1770.0" >BIGINT</text>
+<text class="field-flags" x="2281" y="1770.0" >FK</text>
+<text class="field-name" x="1929" y="1795.0" >AlgorithmVersion</text>
+<text class="field-type" x="2131" y="1795.0" >NVARCHAR(40)</text>
+<text class="field-name" x="1929" y="1820.0" >CreatedAt</text>
+<text class="field-type" x="2131" y="1820.0" >DATETIME2(3)</text>
+</g>
+<g class="table" id="assistant.RecommendationItem" data-kind="TABLE">
+<rect class="card" x="1915" y="1884" width="470" height="199" rx="9"/>
+<path d="M 1924 1884 H 2376 Q 2385 1884 2385 1893 V 1924 H 1915 V 1893 Q 1915 1884 1924 1884 Z" fill="#fff4eb"/>
+<path d="M 1916 1924 H 2384" class="header-rule"/>
+<rect x="1915" y="1884" width="4" height="199" rx="2" fill="#ad6a34"/>
+<text class="title" x="2150" y="1910.0" >assistant.RecommendationItem</text>
+<text class="field-name" x="1929" y="1942.0" >BatchID</text>
+<text class="field-type" x="2131" y="1942.0" >BIGINT</text>
+<text class="field-flags" x="2281" y="1942.0" >PK FK</text>
+<text class="field-name" x="1929" y="1967.0" >ContentID</text>
+<text class="field-type" x="2131" y="1967.0" >BIGINT</text>
+<text class="field-flags" x="2281" y="1967.0" >PK FK</text>
+<text class="field-name" x="1929" y="1992.0" >Rank</text>
+<text class="field-type" x="2131" y="1992.0" >INT</text>
+<text class="field-name" x="1929" y="2017.0" >Score</text>
+<text class="field-type" x="2131" y="2017.0" >DECIMAL(9,6)</text>
+<text class="field-name" x="1929" y="2042.0" >ReasonCode</text>
+<text class="field-type" x="2131" y="2042.0" >VARCHAR(24)</text>
+<text class="field-name" x="1929" y="2067.0" >ReasonText</text>
+<text class="field-type" x="2131" y="2067.0" >NVARCHAR(500)</text>
+</g>
+<g class="table" id="ops.IndexOutbox" data-kind="TABLE">
+<rect class="card" x="1915" y="2131" width="470" height="349" rx="9"/>
+<path d="M 1924 2131 H 2376 Q 2385 2131 2385 2140 V 2171 H 1915 V 2140 Q 1915 2131 1924 2131 Z" fill="#f0f2f5"/>
+<path d="M 1916 2171 H 2384" class="header-rule"/>
+<rect x="1915" y="2131" width="4" height="349" rx="2" fill="#697586"/>
+<text class="title" x="2150" y="2157.0" >ops.IndexOutbox</text>
+<text class="field-name" x="1929" y="2189.0" >EventID</text>
+<text class="field-type" x="2131" y="2189.0" >BIGINT</text>
+<text class="field-flags" x="2281" y="2189.0" >PK</text>
+<text class="field-name" x="1929" y="2214.0" >SourceRevisionID</text>
+<text class="field-type" x="2131" y="2214.0" >BIGINT</text>
+<text class="field-flags" x="2281" y="2214.0" >FK</text>
+<text class="field-name" x="1929" y="2239.0" >ModelID</text>
+<text class="field-type" x="2131" y="2239.0" >INT</text>
+<text class="field-flags" x="2281" y="2239.0" >FK NULL</text>
+<text class="field-name" x="1929" y="2264.0" >Operation</text>
+<text class="field-type" x="2131" y="2264.0" >VARCHAR(8)</text>
+<text class="field-name" x="1929" y="2289.0" >EventStatus</text>
+<text class="field-type" x="2131" y="2289.0" >VARCHAR(8)</text>
+<text class="field-name" x="1929" y="2314.0" >AttemptCount</text>
+<text class="field-type" x="2131" y="2314.0" >INT</text>
+<text class="field-name" x="1929" y="2339.0" >CreatedAt</text>
+<text class="field-type" x="2131" y="2339.0" >DATETIME2(3)</text>
+<text class="field-name" x="1929" y="2364.0" >ClaimedAt</text>
+<text class="field-type" x="2131" y="2364.0" >DATETIME2(3)</text>
+<text class="field-flags" x="2281" y="2364.0" >NULL</text>
+<text class="field-name" x="1929" y="2389.0" >ClaimToken</text>
+<text class="field-type" x="2131" y="2389.0" >UNIQUEIDENTIFIER</text>
+<text class="field-flags" x="2281" y="2389.0" >NULL</text>
+<text class="field-name" x="1929" y="2414.0" >LeaseUntil</text>
+<text class="field-type" x="2131" y="2414.0" >DATETIME2(3)</text>
+<text class="field-flags" x="2281" y="2414.0" >NULL</text>
+<text class="field-name" x="1929" y="2439.0" >ProcessedAt</text>
+<text class="field-type" x="2131" y="2439.0" >DATETIME2(3)</text>
+<text class="field-flags" x="2281" y="2439.0" >NULL</text>
+<text class="field-name" x="1929" y="2464.0" >LastError</text>
+<text class="field-type" x="2131" y="2464.0" >NVARCHAR(2000)</text>
+<text class="field-flags" x="2281" y="2464.0" >NULL</text>
+</g>
+<g class="table" id="ops.AuditEvent" data-kind="TABLE">
+<rect class="card" x="1915" y="2528" width="470" height="249" rx="9"/>
+<path d="M 1924 2528 H 2376 Q 2385 2528 2385 2537 V 2568 H 1915 V 2537 Q 1915 2528 1924 2528 Z" fill="#f0f2f5"/>
+<path d="M 1916 2568 H 2384" class="header-rule"/>
+<rect x="1915" y="2528" width="4" height="249" rx="2" fill="#697586"/>
+<text class="title" x="2150" y="2554.0" >ops.AuditEvent</text>
+<text class="field-name" x="1929" y="2586.0" >AuditEventID</text>
+<text class="field-type" x="2131" y="2586.0" >BIGINT</text>
+<text class="field-flags" x="2281" y="2586.0" >PK</text>
+<text class="field-name" x="1929" y="2611.0" >ActorUserID</text>
+<text class="field-type" x="2131" y="2611.0" >BIGINT</text>
+<text class="field-flags" x="2281" y="2611.0" >FK NULL</text>
+<text class="field-name" x="1929" y="2636.0" >EventType</text>
+<text class="field-type" x="2131" y="2636.0" >VARCHAR(40)</text>
+<text class="field-name" x="1929" y="2661.0" >EntityType</text>
+<text class="field-type" x="2131" y="2661.0" >VARCHAR(40)</text>
+<text class="field-name" x="1929" y="2686.0" >EntityID</text>
+<text class="field-type" x="2131" y="2686.0" >BIGINT</text>
+<text class="field-name" x="1929" y="2711.0" >CorrelationID</text>
+<text class="field-type" x="2131" y="2711.0" >UNIQUEIDENTIFIER</text>
+<text class="field-flags" x="2281" y="2711.0" >NULL</text>
+<text class="field-name" x="1929" y="2736.0" >Details</text>
+<text class="field-type" x="2131" y="2736.0" >NVARCHAR(MAX)</text>
+<text class="field-flags" x="2281" y="2736.0" >NULL</text>
+<text class="field-name" x="1929" y="2761.0" >OccurredAt</text>
+<text class="field-type" x="2131" y="2761.0" >DATETIME2(3)</text>
+</g>
+</svg>
