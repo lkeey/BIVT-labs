@@ -1,0 +1,359 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="2195" viewBox="0 0 1200 2195" role="img" aria-label="Продуктовые таблицы социальной сети, их поля и связи">
+<defs>
+<marker id="fk-arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M 0 0 L 8 4 L 0 8 z" fill="#66789f"/></marker>
+<marker id="graph-arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M 0 0 L 8 4 L 0 8 z" fill="#219186"/></marker>
+</defs>
+<style>
+.canvas{fill:#fbfcff}.card{fill:#fff;stroke:#abb5c6;stroke-width:1.4}.header-rule{stroke:#cbd2de;stroke-width:1}
+.title{font:700 17px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:#1f2937;text-anchor:middle}
+.field-name{font:500 13px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:#283342}
+.field-type{font:400 12.5px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;fill:#526277}
+.field-flags{font:600 11px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;fill:#6d59a1}
+.fk-link{fill:none;stroke:#66789f;stroke-width:1.6;stroke-opacity:.43;marker-end:url(#fk-arrow)}
+.graph-link{fill:none;stroke:#219186;stroke-width:1.7;stroke-dasharray:6 4;stroke-opacity:.55;marker-end:url(#graph-arrow)}
+.fk-link:hover,.graph-link:hover{stroke-width:3;stroke-opacity:1}
+</style>
+<rect class="canvas" width="1200" height="2195"/>
+<g id="connections">
+<path class="fk-link" d="M 525 454.5 C 563 454.5, 563 182.5, 525 182.5"><title>FK: auth.UserProfile.UserID → auth.UserAccount.UserID</title></path>
+<path class="fk-link" d="M 525 995.5 C 571 995.5, 571 182.5, 525 182.5"><title>FK: social.Community.OwnerUserID → auth.UserAccount.UserID</title></path>
+<path class="fk-link" d="M 1145 992.5 C 1199 992.5, 1199 182.5, 1145 182.5"><title>FK: social.PostRevision.ContentID → social.ContentItem.ContentID</title></path>
+<path class="fk-link" d="M 675 1092.5 C 600 1092.5, 600 182.5, 525 182.5"><title>FK: social.PostRevision.EditedByUserID → auth.UserAccount.UserID</title></path>
+<path class="fk-link" d="M 1145 1289.5 C 1215 1289.5, 1215 182.5, 1145 182.5"><title>FK: social.CommentRevision.ContentID → social.ContentItem.ContentID</title></path>
+<path class="fk-link" d="M 1145 1536.5 C 1223 1536.5, 1223 182.5, 1145 182.5"><title>FK: social.DocumentDetail.ContentID → social.ContentItem.ContentID</title></path>
+<path class="fk-link" d="M 1145 1758.5 C 1231 1758.5, 1231 1536.5, 1145 1536.5"><title>FK: knowledge.DocumentVersion.ContentID → social.DocumentDetail.ContentID</title></path>
+<path class="fk-link" d="M 525 1514.5 C 619 1514.5, 619 182.5, 525 182.5"><title>FK: assistant.RecommendationBatch.UserID → auth.UserAccount.UserID</title></path>
+<path class="fk-link" d="M 525 1686.5 C 627 1686.5, 627 1489.5, 525 1489.5"><title>FK: assistant.RecommendationItem.BatchID → assistant.RecommendationBatch.BatchID</title></path>
+<path class="fk-link" d="M 525 1711.5 C 595 1711.5, 595 182.5, 675 182.5"><title>FK: assistant.RecommendationItem.ContentID → social.ContentItem.ContentID</title></path>
+<path class="fk-link" d="M 525 701.5 C 571 701.5, 571 182.5, 525 182.5"><title>FK: auth.ExternalIdentity.UserID → auth.UserAccount.UserID</title></path>
+<path class="graph-link" d="M 525 178.5 C 579 178.5, 579 820.0, 525 820.0"><title>auth.UserAccount → social.Follows</title></path>
+<path class="graph-link" d="M 55 820.0 C -7 820.0, -7 178.5, 55 178.5"><title>social.Follows → auth.UserAccount</title></path>
+<path class="graph-link" d="M 525 182.5 C 595 182.5, 595 1235.0, 525 1235.0"><title>auth.UserAccount → social.MemberOf</title></path>
+<path class="graph-link" d="M 525 1235.0 C 603 1235.0, 603 970.5, 525 970.5"><title>social.MemberOf → social.Community</title></path>
+<path class="graph-link" d="M 525 182.5 C 590 182.5, 590 422.0, 675 422.0"><title>auth.UserAccount → social.Authored</title></path>
+<path class="graph-link" d="M 1145 422.0 C 1239 422.0, 1239 182.5, 1145 182.5"><title>social.Authored → social.ContentItem</title></path>
+<path class="graph-link" d="M 1145 182.5 C 1247 182.5, 1247 544.0, 1145 544.0"><title>social.ContentItem → social.PublishedIn</title></path>
+<path class="graph-link" d="M 675 544.0 C 605 544.0, 605 970.5, 525 970.5"><title>social.PublishedIn → social.Community</title></path>
+<path class="graph-link" d="M 1145 178.5 C 1191 178.5, 1191 670.0, 1145 670.0"><title>social.ContentItem → social.CommentOn</title></path>
+<path class="graph-link" d="M 675 670.0 C 621 670.0, 621 178.5, 675 178.5"><title>social.CommentOn → social.ContentItem</title></path>
+<path class="graph-link" d="M 525 182.5 C 585 182.5, 585 788.0, 675 788.0"><title>auth.UserAccount → social.ReactTo</title></path>
+<path class="graph-link" d="M 1145 788.0 C 1215 788.0, 1215 182.5, 1145 182.5"><title>social.ReactTo → social.ContentItem</title></path>
+</g>
+<g class="table" id="auth.UserAccount" data-kind="NODE">
+<rect class="card" x="55" y="130" width="470" height="224" rx="9"/>
+<path d="M 64 130 H 516 Q 525 130 525 139 V 170 H 55 V 139 Q 55 130 64 130 Z" fill="#eef3ff"/>
+<path d="M 56 170 H 524" class="header-rule"/>
+<rect x="55" y="130" width="4" height="224" rx="2" fill="#4870b8"/>
+<text class="title" x="290" y="156.0" >auth.UserAccount</text>
+<text class="field-name" x="69" y="188.0" >UserID</text>
+<text class="field-type" x="271" y="188.0" >BIGINT</text>
+<text class="field-flags" x="421" y="188.0" >PK</text>
+<text class="field-name" x="69" y="213.0" >Login</text>
+<text class="field-type" x="271" y="213.0" >NVARCHAR(80)</text>
+<text class="field-name" x="69" y="238.0" >EmailNormalized</text>
+<text class="field-type" x="271" y="238.0" >NVARCHAR(254)</text>
+<text class="field-name" x="69" y="263.0" >PasswordHash</text>
+<text class="field-type" x="271" y="263.0" >VARBINARY(64)</text>
+<text class="field-flags" x="421" y="263.0" >NULL</text>
+<text class="field-name" x="69" y="288.0" >AccountStatus</text>
+<text class="field-type" x="271" y="288.0" >VARCHAR(12)</text>
+<text class="field-name" x="69" y="313.0" >CreatedAt</text>
+<text class="field-type" x="271" y="313.0" >DATETIME2(3)</text>
+<text class="field-name" x="69" y="338.0" >UpdatedAt</text>
+<text class="field-type" x="271" y="338.0" >DATETIME2(3)</text>
+</g>
+<g class="table" id="auth.UserProfile" data-kind="TABLE">
+<rect class="card" x="55" y="402" width="470" height="174" rx="9"/>
+<path d="M 64 402 H 516 Q 525 402 525 411 V 442 H 55 V 411 Q 55 402 64 402 Z" fill="#eef3ff"/>
+<path d="M 56 442 H 524" class="header-rule"/>
+<rect x="55" y="402" width="4" height="174" rx="2" fill="#4870b8"/>
+<text class="title" x="290" y="428.0" >auth.UserProfile</text>
+<text class="field-name" x="69" y="460.0" >UserID</text>
+<text class="field-type" x="271" y="460.0" >BIGINT</text>
+<text class="field-flags" x="421" y="460.0" >PK FK</text>
+<text class="field-name" x="69" y="485.0" >DisplayName</text>
+<text class="field-type" x="271" y="485.0" >NVARCHAR(120)</text>
+<text class="field-name" x="69" y="510.0" >Bio</text>
+<text class="field-type" x="271" y="510.0" >NVARCHAR(1000)</text>
+<text class="field-flags" x="421" y="510.0" >NULL</text>
+<text class="field-name" x="69" y="535.0" >ProfileVisibility</text>
+<text class="field-type" x="271" y="535.0" >VARCHAR(8)</text>
+<text class="field-name" x="69" y="560.0" >UpdatedAt</text>
+<text class="field-type" x="271" y="560.0" >DATETIME2(3)</text>
+</g>
+<g class="table" id="auth.ExternalIdentity" data-kind="TABLE">
+<rect class="card" x="55" y="624" width="470" height="124" rx="9"/>
+<path d="M 64 624 H 516 Q 525 624 525 633 V 664 H 55 V 633 Q 55 624 64 624 Z" fill="#eef3ff"/>
+<path d="M 56 664 H 524" class="header-rule"/>
+<rect x="55" y="624" width="4" height="124" rx="2" fill="#4870b8"/>
+<text class="title" x="290" y="650.0" >auth.ExternalIdentity</text>
+<text class="field-name" x="69" y="682.0" >FirebaseUID</text>
+<text class="field-type" x="271" y="682.0" >NVARCHAR(128)</text>
+<text class="field-flags" x="421" y="682.0" >PK</text>
+<text class="field-name" x="69" y="707.0" >UserID</text>
+<text class="field-type" x="271" y="707.0" >BIGINT</text>
+<text class="field-flags" x="421" y="707.0" >FK</text>
+<text class="field-name" x="69" y="732.0" >CreatedAt</text>
+<text class="field-type" x="271" y="732.0" >DATETIME2(3)</text>
+</g>
+<g class="table" id="social.Follows" data-kind="EDGE">
+<rect class="card" x="55" y="796" width="470" height="74" rx="9"/>
+<path d="M 64 796 H 516 Q 525 796 525 805 V 836 H 55 V 805 Q 55 796 64 796 Z" fill="#edf8f6"/>
+<path d="M 56 836 H 524" class="header-rule"/>
+<rect x="55" y="796" width="4" height="74" rx="2" fill="#25847d"/>
+<text class="title" x="290" y="822.0" >social.Follows</text>
+<text class="field-name" x="69" y="854.0" >CreatedAt</text>
+<text class="field-type" x="271" y="854.0" >DATETIME2(3)</text>
+</g>
+<g class="table" id="social.Community" data-kind="NODE">
+<rect class="card" x="55" y="918" width="470" height="249" rx="9"/>
+<path d="M 64 918 H 516 Q 525 918 525 927 V 958 H 55 V 927 Q 55 918 64 918 Z" fill="#edf8f6"/>
+<path d="M 56 958 H 524" class="header-rule"/>
+<rect x="55" y="918" width="4" height="249" rx="2" fill="#25847d"/>
+<text class="title" x="290" y="944.0" >social.Community</text>
+<text class="field-name" x="69" y="976.0" >CommunityID</text>
+<text class="field-type" x="271" y="976.0" >BIGINT</text>
+<text class="field-flags" x="421" y="976.0" >PK</text>
+<text class="field-name" x="69" y="1001.0" >OwnerUserID</text>
+<text class="field-type" x="271" y="1001.0" >BIGINT</text>
+<text class="field-flags" x="421" y="1001.0" >FK</text>
+<text class="field-name" x="69" y="1026.0" >Slug</text>
+<text class="field-type" x="271" y="1026.0" >NVARCHAR(100)</text>
+<text class="field-name" x="69" y="1051.0" >CommunityName</text>
+<text class="field-type" x="271" y="1051.0" >NVARCHAR(160)</text>
+<text class="field-name" x="69" y="1076.0" >Description</text>
+<text class="field-type" x="271" y="1076.0" >NVARCHAR(1000)</text>
+<text class="field-flags" x="421" y="1076.0" >NULL</text>
+<text class="field-name" x="69" y="1101.0" >Visibility</text>
+<text class="field-type" x="271" y="1101.0" >VARCHAR(8)</text>
+<text class="field-name" x="69" y="1126.0" >Status</text>
+<text class="field-type" x="271" y="1126.0" >VARCHAR(12)</text>
+<text class="field-name" x="69" y="1151.0" >CreatedAt</text>
+<text class="field-type" x="271" y="1151.0" >DATETIME2(3)</text>
+</g>
+<g class="table" id="social.MemberOf" data-kind="EDGE">
+<rect class="card" x="55" y="1215" width="470" height="174" rx="9"/>
+<path d="M 64 1215 H 516 Q 525 1215 525 1224 V 1255 H 55 V 1224 Q 55 1215 64 1215 Z" fill="#edf8f6"/>
+<path d="M 56 1255 H 524" class="header-rule"/>
+<rect x="55" y="1215" width="4" height="174" rx="2" fill="#25847d"/>
+<text class="title" x="290" y="1241.0" >social.MemberOf</text>
+<text class="field-name" x="69" y="1273.0" >MembershipID</text>
+<text class="field-type" x="271" y="1273.0" >BIGINT</text>
+<text class="field-flags" x="421" y="1273.0" >PK</text>
+<text class="field-name" x="69" y="1298.0" >MemberStatus</text>
+<text class="field-type" x="271" y="1298.0" >VARCHAR(8)</text>
+<text class="field-name" x="69" y="1323.0" >Role</text>
+<text class="field-type" x="271" y="1323.0" >VARCHAR(10)</text>
+<text class="field-name" x="69" y="1348.0" >JoinedAt</text>
+<text class="field-type" x="271" y="1348.0" >DATETIME2(3)</text>
+<text class="field-name" x="69" y="1373.0" >EndedAt</text>
+<text class="field-type" x="271" y="1373.0" >DATETIME2(3)</text>
+<text class="field-flags" x="421" y="1373.0" >NULL</text>
+</g>
+<g class="table" id="assistant.RecommendationBatch" data-kind="TABLE">
+<rect class="card" x="55" y="1437" width="470" height="149" rx="9"/>
+<path d="M 64 1437 H 516 Q 525 1437 525 1446 V 1477 H 55 V 1446 Q 55 1437 64 1437 Z" fill="#fff4eb"/>
+<path d="M 56 1477 H 524" class="header-rule"/>
+<rect x="55" y="1437" width="4" height="149" rx="2" fill="#ad6a34"/>
+<text class="title" x="290" y="1463.0" >assistant.RecommendationBatch</text>
+<text class="field-name" x="69" y="1495.0" >BatchID</text>
+<text class="field-type" x="271" y="1495.0" >BIGINT</text>
+<text class="field-flags" x="421" y="1495.0" >PK</text>
+<text class="field-name" x="69" y="1520.0" >UserID</text>
+<text class="field-type" x="271" y="1520.0" >BIGINT</text>
+<text class="field-flags" x="421" y="1520.0" >FK</text>
+<text class="field-name" x="69" y="1545.0" >AlgorithmVersion</text>
+<text class="field-type" x="271" y="1545.0" >NVARCHAR(40)</text>
+<text class="field-name" x="69" y="1570.0" >CreatedAt</text>
+<text class="field-type" x="271" y="1570.0" >DATETIME2(3)</text>
+</g>
+<g class="table" id="assistant.RecommendationItem" data-kind="TABLE">
+<rect class="card" x="55" y="1634" width="470" height="199" rx="9"/>
+<path d="M 64 1634 H 516 Q 525 1634 525 1643 V 1674 H 55 V 1643 Q 55 1634 64 1634 Z" fill="#fff4eb"/>
+<path d="M 56 1674 H 524" class="header-rule"/>
+<rect x="55" y="1634" width="4" height="199" rx="2" fill="#ad6a34"/>
+<text class="title" x="290" y="1660.0" >assistant.RecommendationItem</text>
+<text class="field-name" x="69" y="1692.0" >BatchID</text>
+<text class="field-type" x="271" y="1692.0" >BIGINT</text>
+<text class="field-flags" x="421" y="1692.0" >PK FK</text>
+<text class="field-name" x="69" y="1717.0" >ContentID</text>
+<text class="field-type" x="271" y="1717.0" >BIGINT</text>
+<text class="field-flags" x="421" y="1717.0" >PK FK</text>
+<text class="field-name" x="69" y="1742.0" >Rank</text>
+<text class="field-type" x="271" y="1742.0" >INT</text>
+<text class="field-name" x="69" y="1767.0" >Score</text>
+<text class="field-type" x="271" y="1767.0" >DECIMAL(9,6)</text>
+<text class="field-name" x="69" y="1792.0" >ReasonCode</text>
+<text class="field-type" x="271" y="1792.0" >VARCHAR(24)</text>
+<text class="field-name" x="69" y="1817.0" >ReasonText</text>
+<text class="field-type" x="271" y="1817.0" >NVARCHAR(500)</text>
+</g>
+<g class="table" id="social.ContentItem" data-kind="NODE">
+<rect class="card" x="675" y="130" width="470" height="224" rx="9"/>
+<path d="M 684 130 H 1136 Q 1145 130 1145 139 V 170 H 675 V 139 Q 675 130 684 130 Z" fill="#edf8f6"/>
+<path d="M 676 170 H 1144" class="header-rule"/>
+<rect x="675" y="130" width="4" height="224" rx="2" fill="#25847d"/>
+<text class="title" x="910" y="156.0" >social.ContentItem</text>
+<text class="field-name" x="689" y="188.0" >ContentID</text>
+<text class="field-type" x="891" y="188.0" >BIGINT</text>
+<text class="field-flags" x="1041" y="188.0" >PK</text>
+<text class="field-name" x="689" y="213.0" >Kind</text>
+<text class="field-type" x="891" y="213.0" >VARCHAR(8)</text>
+<text class="field-name" x="689" y="238.0" >ContentStatus</text>
+<text class="field-type" x="891" y="238.0" >VARCHAR(12)</text>
+<text class="field-name" x="689" y="263.0" >AllowRag</text>
+<text class="field-type" x="891" y="263.0" >BIT</text>
+<text class="field-name" x="689" y="288.0" >CreatedAt</text>
+<text class="field-type" x="891" y="288.0" >DATETIME2(3)</text>
+<text class="field-name" x="689" y="313.0" >UpdatedAt</text>
+<text class="field-type" x="891" y="313.0" >DATETIME2(3)</text>
+<text class="field-name" x="689" y="338.0" >PublishedAt</text>
+<text class="field-type" x="891" y="338.0" >DATETIME2(3)</text>
+<text class="field-flags" x="1041" y="338.0" >NULL</text>
+</g>
+<g class="table" id="social.Authored" data-kind="EDGE">
+<rect class="card" x="675" y="402" width="470" height="74" rx="9"/>
+<path d="M 684 402 H 1136 Q 1145 402 1145 411 V 442 H 675 V 411 Q 675 402 684 402 Z" fill="#edf8f6"/>
+<path d="M 676 442 H 1144" class="header-rule"/>
+<rect x="675" y="402" width="4" height="74" rx="2" fill="#25847d"/>
+<text class="title" x="910" y="428.0" >social.Authored</text>
+<text class="field-name" x="689" y="460.0" >CreatedAt</text>
+<text class="field-type" x="891" y="460.0" >DATETIME2(3)</text>
+</g>
+<g class="table" id="social.PublishedIn" data-kind="EDGE">
+<rect class="card" x="675" y="524" width="470" height="74" rx="9"/>
+<path d="M 684 524 H 1136 Q 1145 524 1145 533 V 564 H 675 V 533 Q 675 524 684 524 Z" fill="#edf8f6"/>
+<path d="M 676 564 H 1144" class="header-rule"/>
+<rect x="675" y="524" width="4" height="74" rx="2" fill="#25847d"/>
+<text class="title" x="910" y="550.0" >social.PublishedIn</text>
+<text class="field-name" x="689" y="582.0" >CreatedAt</text>
+<text class="field-type" x="891" y="582.0" >DATETIME2(3)</text>
+</g>
+<g class="table" id="social.CommentOn" data-kind="EDGE">
+<rect class="card" x="675" y="646" width="470" height="74" rx="9"/>
+<path d="M 684 646 H 1136 Q 1145 646 1145 655 V 686 H 675 V 655 Q 675 646 684 646 Z" fill="#edf8f6"/>
+<path d="M 676 686 H 1144" class="header-rule"/>
+<rect x="675" y="646" width="4" height="74" rx="2" fill="#25847d"/>
+<text class="title" x="910" y="672.0" >social.CommentOn</text>
+<text class="field-name" x="689" y="704.0" >CreatedAt</text>
+<text class="field-type" x="891" y="704.0" >DATETIME2(3)</text>
+</g>
+<g class="table" id="social.ReactTo" data-kind="EDGE">
+<rect class="card" x="675" y="768" width="470" height="99" rx="9"/>
+<path d="M 684 768 H 1136 Q 1145 768 1145 777 V 808 H 675 V 777 Q 675 768 684 768 Z" fill="#edf8f6"/>
+<path d="M 676 808 H 1144" class="header-rule"/>
+<rect x="675" y="768" width="4" height="99" rx="2" fill="#25847d"/>
+<text class="title" x="910" y="794.0" >social.ReactTo</text>
+<text class="field-name" x="689" y="826.0" >ReactionType</text>
+<text class="field-type" x="891" y="826.0" >VARCHAR(12)</text>
+<text class="field-name" x="689" y="851.0" >CreatedAt</text>
+<text class="field-type" x="891" y="851.0" >DATETIME2(3)</text>
+</g>
+<g class="table" id="social.PostRevision" data-kind="TABLE">
+<rect class="card" x="675" y="915" width="470" height="249" rx="9"/>
+<path d="M 684 915 H 1136 Q 1145 915 1145 924 V 955 H 675 V 924 Q 675 915 684 915 Z" fill="#edf8f6"/>
+<path d="M 676 955 H 1144" class="header-rule"/>
+<rect x="675" y="915" width="4" height="249" rx="2" fill="#25847d"/>
+<text class="title" x="910" y="941.0" >social.PostRevision</text>
+<text class="field-name" x="689" y="973.0" >RevisionID</text>
+<text class="field-type" x="891" y="973.0" >BIGINT</text>
+<text class="field-flags" x="1041" y="973.0" >PK</text>
+<text class="field-name" x="689" y="998.0" >ContentID</text>
+<text class="field-type" x="891" y="998.0" >BIGINT</text>
+<text class="field-flags" x="1041" y="998.0" >FK</text>
+<text class="field-name" x="689" y="1023.0" >RevisionNo</text>
+<text class="field-type" x="891" y="1023.0" >INT</text>
+<text class="field-name" x="689" y="1048.0" >Body</text>
+<text class="field-type" x="891" y="1048.0" >NVARCHAR(MAX)</text>
+<text class="field-name" x="689" y="1073.0" >ContentHash</text>
+<text class="field-type" x="891" y="1073.0" >BINARY(32)</text>
+<text class="field-name" x="689" y="1098.0" >EditedByUserID</text>
+<text class="field-type" x="891" y="1098.0" >BIGINT</text>
+<text class="field-flags" x="1041" y="1098.0" >FK</text>
+<text class="field-name" x="689" y="1123.0" >IsCurrent</text>
+<text class="field-type" x="891" y="1123.0" >BIT</text>
+<text class="field-name" x="689" y="1148.0" >ChangedAt</text>
+<text class="field-type" x="891" y="1148.0" >DATETIME2(3)</text>
+</g>
+<g class="table" id="social.CommentRevision" data-kind="TABLE">
+<rect class="card" x="675" y="1212" width="470" height="224" rx="9"/>
+<path d="M 684 1212 H 1136 Q 1145 1212 1145 1221 V 1252 H 675 V 1221 Q 675 1212 684 1212 Z" fill="#edf8f6"/>
+<path d="M 676 1252 H 1144" class="header-rule"/>
+<rect x="675" y="1212" width="4" height="224" rx="2" fill="#25847d"/>
+<text class="title" x="910" y="1238.0" >social.CommentRevision</text>
+<text class="field-name" x="689" y="1270.0" >RevisionID</text>
+<text class="field-type" x="891" y="1270.0" >BIGINT</text>
+<text class="field-flags" x="1041" y="1270.0" >PK</text>
+<text class="field-name" x="689" y="1295.0" >ContentID</text>
+<text class="field-type" x="891" y="1295.0" >BIGINT</text>
+<text class="field-flags" x="1041" y="1295.0" >FK</text>
+<text class="field-name" x="689" y="1320.0" >RevisionNo</text>
+<text class="field-type" x="891" y="1320.0" >INT</text>
+<text class="field-name" x="689" y="1345.0" >Body</text>
+<text class="field-type" x="891" y="1345.0" >NVARCHAR(MAX)</text>
+<text class="field-name" x="689" y="1370.0" >CommentStatus</text>
+<text class="field-type" x="891" y="1370.0" >VARCHAR(8)</text>
+<text class="field-name" x="689" y="1395.0" >IsCurrent</text>
+<text class="field-type" x="891" y="1395.0" >BIT</text>
+<text class="field-name" x="689" y="1420.0" >ChangedAt</text>
+<text class="field-type" x="891" y="1420.0" >DATETIME2(3)</text>
+</g>
+<g class="table" id="social.DocumentDetail" data-kind="TABLE">
+<rect class="card" x="675" y="1484" width="470" height="149" rx="9"/>
+<path d="M 684 1484 H 1136 Q 1145 1484 1145 1493 V 1524 H 675 V 1493 Q 675 1484 684 1484 Z" fill="#edf8f6"/>
+<path d="M 676 1524 H 1144" class="header-rule"/>
+<rect x="675" y="1484" width="4" height="149" rx="2" fill="#25847d"/>
+<text class="title" x="910" y="1510.0" >social.DocumentDetail</text>
+<text class="field-name" x="689" y="1542.0" >ContentID</text>
+<text class="field-type" x="891" y="1542.0" >BIGINT</text>
+<text class="field-flags" x="1041" y="1542.0" >PK FK</text>
+<text class="field-name" x="689" y="1567.0" >Title</text>
+<text class="field-type" x="891" y="1567.0" >NVARCHAR(250)</text>
+<text class="field-name" x="689" y="1592.0" >Description</text>
+<text class="field-type" x="891" y="1592.0" >NVARCHAR(2000)</text>
+<text class="field-flags" x="1041" y="1592.0" >NULL</text>
+<text class="field-name" x="689" y="1617.0" >DocumentStatus</text>
+<text class="field-type" x="891" y="1617.0" >VARCHAR(12)</text>
+</g>
+<g class="table" id="knowledge.DocumentVersion" data-kind="TABLE">
+<rect class="card" x="675" y="1681" width="470" height="399" rx="9"/>
+<path d="M 684 1681 H 1136 Q 1145 1681 1145 1690 V 1721 H 675 V 1690 Q 675 1681 684 1681 Z" fill="#f3f0ff"/>
+<path d="M 676 1721 H 1144" class="header-rule"/>
+<rect x="675" y="1681" width="4" height="399" rx="2" fill="#7653aa"/>
+<text class="title" x="910" y="1707.0" >knowledge.DocumentVersion</text>
+<text class="field-name" x="689" y="1739.0" >DocumentVersionID</text>
+<text class="field-type" x="891" y="1739.0" >BIGINT</text>
+<text class="field-flags" x="1041" y="1739.0" >PK</text>
+<text class="field-name" x="689" y="1764.0" >ContentID</text>
+<text class="field-type" x="891" y="1764.0" >BIGINT</text>
+<text class="field-flags" x="1041" y="1764.0" >FK</text>
+<text class="field-name" x="689" y="1789.0" >VersionNo</text>
+<text class="field-type" x="891" y="1789.0" >INT</text>
+<text class="field-name" x="689" y="1814.0" >FileName</text>
+<text class="field-type" x="891" y="1814.0" >NVARCHAR(260)</text>
+<text class="field-flags" x="1041" y="1814.0" >NULL</text>
+<text class="field-name" x="689" y="1839.0" >MimeType</text>
+<text class="field-type" x="891" y="1839.0" >VARCHAR(127)</text>
+<text class="field-name" x="689" y="1864.0" >FileBytes</text>
+<text class="field-type" x="891" y="1864.0" >VARBINARY(MAX)</text>
+<text class="field-flags" x="1041" y="1864.0" >NULL</text>
+<text class="field-name" x="689" y="1889.0" >PlainText</text>
+<text class="field-type" x="891" y="1889.0" >NVARCHAR(MAX)</text>
+<text class="field-flags" x="1041" y="1889.0" >NULL</text>
+<text class="field-name" x="689" y="1914.0" >SizeBytes</text>
+<text class="field-type" x="891" y="1914.0" >BIGINT</text>
+<text class="field-name" x="689" y="1939.0" >SHA256</text>
+<text class="field-type" x="891" y="1939.0" >BINARY(32)</text>
+<text class="field-name" x="689" y="1964.0" >IsCurrent</text>
+<text class="field-type" x="891" y="1964.0" >BIT</text>
+<text class="field-name" x="689" y="1989.0" >UploadStatus</text>
+<text class="field-type" x="891" y="1989.0" >VARCHAR(8)</text>
+<text class="field-name" x="689" y="2014.0" >OCRStatus</text>
+<text class="field-type" x="891" y="2014.0" >VARCHAR(10)</text>
+<text class="field-name" x="689" y="2039.0" >OcrEngineVersion</text>
+<text class="field-type" x="891" y="2039.0" >NVARCHAR(80)</text>
+<text class="field-flags" x="1041" y="2039.0" >NULL</text>
+<text class="field-name" x="689" y="2064.0" >CreatedAt</text>
+<text class="field-type" x="891" y="2064.0" >DATETIME2(3)</text>
+</g>
+</svg>
