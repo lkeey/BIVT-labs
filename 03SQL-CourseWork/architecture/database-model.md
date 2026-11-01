@@ -1,303 +1,210 @@
-# Памятка по базе SocialNetworkDB
+# Памятка по таблицам SocialNetworkDB
 
-**Что хранит база:** пользователей и сообщества, их посты, комментарии и документы, данные для поиска, историю ответов и рекомендательную ленту. Это **одна база SQL Server 2025** с пятью схемами и 33 таблицами.
+Одна база SQL Server 2025: 33 таблицы в схемах `auth`, `social`, `knowledge`, `assistant` и `ops`.
 
-Ниже перечислены **главные поля**. Служебные даты, хеши и ограничения местами опущены, чтобы памятка оставалась короткой. Полный список столбцов — в [T-SQL-скриптах](../database/README.md).
-
-**Типы:** Str — текст, Int64/Int32 — число, Bool — да/нет, DateTime — дата и время, Bytes — файл или байты, Decimal — дробное число, UUID — уникальный идентификатор, Vector[384] — вектор из 384 чисел, NodeRef — ссылка SQL Graph. Знак ? означает, что поле может быть пустым. PK — первичный ключ, FK — ссылка на другую таблицу.
-
-Стрелка **→** ниже означает «связан с». Для обычных таблиц связь обычно хранится в FK; для графовых таблиц — в системных полях $from_id и $to_id. Это просто карта связей, без синтаксиса JOIN.
+**Как читать:** каждый прямоугольник — таблица, внутри видны её основные поля и типы. Стрелка показывает связь. `PK` — ключ таблицы, `FK` — ссылка на другую таблицу, `?` — поле может быть пустым. `NodeRef` — системная ссылка ребра SQL Graph. Повторяющиеся прямоугольники на разных рисунках обозначают одну и ту же таблицу. Точные SQL-типы и остальные служебные поля — в [T-SQL DDL](../database/README.md).
 
 ## 1. Пользователи и сообщества
 
-### auth.UserAccount
-- UserID: Int64 (PK)
-- Login: Str
-- EmailNormalized: Str
-- AccountStatus: Str
-- PasswordHash: Bytes?
+Профиль и вход принадлежат пользователю. Подписка ведёт к другому пользователю; членство — к сообществу.
 
-### auth.UserProfile
-- UserID: Int64 (PK, FK)
-- DisplayName: Str
-- Bio: Str?
-- ProfileVisibility: Str
+### Аккаунт, профиль и сообщество
 
-### auth.ExternalIdentity
-- FirebaseUID: Str (PK)
-- UserID: Int64 (FK)
+~~~mermaid
+flowchart TB
+    U["auth.UserAccount<br/>UserID: Int64 (PK)<br/>Login: Str<br/>EmailNormalized: Str<br/>AccountStatus: Str<br/>PasswordHash: Bytes?"]
+    P["auth.UserProfile<br/>UserID: Int64 (PK, FK)<br/>DisplayName: Str<br/>Bio: Str?<br/>ProfileVisibility: Str"]
+    X["auth.ExternalIdentity<br/>FirebaseUID: Str (PK)<br/>UserID: Int64 (FK)"]
+    C["social.Community<br/>CommunityID: Int64 (PK)<br/>OwnerUserID: Int64 (FK)<br/>Slug: Str<br/>CommunityName: Str<br/>Visibility: Str<br/>Status: Str"]
+    U --> P
+    U --> X
+    U --> C
+~~~
 
-### social.Community
-- CommunityID: Int64 (PK)
-- OwnerUserID: Int64 (FK)
-- Slug: Str
-- CommunityName: Str
-- Visibility: Str
-- Status: Str
+### Подписка и членство
 
-### social.Follows
-- $from_id: NodeRef
-- $to_id: NodeRef
-
-### social.MemberOf
-- MembershipID: Int64 (PK)
-- $from_id: NodeRef
-- $to_id: NodeRef
-- Role: Str
-- MemberStatus: Str
-- EndedAt: DateTime?
-
-**Связи:**
-
-- UserAccount → UserProfile
-- UserAccount → ExternalIdentity
-- UserAccount → Community (владелец)
-- UserAccount → Follows → UserAccount (подписка)
-- UserAccount → MemberOf → Community (членство)
+~~~mermaid
+flowchart TB
+    U["auth.UserAccount<br/>UserID: Int64 (PK)<br/>Login: Str<br/>EmailNormalized: Str<br/>AccountStatus: Str<br/>PasswordHash: Bytes?"]
+    F["social.Follows<br/>$from_id: NodeRef<br/>$to_id: NodeRef"]
+    U2["auth.UserAccount (другой пользователь)<br/>UserID: Int64 (PK)<br/>Login: Str<br/>EmailNormalized: Str<br/>AccountStatus: Str<br/>PasswordHash: Bytes?"]
+    M["social.MemberOf<br/>MembershipID: Int64 (PK)<br/>$from_id: NodeRef<br/>$to_id: NodeRef<br/>Role: Str<br/>MemberStatus: Str<br/>EndedAt: DateTime?"]
+    C["social.Community<br/>CommunityID: Int64 (PK)<br/>OwnerUserID: Int64 (FK)<br/>Slug: Str<br/>CommunityName: Str<br/>Visibility: Str<br/>Status: Str"]
+    U --> F --> U2
+    U --> M --> C
+~~~
 
 ## 2. Публикации
 
-### social.ContentItem
-- ContentID: Int64 (PK)
-- Kind: Str (POST / COMMENT / DOCUMENT)
-- ContentStatus: Str
-- AllowRag: Bool
-- PublishedAt: DateTime?
+ContentItem — общая запись поста, комментария или документа. Текст и файл лежат в таблицах версий. У документа заполнено либо `PlainText`, либо `FileBytes`.
 
-### social.Authored
-- $from_id: NodeRef
-- $to_id: NodeRef
+### Автор и сообщество
 
-### social.PublishedIn
-- $from_id: NodeRef
-- $to_id: NodeRef
+~~~mermaid
+flowchart TB
+    U["auth.UserAccount<br/>UserID: Int64 (PK)<br/>Login: Str<br/>EmailNormalized: Str<br/>AccountStatus: Str<br/>PasswordHash: Bytes?"]
+    A["social.Authored<br/>$from_id: NodeRef<br/>$to_id: NodeRef"]
+    I["social.ContentItem<br/>ContentID: Int64 (PK)<br/>Kind: Str (POST / COMMENT / DOCUMENT)<br/>ContentStatus: Str<br/>AllowRag: Bool<br/>PublishedAt: DateTime?"]
+    P["social.PublishedIn<br/>$from_id: NodeRef<br/>$to_id: NodeRef"]
+    C["social.Community<br/>CommunityID: Int64 (PK)<br/>OwnerUserID: Int64 (FK)<br/>Slug: Str<br/>CommunityName: Str<br/>Visibility: Str<br/>Status: Str"]
+    U --> A --> I --> P --> C
+~~~
 
-### social.CommentOn
-- $from_id: NodeRef
-- $to_id: NodeRef
+### Комментарий и реакция
 
-### social.ReactTo
-- $from_id: NodeRef
-- $to_id: NodeRef
-- ReactionType: Str
+~~~mermaid
+flowchart TB
+    CM["social.ContentItem (COMMENT)<br/>ContentID: Int64 (PK)<br/>Kind: Str (POST / COMMENT / DOCUMENT)<br/>ContentStatus: Str<br/>AllowRag: Bool<br/>PublishedAt: DateTime?"]
+    CO["social.CommentOn<br/>$from_id: NodeRef<br/>$to_id: NodeRef"]
+    P["social.ContentItem (POST)<br/>ContentID: Int64 (PK)<br/>Kind: Str (POST / COMMENT / DOCUMENT)<br/>ContentStatus: Str<br/>AllowRag: Bool<br/>PublishedAt: DateTime?"]
+    U["auth.UserAccount<br/>UserID: Int64 (PK)<br/>Login: Str<br/>EmailNormalized: Str<br/>AccountStatus: Str<br/>PasswordHash: Bytes?"]
+    R["social.ReactTo<br/>$from_id: NodeRef<br/>$to_id: NodeRef<br/>ReactionType: Str"]
+    CM --> CO --> P
+    U --> R --> P
+~~~
 
-### social.PostRevision
-- RevisionID: Int64 (PK)
-- ContentID: Int64 (FK)
-- RevisionNo: Int32
-- Body: Str
-- EditedByUserID: Int64 (FK)
-- IsCurrent: Bool
+### Версии поста и комментария
 
-### social.CommentRevision
-- RevisionID: Int64 (PK)
-- ContentID: Int64 (FK)
-- RevisionNo: Int32
-- Body: Str
-- CommentStatus: Str
-- IsCurrent: Bool
+~~~mermaid
+flowchart TB
+    P["social.ContentItem (POST)<br/>ContentID: Int64 (PK)<br/>Kind: Str (POST / COMMENT / DOCUMENT)<br/>ContentStatus: Str<br/>AllowRag: Bool<br/>PublishedAt: DateTime?"]
+    PR["social.PostRevision<br/>RevisionID: Int64 (PK)<br/>ContentID: Int64 (FK)<br/>RevisionNo: Int32<br/>Body: Str<br/>EditedByUserID: Int64 (FK)<br/>IsCurrent: Bool"]
+    C["social.ContentItem (COMMENT)<br/>ContentID: Int64 (PK)<br/>Kind: Str (POST / COMMENT / DOCUMENT)<br/>ContentStatus: Str<br/>AllowRag: Bool<br/>PublishedAt: DateTime?"]
+    CR["social.CommentRevision<br/>RevisionID: Int64 (PK)<br/>ContentID: Int64 (FK)<br/>RevisionNo: Int32<br/>Body: Str<br/>CommentStatus: Str<br/>IsCurrent: Bool"]
+    P --> PR
+    C --> CR
+~~~
 
-### social.DocumentDetail
-- ContentID: Int64 (PK, FK)
-- Title: Str
-- Description: Str?
-- DocumentStatus: Str
+### Версии документа
 
-### knowledge.DocumentVersion
-- DocumentVersionID: Int64 (PK)
-- ContentID: Int64 (FK)
-- VersionNo: Int32
-- MimeType: Str
-- PlainText: Str?
-- FileBytes: Bytes?
-- IsCurrent: Bool
-- OCRStatus: Str
-
-**Связи:**
-
-- UserAccount → Authored → ContentItem (автор)
-- ContentItem (POST / DOCUMENT) → PublishedIn → Community
-- ContentItem (COMMENT) → CommentOn → ContentItem (POST)
-- UserAccount → ReactTo → ContentItem (POST / COMMENT)
-- ContentItem (POST) → PostRevision
-- ContentItem (COMMENT) → CommentRevision
-- ContentItem (DOCUMENT) → DocumentDetail → DocumentVersion
-
-У ContentItem нет отдельных полей AuthorID и CommunityID: автора и сообщество хранят рёбра Authored и PublishedIn. Комментарий получает сообщество через пост, к которому он относится. В DocumentVersion заполнено **либо PlainText, либо FileBytes**.
+~~~mermaid
+flowchart TB
+    I["social.ContentItem (DOCUMENT)<br/>ContentID: Int64 (PK)<br/>Kind: Str (POST / COMMENT / DOCUMENT)<br/>ContentStatus: Str<br/>AllowRag: Bool<br/>PublishedAt: DateTime?"]
+    D["social.DocumentDetail<br/>ContentID: Int64 (PK, FK)<br/>Title: Str<br/>Description: Str?<br/>DocumentStatus: Str"]
+    V["knowledge.DocumentVersion<br/>DocumentVersionID: Int64 (PK)<br/>ContentID: Int64 (FK)<br/>VersionNo: Int32<br/>MimeType: Str<br/>PlainText: Str?<br/>FileBytes: Bytes?<br/>IsCurrent: Bool<br/>OCRStatus: Str"]
+    I --> D --> V
+~~~
 
 ## 3. Поиск и граф знаний
 
-### knowledge.SourceRevision
-- SourceRevisionID: Int64 (PK)
-- ContentID: Int64 (FK)
-- PostRevisionID: Int64?
-- CommentRevisionID: Int64?
-- DocumentVersionID: Int64?
-- ExtractedText: Str?
-- ProcessingStatus: Str
-- IsCurrent: Bool
+`SourceRevision` указывает ровно на одну версию поста, комментария или документа. Она превращается во фрагменты; для каждого можно хранить вектор, упоминания и связи с источником.
 
-### knowledge.Chunk
-- ChunkID: Int64 (PK)
-- SourceRevisionID: Int64 (FK)
-- ChunkNo: Int32
-- ChunkText: Str
-- PageNo: Int32?
-- StartOffset: Int32
-- EndOffset: Int32
+### От версии к фрагменту
 
-### knowledge.EmbeddingModel
-- ModelID: Int32 (PK)
-- ModelName: Str
-- ModelVersion: Str
-- Dimensions: Int32
-- IsActive: Bool
+~~~mermaid
+flowchart TB
+    P["social.PostRevision<br/>RevisionID: Int64 (PK)<br/>ContentID: Int64 (FK)<br/>RevisionNo: Int32<br/>Body: Str<br/>EditedByUserID: Int64 (FK)<br/>IsCurrent: Bool"]
+    C["social.CommentRevision<br/>RevisionID: Int64 (PK)<br/>ContentID: Int64 (FK)<br/>RevisionNo: Int32<br/>Body: Str<br/>CommentStatus: Str<br/>IsCurrent: Bool"]
+    D["knowledge.DocumentVersion<br/>DocumentVersionID: Int64 (PK)<br/>ContentID: Int64 (FK)<br/>VersionNo: Int32<br/>MimeType: Str<br/>PlainText: Str?<br/>FileBytes: Bytes?<br/>IsCurrent: Bool<br/>OCRStatus: Str"]
+    S["knowledge.SourceRevision<br/>SourceRevisionID: Int64 (PK)<br/>ContentID: Int64 (FK)<br/>PostRevisionID: Int64?<br/>CommentRevisionID: Int64?<br/>DocumentVersionID: Int64?<br/>ExtractedText: Str?<br/>ProcessingStatus: Str<br/>IsCurrent: Bool"]
+    K["knowledge.Chunk<br/>ChunkID: Int64 (PK)<br/>SourceRevisionID: Int64 (FK)<br/>ChunkNo: Int32<br/>ChunkText: Str<br/>PageNo: Int32?<br/>StartOffset: Int32<br/>EndOffset: Int32"]
+    P --> S
+    C --> S
+    D --> S
+    S --> K
+~~~
 
-### knowledge.ChunkEmbedding
-- ChunkID: Int64 (PK, FK)
-- ModelID: Int32 (PK, FK)
-- Embedding: Vector[384]
+### Векторы
 
-### knowledge.KnowledgeEntity
-- EntityID: Int64 (PK)
-- EntityType: Str
-- EntityName: Str
-- ExtractorVersion: Str
+~~~mermaid
+flowchart TB
+    K["knowledge.Chunk<br/>ChunkID: Int64 (PK)<br/>SourceRevisionID: Int64 (FK)<br/>ChunkNo: Int32<br/>ChunkText: Str<br/>PageNo: Int32?<br/>StartOffset: Int32<br/>EndOffset: Int32"]
+    E["knowledge.ChunkEmbedding<br/>ChunkID: Int64 (PK, FK)<br/>ModelID: Int32 (PK, FK)<br/>Embedding: Vector[384]"]
+    M["knowledge.EmbeddingModel<br/>ModelID: Int32 (PK)<br/>ModelName: Str<br/>ModelVersion: Str<br/>Dimensions: Int32<br/>IsActive: Bool"]
+    K --> E
+    M --> E
+~~~
 
-### knowledge.ChunkOf
-- $from_id: NodeRef
-- $to_id: NodeRef
+### Упоминания в исходном материале
 
-### knowledge.Mentions
-- MentionID: Int64 (PK)
-- $from_id: NodeRef
-- $to_id: NodeRef
-- EvidenceChunkID: Int64 (FK)
-- EvidenceText: Str
-- Confidence: Decimal
+~~~mermaid
+flowchart TB
+    K["knowledge.Chunk<br/>ChunkID: Int64 (PK)<br/>SourceRevisionID: Int64 (FK)<br/>ChunkNo: Int32<br/>ChunkText: Str<br/>PageNo: Int32?<br/>StartOffset: Int32<br/>EndOffset: Int32"]
+    O["knowledge.ChunkOf<br/>$from_id: NodeRef<br/>$to_id: NodeRef"]
+    I["social.ContentItem<br/>ContentID: Int64 (PK)<br/>Kind: Str (POST / COMMENT / DOCUMENT)<br/>ContentStatus: Str<br/>AllowRag: Bool<br/>PublishedAt: DateTime?"]
+    M["knowledge.Mentions<br/>MentionID: Int64 (PK)<br/>$from_id: NodeRef<br/>$to_id: NodeRef<br/>EvidenceChunkID: Int64 (FK)<br/>EvidenceText: Str<br/>Confidence: Decimal"]
+    E["knowledge.KnowledgeEntity<br/>EntityID: Int64 (PK)<br/>EntityType: Str<br/>EntityName: Str<br/>ExtractorVersion: Str"]
+    K --> O --> I
+    K --> M --> E
+~~~
 
-### knowledge.EntityRelation
-- RelationID: Int64 (PK)
-- $from_id: NodeRef
-- $to_id: NodeRef
-- PredicateCode: Str
-- EvidenceChunkID: Int64 (FK)
-- EvidenceText: Str
-- Confidence: Decimal
+### Связи сущностей
 
-**Связи:**
-
-- PostRevision **или** CommentRevision **или** DocumentVersion → SourceRevision → Chunk
-- Chunk → ChunkEmbedding ← EmbeddingModel
-- Chunk → ChunkOf → ContentItem (исходный материал)
-- Chunk → Mentions → KnowledgeEntity (упоминание)
-- KnowledgeEntity → EntityRelation → KnowledgeEntity (связь понятий)
-- Chunk → EntityRelation (текстовое свидетельство через EvidenceChunkID)
-
-У SourceRevision заполнен **ровно один** из трёх ID редакции. Chunk — небольшой фрагмент текста; ChunkEmbedding — его числовой вектор. KnowledgeEntity и EntityRelation — сущности и связи, извлечённые из текста. Их можно использовать только вместе с доступным исходным фрагментом.
+~~~mermaid
+flowchart TB
+    E["knowledge.KnowledgeEntity<br/>EntityID: Int64 (PK)<br/>EntityType: Str<br/>EntityName: Str<br/>ExtractorVersion: Str"]
+    R["knowledge.EntityRelation<br/>RelationID: Int64 (PK)<br/>$from_id: NodeRef<br/>$to_id: NodeRef<br/>PredicateCode: Str<br/>EvidenceChunkID: Int64 (FK)<br/>EvidenceText: Str<br/>Confidence: Decimal"]
+    E2["knowledge.KnowledgeEntity (другая сущность)<br/>EntityID: Int64 (PK)<br/>EntityType: Str<br/>EntityName: Str<br/>ExtractorVersion: Str"]
+    K["knowledge.Chunk<br/>ChunkID: Int64 (PK)<br/>SourceRevisionID: Int64 (FK)<br/>ChunkNo: Int32<br/>ChunkText: Str<br/>PageNo: Int32?<br/>StartOffset: Int32<br/>EndOffset: Int32"]
+    E --> R --> E2
+    K --> R
+~~~
 
 ## 4. Вопросы и цитаты RAG
 
-### assistant.RagSession
-- SessionID: Int64 (PK)
-- UserID: Int64 (FK)
-- CommunityID: Int64? (FK)
-- Scope: Str
+Сохраняются вопрос, найденные фрагменты и цитата. Цитата может вести только к фрагменту из сохранённой выдачи.
 
-### assistant.RagTurn
-- TurnID: Int64 (PK)
-- SessionID: Int64 (FK)
-- TurnNo: Int32
-- QuestionText: Str
-- AnswerText: Str?
-- GenerationStatus: Str
+### Диалог и оценка ответа
 
-### assistant.RetrievalRun
-- RetrievalRunID: Int64 (PK)
-- TurnID: Int64 (FK)
-- RetrievalMode: Str
-- ModelVersion: Str
+~~~mermaid
+flowchart TB
+    U["auth.UserAccount<br/>UserID: Int64 (PK)<br/>Login: Str<br/>EmailNormalized: Str<br/>AccountStatus: Str<br/>PasswordHash: Bytes?"]
+    C["social.Community<br/>CommunityID: Int64 (PK)<br/>OwnerUserID: Int64 (FK)<br/>Slug: Str<br/>CommunityName: Str<br/>Visibility: Str<br/>Status: Str"]
+    S["assistant.RagSession<br/>SessionID: Int64 (PK)<br/>UserID: Int64 (FK)<br/>CommunityID: Int64? (FK)<br/>Scope: Str"]
+    T["assistant.RagTurn<br/>TurnID: Int64 (PK)<br/>SessionID: Int64 (FK)<br/>TurnNo: Int32<br/>QuestionText: Str<br/>AnswerText: Str?<br/>GenerationStatus: Str"]
+    F["assistant.TurnFeedback<br/>TurnID: Int64 (PK, FK)<br/>UserID: Int64 (FK)<br/>Rating: Int32<br/>Comment: Str?"]
+    U --> S
+    C --> S
+    S --> T --> F
+    U --> F
+~~~
 
-### assistant.RetrievedChunk
-- RetrievalRunID: Int64 (PK, FK)
-- ChunkID: Int64 (PK, FK)
-- Rank: Int32
-- Snippet: Str
-- VectorScore: Decimal?
-- TextScore: Decimal?
-- GraphScore: Decimal?
+### Поиск и цитирование
 
-### assistant.AnswerCitation
-- CitationID: Int64 (PK)
-- RetrievalRunID: Int64 (FK)
-- ChunkID: Int64 (FK)
-- QuoteText: Str
-- PageNo: Int32?
-- StartOffset: Int32
-- EndOffset: Int32
+~~~mermaid
+flowchart TB
+    T["assistant.RagTurn<br/>TurnID: Int64 (PK)<br/>SessionID: Int64 (FK)<br/>TurnNo: Int32<br/>QuestionText: Str<br/>AnswerText: Str?<br/>GenerationStatus: Str"]
+    R["assistant.RetrievalRun<br/>RetrievalRunID: Int64 (PK)<br/>TurnID: Int64 (FK)<br/>RetrievalMode: Str<br/>ModelVersion: Str"]
+    K["knowledge.Chunk<br/>ChunkID: Int64 (PK)<br/>SourceRevisionID: Int64 (FK)<br/>ChunkNo: Int32<br/>ChunkText: Str<br/>PageNo: Int32?<br/>StartOffset: Int32<br/>EndOffset: Int32"]
+    F["assistant.RetrievedChunk<br/>RetrievalRunID: Int64 (PK, FK)<br/>ChunkID: Int64 (PK, FK)<br/>Rank: Int32<br/>Snippet: Str<br/>VectorScore: Decimal?<br/>TextScore: Decimal?<br/>GraphScore: Decimal?"]
+    C["assistant.AnswerCitation<br/>CitationID: Int64 (PK)<br/>RetrievalRunID: Int64 (FK)<br/>ChunkID: Int64 (FK)<br/>QuoteText: Str<br/>PageNo: Int32?<br/>StartOffset: Int32<br/>EndOffset: Int32"]
+    T --> R --> F --> C
+    K --> F
+~~~
 
-### assistant.TurnFeedback
-- TurnID: Int64 (PK, FK)
-- UserID: Int64 (FK)
-- Rating: Int32
-- Comment: Str?
+## 5. Лента и служебные записи
 
-**Связи:**
+Лента хранит рассчитанный порядок материалов; очередь запускает обработку новых версий, журнал фиксирует действия.
 
-- UserAccount → RagSession ← Community? (если поиск ограничен сообществом)
-- RagSession → RagTurn → RetrievalRun → RetrievedChunk ← Chunk
-- RetrievedChunk → AnswerCitation
-- RagTurn → TurnFeedback ← UserAccount
+### Рекомендательная лента
 
-RetrievedChunk записывает, какие фрагменты реально нашли. AnswerCitation может ссылаться только на такой фрагмент; SQL дополнительно проверяет, что текст цитаты есть в нём. При показе сохранённого ответа доступ к источнику проверяется снова.
+~~~mermaid
+flowchart TB
+    U["auth.UserAccount<br/>UserID: Int64 (PK)<br/>Login: Str<br/>EmailNormalized: Str<br/>AccountStatus: Str<br/>PasswordHash: Bytes?"]
+    B["assistant.RecommendationBatch<br/>BatchID: Int64 (PK)<br/>UserID: Int64 (FK)<br/>AlgorithmVersion: Str"]
+    I["assistant.RecommendationItem<br/>BatchID: Int64 (PK, FK)<br/>ContentID: Int64 (PK, FK)<br/>Rank: Int32<br/>Score: Decimal<br/>ReasonCode: Str<br/>ReasonText: Str"]
+    C["social.ContentItem<br/>ContentID: Int64 (PK)<br/>Kind: Str (POST / COMMENT / DOCUMENT)<br/>ContentStatus: Str<br/>AllowRag: Bool<br/>PublishedAt: DateTime?"]
+    U --> B --> I --> C
+~~~
 
-## 5. Лента и служебные данные
+### Индексация
 
-### assistant.RecommendationBatch
-- BatchID: Int64 (PK)
-- UserID: Int64 (FK)
-- AlgorithmVersion: Str
+~~~mermaid
+flowchart TB
+    S["knowledge.SourceRevision<br/>SourceRevisionID: Int64 (PK)<br/>ContentID: Int64 (FK)<br/>PostRevisionID: Int64?<br/>CommentRevisionID: Int64?<br/>DocumentVersionID: Int64?<br/>ExtractedText: Str?<br/>ProcessingStatus: Str<br/>IsCurrent: Bool"]
+    M["knowledge.EmbeddingModel<br/>ModelID: Int32 (PK)<br/>ModelName: Str<br/>ModelVersion: Str<br/>Dimensions: Int32<br/>IsActive: Bool"]
+    O["ops.IndexOutbox<br/>EventID: Int64 (PK)<br/>SourceRevisionID: Int64 (FK)<br/>ModelID: Int32? (FK)<br/>Operation: Str<br/>EventStatus: Str<br/>AttemptCount: Int32<br/>LeaseUntil: DateTime?"]
+    S --> O
+    M --> O
+~~~
 
-### assistant.RecommendationItem
-- BatchID: Int64 (PK, FK)
-- ContentID: Int64 (PK, FK)
-- Rank: Int32
-- Score: Decimal
-- ReasonCode: Str
-- ReasonText: Str
+### Журнал действий
 
-### ops.IndexOutbox
-- EventID: Int64 (PK)
-- SourceRevisionID: Int64 (FK)
-- ModelID: Int32? (FK)
-- Operation: Str
-- EventStatus: Str
-- AttemptCount: Int32
-- LeaseUntil: DateTime?
+~~~mermaid
+flowchart TB
+    U["auth.UserAccount<br/>UserID: Int64 (PK)<br/>Login: Str<br/>EmailNormalized: Str<br/>AccountStatus: Str<br/>PasswordHash: Bytes?"]
+    A["ops.AuditEvent<br/>AuditEventID: Int64 (PK)<br/>ActorUserID: Int64? (FK)<br/>EventType: Str<br/>EntityType: Str<br/>EntityID: Int64<br/>CorrelationID: UUID?"]
+    U --> A
+~~~
 
-### ops.AuditEvent
-- AuditEventID: Int64 (PK)
-- ActorUserID: Int64? (FK)
-- EventType: Str
-- EntityType: Str
-- EntityID: Int64
-- CorrelationID: UUID?
-
-**Связи:**
-
-- UserAccount → RecommendationBatch → RecommendationItem → ContentItem
-- SourceRevision → IndexOutbox ← EmbeddingModel?
-- UserAccount? → AuditEvent
-
-RecommendationItem хранит материал, его место в ленте, оценку и объяснение рекомендации. IndexOutbox — очередь задач для обработки текста и обновления индекса. AuditEvent — журнал действий; пара EntityType + EntityID указывает на объект разных типов, поэтому общего FK на одну таблицу здесь нет.
-
-## Вся идея в шести строках
-
-1. Пользователь состоит в сообществе и публикует материал.
-2. Материал имеет версии: пост, комментарий или документ.
-3. Текущая версия превращается в текстовые фрагменты, векторы и связи графа.
-4. Поиск выбирает только доступные пользователю фрагменты.
-5. Ответ хранит цитаты со ссылкой на реально найденные фрагменты.
-6. Лента хранит рекомендованные материалы, оценки и причины.
-
-Это краткая памятка. Точные SQL-типы, все служебные поля и ограничения смотрите в [DDL](../database/README.md).
+**Три главные цепочки:** пользователь → сообщество → материал; материал → версия → фрагмент → сущность; вопрос → найденный фрагмент → цитата.
