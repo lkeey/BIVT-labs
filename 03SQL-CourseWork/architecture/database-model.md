@@ -2,7 +2,7 @@
 
 Одна база SQL Server 2025: 33 таблицы в схемах `auth`, `social`, `knowledge`, `assistant` и `ops`.
 
-**Как читать:** каждый прямоугольник — таблица, внутри видны её основные поля и типы. Стрелка показывает связь. `PK` — ключ таблицы, `FK` — ссылка на другую таблицу, `?` — поле может быть пустым. `NodeRef` — системная ссылка ребра SQL Graph. Повторяющиеся прямоугольники на разных рисунках обозначают одну и ту же таблицу. Точные SQL-типы и остальные служебные поля — в [T-SQL DDL](../database/README.md).
+**Как читать:** каждый прямоугольник — таблица, внутри видны её основные поля и типы. Стрелка показывает связь. `PK` — ключ таблицы, `FK` — ссылка на другую таблицу, `NULL` — поле допускает пустое значение; остальные перечисленные столбцы имеют `NOT NULL`. `$from_id` и `$to_id` — служебные псевдостолбцы SQL Graph: их тип не задаётся в `CREATE TABLE`. Повторяющиеся прямоугольники на разных рисунках обозначают одну и ту же таблицу. Точные SQL-типы и остальные служебные поля — в [T-SQL DDL](../database/README.md).
 
 ## 1. Пользователи и сообщества
 
@@ -14,29 +14,29 @@
 classDiagram
     direction TB
     class U["auth.UserAccount"] {
-        UserID : Int64 PK
-        Login : Str
-        EmailNormalized : Str
-        AccountStatus : Str
-        PasswordHash : Bytes?
+        UserID : BIGINT PK
+        Login : NVARCHAR#40;80#41;
+        EmailNormalized : NVARCHAR#40;254#41;
+        AccountStatus : VARCHAR#40;12#41;
+        PasswordHash : VARBINARY#40;64#41; NULL
     }
     class P["auth.UserProfile"] {
-        UserID : Int64 PK FK
-        DisplayName : Str
-        Bio : Str?
-        ProfileVisibility : Str
+        UserID : BIGINT PK FK
+        DisplayName : NVARCHAR#40;120#41;
+        Bio : NVARCHAR#40;1000#41; NULL
+        ProfileVisibility : VARCHAR#40;8#41;
     }
     class X["auth.ExternalIdentity"] {
-        FirebaseUID : Str PK
-        UserID : Int64 FK
+        FirebaseUID : NVARCHAR#40;128#41; PK
+        UserID : BIGINT FK
     }
     class C["social.Community"] {
-        CommunityID : Int64 PK
-        OwnerUserID : Int64 FK
-        Slug : Str
-        CommunityName : Str
-        Visibility : Str
-        Status : Str
+        CommunityID : BIGINT PK
+        OwnerUserID : BIGINT FK
+        Slug : NVARCHAR#40;100#41;
+        CommunityName : NVARCHAR#40;160#41;
+        Visibility : VARCHAR#40;8#41;
+        Status : VARCHAR#40;12#41;
     }
     U --> P
     U --> X
@@ -49,38 +49,38 @@ classDiagram
 classDiagram
     direction TB
     class U["auth.UserAccount"] {
-        UserID : Int64 PK
-        Login : Str
-        EmailNormalized : Str
-        AccountStatus : Str
-        PasswordHash : Bytes?
+        UserID : BIGINT PK
+        Login : NVARCHAR#40;80#41;
+        EmailNormalized : NVARCHAR#40;254#41;
+        AccountStatus : VARCHAR#40;12#41;
+        PasswordHash : VARBINARY#40;64#41; NULL
     }
     class F["social.Follows"] {
-        $from_id : NodeRef
-        $to_id : NodeRef
+        $from_id
+        $to_id
     }
     class U2["auth.UserAccount (другой пользователь)"] {
-        UserID : Int64 PK
-        Login : Str
-        EmailNormalized : Str
-        AccountStatus : Str
-        PasswordHash : Bytes?
+        UserID : BIGINT PK
+        Login : NVARCHAR#40;80#41;
+        EmailNormalized : NVARCHAR#40;254#41;
+        AccountStatus : VARCHAR#40;12#41;
+        PasswordHash : VARBINARY#40;64#41; NULL
     }
     class M["social.MemberOf"] {
-        MembershipID : Int64 PK
-        $from_id : NodeRef
-        $to_id : NodeRef
-        Role : Str
-        MemberStatus : Str
-        EndedAt : DateTime?
+        MembershipID : BIGINT PK
+        $from_id
+        $to_id
+        Role : VARCHAR#40;10#41;
+        MemberStatus : VARCHAR#40;8#41;
+        EndedAt : DATETIME2#40;3#41; NULL
     }
     class C["social.Community"] {
-        CommunityID : Int64 PK
-        OwnerUserID : Int64 FK
-        Slug : Str
-        CommunityName : Str
-        Visibility : Str
-        Status : Str
+        CommunityID : BIGINT PK
+        OwnerUserID : BIGINT FK
+        Slug : NVARCHAR#40;100#41;
+        CommunityName : NVARCHAR#40;160#41;
+        Visibility : VARCHAR#40;8#41;
+        Status : VARCHAR#40;12#41;
     }
     U --> F
     F --> U2
@@ -98,34 +98,34 @@ ContentItem — общая запись поста, комментария ил�
 classDiagram
     direction TB
     class U["auth.UserAccount"] {
-        UserID : Int64 PK
-        Login : Str
-        EmailNormalized : Str
-        AccountStatus : Str
-        PasswordHash : Bytes?
+        UserID : BIGINT PK
+        Login : NVARCHAR#40;80#41;
+        EmailNormalized : NVARCHAR#40;254#41;
+        AccountStatus : VARCHAR#40;12#41;
+        PasswordHash : VARBINARY#40;64#41; NULL
     }
     class A["social.Authored"] {
-        $from_id : NodeRef
-        $to_id : NodeRef
+        $from_id
+        $to_id
     }
     class I["social.ContentItem"] {
-        ContentID : Int64 PK
-        Kind : Str
-        ContentStatus : Str
-        AllowRag : Bool
-        PublishedAt : DateTime?
+        ContentID : BIGINT PK
+        Kind : VARCHAR#40;8#41;
+        ContentStatus : VARCHAR#40;12#41;
+        AllowRag : BIT
+        PublishedAt : DATETIME2#40;3#41; NULL
     }
     class P["social.PublishedIn"] {
-        $from_id : NodeRef
-        $to_id : NodeRef
+        $from_id
+        $to_id
     }
     class C["social.Community"] {
-        CommunityID : Int64 PK
-        OwnerUserID : Int64 FK
-        Slug : Str
-        CommunityName : Str
-        Visibility : Str
-        Status : Str
+        CommunityID : BIGINT PK
+        OwnerUserID : BIGINT FK
+        Slug : NVARCHAR#40;100#41;
+        CommunityName : NVARCHAR#40;160#41;
+        Visibility : VARCHAR#40;8#41;
+        Status : VARCHAR#40;12#41;
     }
     U --> A
     A --> I
@@ -139,34 +139,34 @@ classDiagram
 classDiagram
     direction TB
     class CM["social.ContentItem (COMMENT)"] {
-        ContentID : Int64 PK
-        Kind : Str
-        ContentStatus : Str
-        AllowRag : Bool
-        PublishedAt : DateTime?
+        ContentID : BIGINT PK
+        Kind : VARCHAR#40;8#41;
+        ContentStatus : VARCHAR#40;12#41;
+        AllowRag : BIT
+        PublishedAt : DATETIME2#40;3#41; NULL
     }
     class CO["social.CommentOn"] {
-        $from_id : NodeRef
-        $to_id : NodeRef
+        $from_id
+        $to_id
     }
     class P["social.ContentItem (POST)"] {
-        ContentID : Int64 PK
-        Kind : Str
-        ContentStatus : Str
-        AllowRag : Bool
-        PublishedAt : DateTime?
+        ContentID : BIGINT PK
+        Kind : VARCHAR#40;8#41;
+        ContentStatus : VARCHAR#40;12#41;
+        AllowRag : BIT
+        PublishedAt : DATETIME2#40;3#41; NULL
     }
     class U["auth.UserAccount"] {
-        UserID : Int64 PK
-        Login : Str
-        EmailNormalized : Str
-        AccountStatus : Str
-        PasswordHash : Bytes?
+        UserID : BIGINT PK
+        Login : NVARCHAR#40;80#41;
+        EmailNormalized : NVARCHAR#40;254#41;
+        AccountStatus : VARCHAR#40;12#41;
+        PasswordHash : VARBINARY#40;64#41; NULL
     }
     class R["social.ReactTo"] {
-        $from_id : NodeRef
-        $to_id : NodeRef
-        ReactionType : Str
+        $from_id
+        $to_id
+        ReactionType : VARCHAR#40;12#41;
     }
     CM --> CO
     CO --> P
@@ -180,34 +180,34 @@ classDiagram
 classDiagram
     direction TB
     class P["social.ContentItem (POST)"] {
-        ContentID : Int64 PK
-        Kind : Str
-        ContentStatus : Str
-        AllowRag : Bool
-        PublishedAt : DateTime?
+        ContentID : BIGINT PK
+        Kind : VARCHAR#40;8#41;
+        ContentStatus : VARCHAR#40;12#41;
+        AllowRag : BIT
+        PublishedAt : DATETIME2#40;3#41; NULL
     }
     class PR["social.PostRevision"] {
-        RevisionID : Int64 PK
-        ContentID : Int64 FK
-        RevisionNo : Int32
-        Body : Str
-        EditedByUserID : Int64 FK
-        IsCurrent : Bool
+        RevisionID : BIGINT PK
+        ContentID : BIGINT FK
+        RevisionNo : INT
+        Body : NVARCHAR#40;MAX#41;
+        EditedByUserID : BIGINT FK
+        IsCurrent : BIT
     }
     class C["social.ContentItem (COMMENT)"] {
-        ContentID : Int64 PK
-        Kind : Str
-        ContentStatus : Str
-        AllowRag : Bool
-        PublishedAt : DateTime?
+        ContentID : BIGINT PK
+        Kind : VARCHAR#40;8#41;
+        ContentStatus : VARCHAR#40;12#41;
+        AllowRag : BIT
+        PublishedAt : DATETIME2#40;3#41; NULL
     }
     class CR["social.CommentRevision"] {
-        RevisionID : Int64 PK
-        ContentID : Int64 FK
-        RevisionNo : Int32
-        Body : Str
-        CommentStatus : Str
-        IsCurrent : Bool
+        RevisionID : BIGINT PK
+        ContentID : BIGINT FK
+        RevisionNo : INT
+        Body : NVARCHAR#40;MAX#41;
+        CommentStatus : VARCHAR#40;8#41;
+        IsCurrent : BIT
     }
     P --> PR
     C --> CR
@@ -219,27 +219,27 @@ classDiagram
 classDiagram
     direction TB
     class I["social.ContentItem (DOCUMENT)"] {
-        ContentID : Int64 PK
-        Kind : Str
-        ContentStatus : Str
-        AllowRag : Bool
-        PublishedAt : DateTime?
+        ContentID : BIGINT PK
+        Kind : VARCHAR#40;8#41;
+        ContentStatus : VARCHAR#40;12#41;
+        AllowRag : BIT
+        PublishedAt : DATETIME2#40;3#41; NULL
     }
     class D["social.DocumentDetail"] {
-        ContentID : Int64 PK FK
-        Title : Str
-        Description : Str?
-        DocumentStatus : Str
+        ContentID : BIGINT PK FK
+        Title : NVARCHAR#40;250#41;
+        Description : NVARCHAR#40;2000#41; NULL
+        DocumentStatus : VARCHAR#40;12#41;
     }
     class V["knowledge.DocumentVersion"] {
-        DocumentVersionID : Int64 PK
-        ContentID : Int64 FK
-        VersionNo : Int32
-        MimeType : Str
-        PlainText : Str?
-        FileBytes : Bytes?
-        IsCurrent : Bool
-        OCRStatus : Str
+        DocumentVersionID : BIGINT PK
+        ContentID : BIGINT FK
+        VersionNo : INT
+        MimeType : VARCHAR#40;127#41;
+        PlainText : NVARCHAR#40;MAX#41; NULL
+        FileBytes : VARBINARY#40;MAX#41; NULL
+        IsCurrent : BIT
+        OCRStatus : VARCHAR#40;10#41;
     }
     I --> D
     D --> V
@@ -255,49 +255,49 @@ classDiagram
 classDiagram
     direction TB
     class P["social.PostRevision"] {
-        RevisionID : Int64 PK
-        ContentID : Int64 FK
-        RevisionNo : Int32
-        Body : Str
-        EditedByUserID : Int64 FK
-        IsCurrent : Bool
+        RevisionID : BIGINT PK
+        ContentID : BIGINT FK
+        RevisionNo : INT
+        Body : NVARCHAR#40;MAX#41;
+        EditedByUserID : BIGINT FK
+        IsCurrent : BIT
     }
     class C["social.CommentRevision"] {
-        RevisionID : Int64 PK
-        ContentID : Int64 FK
-        RevisionNo : Int32
-        Body : Str
-        CommentStatus : Str
-        IsCurrent : Bool
+        RevisionID : BIGINT PK
+        ContentID : BIGINT FK
+        RevisionNo : INT
+        Body : NVARCHAR#40;MAX#41;
+        CommentStatus : VARCHAR#40;8#41;
+        IsCurrent : BIT
     }
     class D["knowledge.DocumentVersion"] {
-        DocumentVersionID : Int64 PK
-        ContentID : Int64 FK
-        VersionNo : Int32
-        MimeType : Str
-        PlainText : Str?
-        FileBytes : Bytes?
-        IsCurrent : Bool
-        OCRStatus : Str
+        DocumentVersionID : BIGINT PK
+        ContentID : BIGINT FK
+        VersionNo : INT
+        MimeType : VARCHAR#40;127#41;
+        PlainText : NVARCHAR#40;MAX#41; NULL
+        FileBytes : VARBINARY#40;MAX#41; NULL
+        IsCurrent : BIT
+        OCRStatus : VARCHAR#40;10#41;
     }
     class S["knowledge.SourceRevision"] {
-        SourceRevisionID : Int64 PK
-        ContentID : Int64 FK
-        PostRevisionID : Int64?
-        CommentRevisionID : Int64?
-        DocumentVersionID : Int64?
-        ExtractedText : Str?
-        ProcessingStatus : Str
-        IsCurrent : Bool
+        SourceRevisionID : BIGINT PK
+        ContentID : BIGINT FK
+        PostRevisionID : BIGINT FK NULL
+        CommentRevisionID : BIGINT FK NULL
+        DocumentVersionID : BIGINT FK NULL
+        ExtractedText : NVARCHAR#40;MAX#41; NULL
+        ProcessingStatus : VARCHAR#40;10#41;
+        IsCurrent : BIT
     }
     class K["knowledge.Chunk"] {
-        ChunkID : Int64 PK
-        SourceRevisionID : Int64 FK
-        ChunkNo : Int32
-        ChunkText : Str
-        PageNo : Int32?
-        StartOffset : Int32
-        EndOffset : Int32
+        ChunkID : BIGINT PK
+        SourceRevisionID : BIGINT FK
+        ChunkNo : INT
+        ChunkText : NVARCHAR#40;MAX#41;
+        PageNo : INT NULL
+        StartOffset : INT
+        EndOffset : INT
     }
     P --> S
     C --> S
@@ -311,25 +311,25 @@ classDiagram
 classDiagram
     direction TB
     class K["knowledge.Chunk"] {
-        ChunkID : Int64 PK
-        SourceRevisionID : Int64 FK
-        ChunkNo : Int32
-        ChunkText : Str
-        PageNo : Int32?
-        StartOffset : Int32
-        EndOffset : Int32
+        ChunkID : BIGINT PK
+        SourceRevisionID : BIGINT FK
+        ChunkNo : INT
+        ChunkText : NVARCHAR#40;MAX#41;
+        PageNo : INT NULL
+        StartOffset : INT
+        EndOffset : INT
     }
     class E["knowledge.ChunkEmbedding"] {
-        ChunkID : Int64 PK FK
-        ModelID : Int32 PK FK
-        Embedding : Vector[384]
+        ChunkID : BIGINT PK FK
+        ModelID : INT PK FK
+        Embedding : VECTOR#40;384#41;
     }
     class M["knowledge.EmbeddingModel"] {
-        ModelID : Int32 PK
-        ModelName : Str
-        ModelVersion : Str
-        Dimensions : Int32
-        IsActive : Bool
+        ModelID : INT PK
+        ModelName : NVARCHAR#40;200#41;
+        ModelVersion : NVARCHAR#40;80#41;
+        Dimensions : INT
+        IsActive : BIT
     }
     K --> E
     M --> E
@@ -341,38 +341,38 @@ classDiagram
 classDiagram
     direction TB
     class K["knowledge.Chunk"] {
-        ChunkID : Int64 PK
-        SourceRevisionID : Int64 FK
-        ChunkNo : Int32
-        ChunkText : Str
-        PageNo : Int32?
-        StartOffset : Int32
-        EndOffset : Int32
+        ChunkID : BIGINT PK
+        SourceRevisionID : BIGINT FK
+        ChunkNo : INT
+        ChunkText : NVARCHAR#40;MAX#41;
+        PageNo : INT NULL
+        StartOffset : INT
+        EndOffset : INT
     }
     class O["knowledge.ChunkOf"] {
-        $from_id : NodeRef
-        $to_id : NodeRef
+        $from_id
+        $to_id
     }
     class I["social.ContentItem"] {
-        ContentID : Int64 PK
-        Kind : Str
-        ContentStatus : Str
-        AllowRag : Bool
-        PublishedAt : DateTime?
+        ContentID : BIGINT PK
+        Kind : VARCHAR#40;8#41;
+        ContentStatus : VARCHAR#40;12#41;
+        AllowRag : BIT
+        PublishedAt : DATETIME2#40;3#41; NULL
     }
     class M["knowledge.Mentions"] {
-        MentionID : Int64 PK
-        $from_id : NodeRef
-        $to_id : NodeRef
-        EvidenceChunkID : Int64 FK
-        EvidenceText : Str
-        Confidence : Decimal
+        MentionID : BIGINT PK
+        $from_id
+        $to_id
+        EvidenceChunkID : BIGINT FK
+        EvidenceText : NVARCHAR#40;1000#41;
+        Confidence : DECIMAL#40;4,3#41;
     }
     class E["knowledge.KnowledgeEntity"] {
-        EntityID : Int64 PK
-        EntityType : Str
-        EntityName : Str
-        ExtractorVersion : Str
+        EntityID : BIGINT PK
+        EntityType : VARCHAR#40;14#41;
+        EntityName : NVARCHAR#40;500#41;
+        ExtractorVersion : NVARCHAR#40;80#41;
     }
     K --> O
     O --> I
@@ -386,34 +386,34 @@ classDiagram
 classDiagram
     direction TB
     class E["knowledge.KnowledgeEntity"] {
-        EntityID : Int64 PK
-        EntityType : Str
-        EntityName : Str
-        ExtractorVersion : Str
+        EntityID : BIGINT PK
+        EntityType : VARCHAR#40;14#41;
+        EntityName : NVARCHAR#40;500#41;
+        ExtractorVersion : NVARCHAR#40;80#41;
     }
     class R["knowledge.EntityRelation"] {
-        RelationID : Int64 PK
-        $from_id : NodeRef
-        $to_id : NodeRef
-        PredicateCode : Str
-        EvidenceChunkID : Int64 FK
-        EvidenceText : Str
-        Confidence : Decimal
+        RelationID : BIGINT PK
+        $from_id
+        $to_id
+        PredicateCode : VARCHAR#40;20#41;
+        EvidenceChunkID : BIGINT FK
+        EvidenceText : NVARCHAR#40;1000#41;
+        Confidence : DECIMAL#40;4,3#41;
     }
     class E2["knowledge.KnowledgeEntity (другая сущность)"] {
-        EntityID : Int64 PK
-        EntityType : Str
-        EntityName : Str
-        ExtractorVersion : Str
+        EntityID : BIGINT PK
+        EntityType : VARCHAR#40;14#41;
+        EntityName : NVARCHAR#40;500#41;
+        ExtractorVersion : NVARCHAR#40;80#41;
     }
     class K["knowledge.Chunk"] {
-        ChunkID : Int64 PK
-        SourceRevisionID : Int64 FK
-        ChunkNo : Int32
-        ChunkText : Str
-        PageNo : Int32?
-        StartOffset : Int32
-        EndOffset : Int32
+        ChunkID : BIGINT PK
+        SourceRevisionID : BIGINT FK
+        ChunkNo : INT
+        ChunkText : NVARCHAR#40;MAX#41;
+        PageNo : INT NULL
+        StartOffset : INT
+        EndOffset : INT
     }
     E --> R
     R --> E2
@@ -430,39 +430,39 @@ classDiagram
 classDiagram
     direction TB
     class U["auth.UserAccount"] {
-        UserID : Int64 PK
-        Login : Str
-        EmailNormalized : Str
-        AccountStatus : Str
-        PasswordHash : Bytes?
+        UserID : BIGINT PK
+        Login : NVARCHAR#40;80#41;
+        EmailNormalized : NVARCHAR#40;254#41;
+        AccountStatus : VARCHAR#40;12#41;
+        PasswordHash : VARBINARY#40;64#41; NULL
     }
     class C["social.Community"] {
-        CommunityID : Int64 PK
-        OwnerUserID : Int64 FK
-        Slug : Str
-        CommunityName : Str
-        Visibility : Str
-        Status : Str
+        CommunityID : BIGINT PK
+        OwnerUserID : BIGINT FK
+        Slug : NVARCHAR#40;100#41;
+        CommunityName : NVARCHAR#40;160#41;
+        Visibility : VARCHAR#40;8#41;
+        Status : VARCHAR#40;12#41;
     }
     class S["assistant.RagSession"] {
-        SessionID : Int64 PK
-        UserID : Int64 FK
-        CommunityID : Int64? FK
-        Scope : Str
+        SessionID : BIGINT PK
+        UserID : BIGINT FK
+        CommunityID : BIGINT FK NULL
+        Scope : VARCHAR#40;16#41;
     }
     class T["assistant.RagTurn"] {
-        TurnID : Int64 PK
-        SessionID : Int64 FK
-        TurnNo : Int32
-        QuestionText : Str
-        AnswerText : Str?
-        GenerationStatus : Str
+        TurnID : BIGINT PK
+        SessionID : BIGINT FK
+        TurnNo : INT
+        QuestionText : NVARCHAR#40;2000#41;
+        AnswerText : NVARCHAR#40;MAX#41; NULL
+        GenerationStatus : VARCHAR#40;12#41;
     }
     class F["assistant.TurnFeedback"] {
-        TurnID : Int64 PK FK
-        UserID : Int64 FK
-        Rating : Int32
-        Comment : Str?
+        TurnID : BIGINT PK FK
+        UserID : BIGINT FK
+        Rating : SMALLINT
+        Comment : NVARCHAR#40;1000#41; NULL
     }
     U --> S
     C --> S
@@ -477,45 +477,45 @@ classDiagram
 classDiagram
     direction TB
     class T["assistant.RagTurn"] {
-        TurnID : Int64 PK
-        SessionID : Int64 FK
-        TurnNo : Int32
-        QuestionText : Str
-        AnswerText : Str?
-        GenerationStatus : Str
+        TurnID : BIGINT PK
+        SessionID : BIGINT FK
+        TurnNo : INT
+        QuestionText : NVARCHAR#40;2000#41;
+        AnswerText : NVARCHAR#40;MAX#41; NULL
+        GenerationStatus : VARCHAR#40;12#41;
     }
     class R["assistant.RetrievalRun"] {
-        RetrievalRunID : Int64 PK
-        TurnID : Int64 FK
-        RetrievalMode : Str
-        ModelVersion : Str
+        RetrievalRunID : BIGINT PK
+        TurnID : BIGINT FK
+        RetrievalMode : VARCHAR#40;16#41;
+        ModelVersion : NVARCHAR#40;120#41;
     }
     class K["knowledge.Chunk"] {
-        ChunkID : Int64 PK
-        SourceRevisionID : Int64 FK
-        ChunkNo : Int32
-        ChunkText : Str
-        PageNo : Int32?
-        StartOffset : Int32
-        EndOffset : Int32
+        ChunkID : BIGINT PK
+        SourceRevisionID : BIGINT FK
+        ChunkNo : INT
+        ChunkText : NVARCHAR#40;MAX#41;
+        PageNo : INT NULL
+        StartOffset : INT
+        EndOffset : INT
     }
     class F["assistant.RetrievedChunk"] {
-        RetrievalRunID : Int64 PK FK
-        ChunkID : Int64 PK FK
-        Rank : Int32
-        Snippet : Str
-        VectorScore : Decimal?
-        TextScore : Decimal?
-        GraphScore : Decimal?
+        RetrievalRunID : BIGINT PK FK
+        ChunkID : BIGINT PK FK
+        Rank : INT
+        Snippet : NVARCHAR#40;1000#41;
+        VectorScore : DECIMAL#40;9,6#41; NULL
+        TextScore : DECIMAL#40;9,6#41; NULL
+        GraphScore : DECIMAL#40;9,6#41; NULL
     }
     class C["assistant.AnswerCitation"] {
-        CitationID : Int64 PK
-        RetrievalRunID : Int64 FK
-        ChunkID : Int64 FK
-        QuoteText : Str
-        PageNo : Int32?
-        StartOffset : Int32
-        EndOffset : Int32
+        CitationID : BIGINT PK
+        RetrievalRunID : BIGINT FK
+        ChunkID : BIGINT FK
+        QuoteText : NVARCHAR#40;1000#41;
+        PageNo : INT NULL
+        StartOffset : INT
+        EndOffset : INT
     }
     T --> R
     R --> F
@@ -533,31 +533,31 @@ classDiagram
 classDiagram
     direction TB
     class U["auth.UserAccount"] {
-        UserID : Int64 PK
-        Login : Str
-        EmailNormalized : Str
-        AccountStatus : Str
-        PasswordHash : Bytes?
+        UserID : BIGINT PK
+        Login : NVARCHAR#40;80#41;
+        EmailNormalized : NVARCHAR#40;254#41;
+        AccountStatus : VARCHAR#40;12#41;
+        PasswordHash : VARBINARY#40;64#41; NULL
     }
     class B["assistant.RecommendationBatch"] {
-        BatchID : Int64 PK
-        UserID : Int64 FK
-        AlgorithmVersion : Str
+        BatchID : BIGINT PK
+        UserID : BIGINT FK
+        AlgorithmVersion : NVARCHAR#40;40#41;
     }
     class I["assistant.RecommendationItem"] {
-        BatchID : Int64 PK FK
-        ContentID : Int64 PK FK
-        Rank : Int32
-        Score : Decimal
-        ReasonCode : Str
-        ReasonText : Str
+        BatchID : BIGINT PK FK
+        ContentID : BIGINT PK FK
+        Rank : INT
+        Score : DECIMAL#40;9,6#41;
+        ReasonCode : VARCHAR#40;24#41;
+        ReasonText : NVARCHAR#40;500#41;
     }
     class C["social.ContentItem"] {
-        ContentID : Int64 PK
-        Kind : Str
-        ContentStatus : Str
-        AllowRag : Bool
-        PublishedAt : DateTime?
+        ContentID : BIGINT PK
+        Kind : VARCHAR#40;8#41;
+        ContentStatus : VARCHAR#40;12#41;
+        AllowRag : BIT
+        PublishedAt : DATETIME2#40;3#41; NULL
     }
     U --> B
     B --> I
@@ -570,30 +570,30 @@ classDiagram
 classDiagram
     direction TB
     class S["knowledge.SourceRevision"] {
-        SourceRevisionID : Int64 PK
-        ContentID : Int64 FK
-        PostRevisionID : Int64?
-        CommentRevisionID : Int64?
-        DocumentVersionID : Int64?
-        ExtractedText : Str?
-        ProcessingStatus : Str
-        IsCurrent : Bool
+        SourceRevisionID : BIGINT PK
+        ContentID : BIGINT FK
+        PostRevisionID : BIGINT FK NULL
+        CommentRevisionID : BIGINT FK NULL
+        DocumentVersionID : BIGINT FK NULL
+        ExtractedText : NVARCHAR#40;MAX#41; NULL
+        ProcessingStatus : VARCHAR#40;10#41;
+        IsCurrent : BIT
     }
     class M["knowledge.EmbeddingModel"] {
-        ModelID : Int32 PK
-        ModelName : Str
-        ModelVersion : Str
-        Dimensions : Int32
-        IsActive : Bool
+        ModelID : INT PK
+        ModelName : NVARCHAR#40;200#41;
+        ModelVersion : NVARCHAR#40;80#41;
+        Dimensions : INT
+        IsActive : BIT
     }
     class O["ops.IndexOutbox"] {
-        EventID : Int64 PK
-        SourceRevisionID : Int64 FK
-        ModelID : Int32? FK
-        Operation : Str
-        EventStatus : Str
-        AttemptCount : Int32
-        LeaseUntil : DateTime?
+        EventID : BIGINT PK
+        SourceRevisionID : BIGINT FK
+        ModelID : INT FK NULL
+        Operation : VARCHAR#40;8#41;
+        EventStatus : VARCHAR#40;8#41;
+        AttemptCount : INT
+        LeaseUntil : DATETIME2#40;3#41; NULL
     }
     S --> O
     M --> O
@@ -605,19 +605,19 @@ classDiagram
 classDiagram
     direction TB
     class U["auth.UserAccount"] {
-        UserID : Int64 PK
-        Login : Str
-        EmailNormalized : Str
-        AccountStatus : Str
-        PasswordHash : Bytes?
+        UserID : BIGINT PK
+        Login : NVARCHAR#40;80#41;
+        EmailNormalized : NVARCHAR#40;254#41;
+        AccountStatus : VARCHAR#40;12#41;
+        PasswordHash : VARBINARY#40;64#41; NULL
     }
     class A["ops.AuditEvent"] {
-        AuditEventID : Int64 PK
-        ActorUserID : Int64? FK
-        EventType : Str
-        EntityType : Str
-        EntityID : Int64
-        CorrelationID : UUID?
+        AuditEventID : BIGINT PK
+        ActorUserID : BIGINT FK NULL
+        EventType : VARCHAR#40;40#41;
+        EntityType : VARCHAR#40;40#41;
+        EntityID : BIGINT
+        CorrelationID : UNIQUEIDENTIFIER NULL
     }
     U --> A
 ~~~
