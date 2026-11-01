@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Render one field-level picture from the canonical SQL Server CREATE TABLE scripts.
+"""Render full and product SVGs from the canonical SQL Server CREATE TABLE scripts.
 
 Run from any directory: python3 tools/generate_database_model_svg.py
 Only the Python standard library is required. The SVG is a checked-in artifact;
@@ -16,7 +16,8 @@ from xml.sax.saxutils import escape
 
 ROOT = Path(__file__).resolve().parents[1]
 DATABASE = ROOT / "database"
-OUTPUT = ROOT / "architecture" / "database-model.svg"
+OUTPUT_FULL = ROOT / "architecture" / "database-model.svg"
+OUTPUT_PRODUCT = ROOT / "architecture" / "product-model.svg"
 DDL_FILES = (
     "01-social-nodes.sql",
     "02-content.sql",
@@ -27,7 +28,7 @@ DDL_FILES = (
 )
 
 # Columns are thematic neighborhoods on one canvas; every table appears once.
-LANES = (
+FULL_LANES = (
     (
         "auth.UserAccount",
         "auth.UserProfile",
@@ -71,6 +72,32 @@ LANES = (
     ),
 )
 
+# The social network as a product: identity, communities, content, files and feed.
+# RAG, indexing, extraction and technical audit tables stay in the full view.
+PRODUCT_LANES = (
+    (
+        "auth.UserAccount",
+        "auth.UserProfile",
+        "auth.ExternalIdentity",
+        "social.Follows",
+        "social.Community",
+        "social.MemberOf",
+        "assistant.RecommendationBatch",
+        "assistant.RecommendationItem",
+    ),
+    (
+        "social.ContentItem",
+        "social.Authored",
+        "social.PublishedIn",
+        "social.CommentOn",
+        "social.ReactTo",
+        "social.PostRevision",
+        "social.CommentRevision",
+        "social.DocumentDetail",
+        "knowledge.DocumentVersion",
+    ),
+)
+
 CARD_WIDTH = 470
 HEADER_HEIGHT = 40
 ROW_HEIGHT = 25
@@ -101,6 +128,8 @@ class Table:
 
     @property
     def height(self) -> int:
+        if not self.columns:
+            return HEADER_HEIGHT
         return HEADER_HEIGHT + ROW_HEIGHT * len(self.columns) + BOTTOM_PAD
 
     def column(self, name: str) -> Column:
@@ -259,12 +288,12 @@ def read_model() -> tuple[dict[str, Table], list[ForeignKey], list[GraphConnecti
     return tables, fks, graph
 
 
-def place_tables(tables: dict[str, Table]) -> tuple[int, int]:
-    ordered = [name for lane in LANES for name in lane]
+def place_tables(tables: dict[str, Table], lanes: tuple[tuple[str, ...], ...]) -> tuple[int, int]:
+    ordered = [name for lane in lanes for name in lane]
     if len(ordered) != len(set(ordered)) or set(ordered) != set(tables):
         raise ValueError(f"Layout does not match DDL tables: {set(tables) ^ set(ordered)}")
     bottom = 0
-    for lane_no, lane in enumerate(LANES):
+    for lane_no, lane in enumerate(lanes):
         y = TOP
         for name in lane:
             table = tables[name]
@@ -273,7 +302,7 @@ def place_tables(tables: dict[str, Table]) -> tuple[int, int]:
             table.y = y
             y += table.height + CARD_GAP
         bottom = max(bottom, y - CARD_GAP)
-    width = LEFT * 2 + len(LANES) * CARD_WIDTH + (len(LANES) - 1) * LANE_GAP
+    width = LEFT * 2 + len(lanes) * CARD_WIDTH + (len(lanes) - 1) * LANE_GAP
     return width, bottom + 115
 
 
@@ -315,8 +344,9 @@ def svg_text(x: float, y: float, text: str, css_class: str, **attrs: str) -> str
     return f'<text class="{css_class}" x="{x:.0f}" y="{y:.1f}" {attributes}>{escape(text)}</text>'
 
 
-def render(tables: dict[str, Table], fks: list[ForeignKey], graph: list[GraphConnection]) -> str:
-    width, height = place_tables(tables)
+def render(tables: dict[str, Table], fks: list[ForeignKey], graph: list[GraphConnection],
+           lanes: tuple[tuple[str, ...], ...], label: str) -> str:
+    width, height = place_tables(tables, lanes)
     colors = {
         "auth": ("#eef3ff", "#4870b8"),
         "social": ("#edf8f6", "#25847d"),
@@ -325,7 +355,7 @@ def render(tables: dict[str, Table], fks: list[ForeignKey], graph: list[GraphCon
         "ops": ("#f0f2f5", "#697586"),
     }
     out = [
-        f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}" role="img" aria-label="Все 33 таблицы SocialNetworkDB, их поля и связи">',
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}" role="img" aria-label="{escape(label)}">',
         "<defs>",
         '<marker id="fk-arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M 0 0 L 8 4 L 0 8 z" fill="#66789f"/></marker>',
         '<marker id="graph-arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M 0 0 L 8 4 L 0 8 z" fill="#219186"/></marker>',
@@ -362,15 +392,19 @@ def render(tables: dict[str, Table], fks: list[ForeignKey], graph: list[GraphCon
         out.append(f'<path class="graph-link" d="{second}"><title>{escape(edge.name + " → " + target.name)}</title></path>')
         serial += 1
     out.append("</g>")
-    for lane in LANES:
+    for lane in lanes:
         for name in lane:
             table = tables[name]
             fill, accent = colors[name.split(".", 1)[0]]
             x, y = table.x, table.y
             out.append(f'<g class="table" id="{name}" data-kind="{table.kind}">')
             out.append(f'<rect class="card" x="{x:.0f}" y="{y:.0f}" width="{CARD_WIDTH}" height="{table.height}" rx="9"/>')
-            out.append(f'<path d="M {x+9:.0f} {y:.0f} H {x+CARD_WIDTH-9:.0f} Q {x+CARD_WIDTH:.0f} {y:.0f} {x+CARD_WIDTH:.0f} {y+9:.0f} V {y+HEADER_HEIGHT:.0f} H {x:.0f} V {y+9:.0f} Q {x:.0f} {y:.0f} {x+9:.0f} {y:.0f} Z" fill="{fill}"/>')
-            out.append(f'<path d="M {x+1:.0f} {y+HEADER_HEIGHT:.0f} H {x+CARD_WIDTH-1:.0f}" class="header-rule"/>')
+            if table.columns:
+                out.append(f'<path d="M {x+9:.0f} {y:.0f} H {x+CARD_WIDTH-9:.0f} Q {x+CARD_WIDTH:.0f} {y:.0f} {x+CARD_WIDTH:.0f} {y+9:.0f} V {y+HEADER_HEIGHT:.0f} H {x:.0f} V {y+9:.0f} Q {x:.0f} {y:.0f} {x+9:.0f} {y:.0f} Z" fill="{fill}"/>')
+                out.append(f'<path d="M {x+1:.0f} {y+HEADER_HEIGHT:.0f} H {x+CARD_WIDTH-1:.0f}" class="header-rule"/>')
+            else:
+                out.append(f'<rect x="{x+1:.0f}" y="{y+1:.0f}" width="{CARD_WIDTH-2}" height="{table.height-2}" rx="8" fill="{fill}"/>')
+                out.append(f'<title>{escape(name)}: ребро SQL Graph без объявленных полей; концы связи хранятся в системных $from_id и $to_id.</title>')
             out.append(f'<rect x="{x:.0f}" y="{y:.0f}" width="4" height="{table.height}" rx="2" fill="{accent}"/>')
             out.append(svg_text(x + CARD_WIDTH / 2, y + 26, name, "title"))
             for index, column in enumerate(table.columns):
@@ -390,10 +424,29 @@ def render(tables: dict[str, Table], fks: list[ForeignKey], graph: list[GraphCon
 
 def main() -> None:
     tables, fks, graph = read_model()
-    svg = render(tables, fks, graph)
-    OUTPUT.write_text(svg, encoding="utf-8")
-    print(f"{OUTPUT}: {len(tables)} tables, {sum(len(t.columns) for t in tables.values())} columns, "
+    OUTPUT_FULL.write_text(
+        render(tables, fks, graph, FULL_LANES, "Все таблицы SocialNetworkDB, их поля и связи"),
+        encoding="utf-8",
+    )
+    print(f"{OUTPUT_FULL}: {len(tables)} tables, {sum(len(t.columns) for t in tables.values())} columns, "
           f"{len(fks)} FK constraints, {len(graph)} SQL Graph connections")
+
+    product_names = {name for lane in PRODUCT_LANES for name in lane}
+    product_tables = {name: table for name, table in tables.items() if name in product_names}
+    product_fks = [fk for fk in fks if fk.source_table in product_names and fk.target_table in product_names]
+    product_graph = [link for link in graph if {link.edge_table, link.source_table, link.target_table} <= product_names]
+    if any(fk.source_table in product_names and fk.target_table not in product_names for fk in fks):
+        raise ValueError("Product view cuts a declared foreign key")
+    if any(link.edge_table in product_names and link not in product_graph for link in graph):
+        raise ValueError("Product view cuts a SQL Graph connection")
+    OUTPUT_PRODUCT.write_text(
+        render(product_tables, product_fks, product_graph, PRODUCT_LANES,
+               "Продуктовые таблицы социальной сети, их поля и связи"),
+        encoding="utf-8",
+    )
+    print(f"{OUTPUT_PRODUCT}: {len(product_tables)} tables, "
+          f"{sum(len(t.columns) for t in product_tables.values())} columns, "
+          f"{len(product_fks)} FK constraints, {len(product_graph)} SQL Graph connections")
 
 
 if __name__ == "__main__":
