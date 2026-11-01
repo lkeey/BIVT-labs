@@ -1,165 +1,222 @@
-# База данных курсовой: что и зачем мы храним
+# База данных курсовой: что мы храним и как связаны записи
 
-**Предметная область:** социальная сеть с сообществами, публикациями, комментариями и документами. Пользователь может искать по доступным материалам, получать ответ с проверяемыми цитатами и персональную ленту. Каноническая реализация курсовой — **одна база `SocialNetworkDB` на SQL Server 2025**, написанная на T-SQL. Её пять схем (`auth`, `social`, `knowledge`, `assistant`, `ops`) группируют объекты по назначению; это **не пять отдельных баз**.
+**Предметная область:** социальная сеть с сообществами, постами, комментариями и документами. Вопросы по материалам и рекомендательная лента используют те же данные. Для курсовой есть **одна база SocialNetworkDB на SQL Server 2025** с пятью схемами: auth, social, knowledge, assistant и ops. Всего в ней **33 таблицы**: 5 узлов SQL Graph, 9 рёбер и 19 обычных таблиц.
 
-В базе **33 таблицы**: 5 узлов `AS NODE`, 9 рёбер `AS EDGE` и 19 обычных таблиц. Ниже они разбиты на пять небольших блоков. Диаграммы показывают смысл связей, а поля и ограничения точно определены в [T-SQL-скриптах](../database/README.md). Здесь рассматривается только модель базы, без HTTP API и размещения приложения.
+Здесь показаны **важные поля каждой модели и реальные пары полей для соединения**. Число таблиц в заголовке раздела считает каждую модель один раз; повторённые для контекста узлы в него не входят. Указаны не все технические столбцы; их типы и ограничения находятся в [T-SQL-скриптах](../database/README.md). API и хостинг в этом документе не рассматриваются.
 
-## Как читать схему
+## Как читать стрелки
 
-- **Узел SQL Graph** — самостоятельный объект с обычным первичным ключом, например `UserID` или `ContentID`. SQL Server дополнительно создаёт внутренний `$node_id` для графовых связей.
-- **Ребро SQL Graph** — строка связи от `$from_id` к `$to_id`, например «пользователь подписан на пользователя». Ребро может иметь свои поля: роль, статус, оценку уверенности.
-- **Обычная таблица** хранит атрибуты, версии, векторы, историю поиска или задания обработки и связывается внешними ключами (`FK`). Доменные идентификаторы — обычные столбцы, часто `bigint`, а не внутренние `$node_id`.
-- `CONNECTION` ограничивает **типы таблиц** на концах ребра. Например, правило «комментарий указывает именно на пост», а не на другой документ, дополнительно проверяют процедуры записи по `ContentItem.Kind`.
+- **PK → FK:** например, UserAccount.UserID = UserProfile.UserID. В прямоугольниках эти поля помечены PK и FK.
+- **UNIQUE → составной FK:** SourceRevision указывает на редакцию по паре (ContentID, RevisionID); пара уникальна, хотя PK редакции — только RevisionID.
+- **SQL Graph:** у узла есть обычный PK и созданный SQL Server системный $node_id. Ребро хранит $from_id и $to_id и соединяется с $node_id узлов. Поэтому у MemberOf **нет** поля UserID, по которому его можно было бы связать с пользователем. Обход выполняется через MATCH.
+- Подпись на каждой стрелке показывает именно сравниваемые поля. Mermaid проводит линию между прямоугольниками, а не к отдельной строке внутри них.
 
-## 1. Пользователи и сообщества — 6 таблиц
-
-~~~mermaid
-flowchart LR
-    U1["UserAccount: Анна"] -->|"0..1 профиль"| P["UserProfile"]
-    U1 -->|"0..1 Firebase UID"| X["ExternalIdentity"]
-    U1 -->|"OwnerUserID: владелец"| C["Community"]
-    U1 -->|"MemberOf: роль и статус"| C
-    U1 -->|"Follows: подписка"| U2["UserAccount: Борис"]
-~~~
-
-| Таблица | Что храним и как связываем |
-| --- | --- |
-| `auth.UserAccount` **NODE** | Учётная запись: `UserID`, логин, нормализованный email, статус `ACTIVE/BLOCKED/DELETED`. Логин и email уникальны. |
-| `auth.UserProfile` | Имя, описание, видимость профиля; `UserID` одновременно PK и FK на аккаунт, то есть не более одного профиля. |
-| `auth.ExternalIdentity` | Проверенный Firebase UID и FK на `UserAccount`; уникальность `UserID` допускает не более одной такой привязки на аккаунт. Email не служит ключом для объединения пользователей. |
-| `social.Community` **NODE** | Сообщество: `CommunityID`, уникальный `Slug`, название, `PUBLIC/PRIVATE`, `ACTIVE/ARCHIVED`; `OwnerUserID` — обычный FK на владельца. |
-| `social.Follows` **EDGE** | Направленная подписка `UserAccount → UserAccount`; пара пользователей уникальна, подписка на себя запрещена. Подписка влияет на ленту, но не даёт доступа к закрытому сообществу. |
-| `social.MemberOf` **EDGE** | Членство `UserAccount → Community`: роль `OWNER/ADMIN/MODERATOR/MEMBER`, статус заявки или участия, даты вступления и выхода. Действующее участие одной пары уникально. |
-
-**Главная мысль:** владелец сообщества задан FK, а участники — графовыми рёбрами с разными ролями и состояниями. `PENDING` ещё не даёт доступа. Для закрытого сообщества нужен владелец или действующее `ACTIVE` членство; актуальная блокировка `BLOCKED/BANNED` закрывает даже открытый материал.
-
-## 2. Публикации и их версии — 9 таблиц
+## 1. Учётные записи и сообщества · 6 таблиц
 
 ~~~mermaid
-flowchart LR
-    U["UserAccount"] -->|"Authored"| P["ContentItem: POST"]
-    P -->|"PublishedIn"| C["Community"]
-    U -->|"ReactTo"| P
-    P --> PR["PostRevision: текст и редакции"]
-    CM["ContentItem: COMMENT"] -->|"CommentOn"| P
-    CM --> CR["CommentRevision: текст и редакции"]
-    U -->|"Authored"| D["ContentItem: DOCUMENT"]
-    D -->|"PublishedIn"| C
-    D --> DD["DocumentDetail: название"]
-    DD --> DV["DocumentVersion: текст или файл"]
+flowchart TB
+    U["auth.UserAccount · NODE<br/>PK UserID · $node_id<br/>Login · EmailNormalized · AccountStatus"]
+    P["auth.UserProfile<br/>PK/FK UserID<br/>DisplayName · ProfileVisibility"]
+    X["auth.ExternalIdentity<br/>PK FirebaseUID · FK/UNIQUE UserID"]
+    C["social.Community · NODE<br/>PK CommunityID · $node_id<br/>FK OwnerUserID · Visibility"]
+    M["social.MemberOf · EDGE<br/>PK MembershipID · $from_id · $to_id<br/>Role · MemberStatus · EndedAt"]
+    F["social.Follows · EDGE<br/>$from_id · $to_id · CreatedAt<br/>без PK; UNIQUE пара концов"]
+    U2["auth.UserAccount: другой пользователь<br/>PK UserID · $node_id"]
+
+    U -->|"PK UserID = PK/FK UserID"| P
+    U -->|"PK UserID = FK/UNIQUE UserID"| X
+    U -->|"PK UserID = FK OwnerUserID"| C
+    U -->|"$node_id = $from_id"| M
+    M -->|"$to_id = $node_id"| C
+    U -->|"$node_id = $from_id"| F
+    F -->|"$to_id = $node_id"| U2
 ~~~
 
-| Таблица | Что храним и как связываем |
-| --- | --- |
-| `social.ContentItem` **NODE** | Общая запись материала: `ContentID`, `Kind = POST/COMMENT/DOCUMENT`, состояние `DRAFT/PUBLISHED/HIDDEN/DELETED`, `AllowRag`, даты. В ней **нет** `AuthorID` или `CommunityID`: эти связи хранятся рёбрами. |
-| `social.Authored` **EDGE** | `UserAccount → ContentItem`; у материала один автор. |
-| `social.PublishedIn` **EDGE** | `ContentItem → Community`; пост или документ размещён в одном сообществе. Комментарий наследует сообщество родительского поста. |
-| `social.CommentOn` **EDGE** | `ContentItem(COMMENT) → ContentItem(POST)`; у комментария один родитель. Проверка видов материала выполняется процедурами. |
-| `social.ReactTo` **EDGE** | Реакция пользователя на пост или комментарий: `LIKE/HELPFUL/INSIGHTFUL`; одна пара пользователь–материал. |
-| `social.PostRevision` | Редакции текста поста: `Body`, номер, хеш, признак текущей версии, автор правки; FK на `ContentItem` и редактора. |
-| `social.CommentRevision` | Редакции текста комментария: `Body`, номер, `VISIBLE/HIDDEN/DELETED`, признак текущей версии; FK на `ContentItem`. |
-| `social.DocumentDetail` | Заголовок, описание и состояние обработки документа `PROCESSING/READY/FAILED`; `ContentID` одновременно PK и FK. |
-| `knowledge.DocumentVersion` | Нумерованные версии документа; FK на `DocumentDetail`. Версия содержит **либо** введённый `PlainText`, **либо** PDF/DOCX в `FileBytes VARBINARY(MAX)`, а также MIME-тип, размер, SHA-256, состояние OCR и признак текущей версии. Размер файла ограничен 10 МиБ. |
+UserAccount хранит логин, нормализованный email и статус аккаунта; UserProfile — публичные сведения. ExternalIdentity привязывает проверенный Firebase UID, причём один аккаунт имеет не более одной такой привязки. Community хранит владельца обычным FK, а членство — графовым ребром MemberOf со статусом и ролью. Follows — направленная подписка на другого пользователя; она влияет на ленту, но не открывает закрытое сообщество.
 
-**Зачем версии:** после редактирования старый текст остаётся в истории, но новые ответы и поиск берут только текущую опубликованную редакцию. Уникальные фильтрованные индексы не позволяют двум редакциям одного материала одновременно быть текущими. Скрытие или удаление материала прекращает его выдачу без физического удаления всех исторических строк.
+Для чтения закрытого сообщества нужен владелец или действующее членство ACTIVE. Заявка PENDING доступа не даёт; актуальные BLOCKED/BANNED закрывают даже открытые материалы.
 
-## 3. Индекс поиска и граф знаний — 8 таблиц
+## 2. Социальные связи публикации · 5 таблиц
 
 ~~~mermaid
-flowchart LR
-    R["Текущая редакция поста / комментария / документа"] --> S["SourceRevision: снимок для индекса"]
-    S --> K["Chunk: текст, страница, позиции"]
-    K --> V["ChunkEmbedding: VECTOR(384)"]
-    M["EmbeddingModel: версия модели"] --> V
-    K -->|"ChunkOf"| I["ContentItem: источник"]
-    K -->|"Mentions"| E1["KnowledgeEntity: человек"]
-    E1 -->|"от"| ER["EntityRelation: WORKS_AT"]
-    ER -->|"к"| E2["KnowledgeEntity: организация"]
-    K -.->|"EvidenceChunkID"| ER
+flowchart TB
+    U["auth.UserAccount · NODE<br/>PK UserID · $node_id"]
+    P["social.ContentItem: POST · NODE<br/>PK ContentID · $node_id<br/>Kind · ContentStatus · AllowRag"]
+    CM["social.ContentItem: COMMENT · NODE<br/>PK ContentID · $node_id<br/>Kind · ContentStatus"]
+    C["social.Community · NODE<br/>PK CommunityID · $node_id"]
+    A["social.Authored · EDGE<br/>$from_id · $to_id<br/>без PK; UNIQUE $to_id"]
+    PI["social.PublishedIn · EDGE<br/>$from_id · $to_id<br/>без PK; UNIQUE $from_id"]
+    CO["social.CommentOn · EDGE<br/>$from_id · $to_id<br/>без PK; UNIQUE $from_id"]
+    RT["social.ReactTo · EDGE<br/>$from_id · $to_id · ReactionType<br/>без PK; UNIQUE пара концов"]
+    U -->|"$node_id = $from_id"| A
+    A -->|"$to_id = $node_id"| P
+    P -->|"$node_id = $from_id"| PI
+    PI -->|"$to_id = $node_id"| C
+    CM -->|"$node_id = $from_id"| CO
+    CO -->|"$to_id = $node_id"| P
+    U -->|"$node_id = $from_id"| RT
+    RT -->|"$to_id = $node_id"| P
 ~~~
 
-| Таблица | Что храним и как связываем |
-| --- | --- |
-| `knowledge.SourceRevision` | Снимок материала для индекса: `ContentID`, извлечённый текст, состояние и `IsCurrent`. Три необязательных FK указывают на `PostRevision`, `CommentRevision` или `DocumentVersion`; `CHECK` требует **ровно один** из них. |
-| `knowledge.Chunk` **NODE** | Фрагмент текущего текста: `ChunkText`, номер фрагмента, страница, позиции символов, `READY/STALE`; FK на `SourceRevision`. |
-| `knowledge.EmbeddingModel` | Имя, закреплённая версия и размерность модели; в проекте активна `intfloat/multilingual-e5-small`, 384 измерения. |
-| `knowledge.ChunkEmbedding` | Вектор `VECTOR(384)` для пары `(ChunkID, ModelID)`; оба столбца образуют составной PK и ссылаются на фрагмент и модель. |
-| `knowledge.KnowledgeEntity` **NODE** | Извлечённая сущность: тема, человек, организация, событие или место, имя и версия извлекателя. Совпадающие имена автоматически не склеиваются. |
-| `knowledge.ChunkOf` **EDGE** | `Chunk → ContentItem`: из какого материала получен фрагмент. |
-| `knowledge.Mentions` **EDGE** | `Chunk → KnowledgeEntity`: упоминание сущности с исходной цитатой, позициями, уверенностью `0..1` и версией извлекателя; `EvidenceChunkID` ссылается на фрагмент. |
-| `knowledge.EntityRelation` **EDGE** | `KnowledgeEntity → KnowledgeEntity`: связь `PARTICIPATES_IN/WORKS_AT/TAKES_PLACE_IN/RELATED_TO` с `EvidenceChunkID`, цитатой, позициями, уверенностью и версией извлекателя. |
+ContentItem — общая запись с видом POST, COMMENT или DOCUMENT, состоянием DRAFT/PUBLISHED/HIDDEN/DELETED и флагом AllowRag. **Автор и сообщество не дублируются в его столбцах:** их задают Authored и PublishedIn. Диаграмма показывает пост и комментарий как две строки одной таблицы. У документа тоже есть Authored и PublishedIn; у комментария есть Authored, а сообщество он наследует от родительского поста по CommentOn. ReactTo хранит вид реакции LIKE, HELPFUL или INSIGHTFUL.
 
-**Источник истины** — текущий пост, комментарий или версия документа. `SourceRevision`, фрагменты, векторы и извлечённые связи — производные данные: их можно восстановить из исходного материала. Вектор — числовое представление текста для поиска похожих фрагментов; граф хранит явные связи. OCR, извлечение сущностей и вычисление векторов выполняет внешний обработчик, а SQL Server хранит результат и обеспечивает связи и права.
+Ограничение CONNECTION проверяет, что концы рёбер принадлежат нужным таблицам. Правило «CommentOn ведёт от COMMENT к POST» проверяют процедуры: обе строки являются ContentItem, и тип Kind системное графовое ограничение не различает. Рёбра Follows, Authored, PublishedIn, CommentOn, ReactTo и ChunkOf не имеют отдельного PK; уникальные индексы ограничивают допустимые пары или один из концов.
 
-У `Chunk` есть координаты, поэтому можно показать страницу и точное место цитаты. `EntityRelation` нельзя использовать в ответе без доступного `EvidenceChunkID`: само наличие ребра графа не открывает закрытый документ. По русскому тексту дополнительно работает Full-Text Search; векторное сравнение выполняется через `VECTOR_DISTANCE`.
-
-## 4. Вопросы, найденные фрагменты и цитаты — 6 таблиц
+## 3. Текст и версии публикаций · 4 таблицы
 
 ~~~mermaid
-flowchart LR
-    U["UserAccount"] --> S["RagSession: область поиска"]
-    C["Community: необязательное ограничение"] -.-> S
-    S --> T["RagTurn: вопрос и ответ"]
-    T --> R["RetrievalRun: параметры поиска"]
-    R --> RC["RetrievedChunk: действительно найден"]
-    K["Chunk"] --> RC
-    RC --> AC["AnswerCitation: цитата"]
-    T --> F["TurnFeedback: оценка"]
+flowchart TB
+    I["social.ContentItem · NODE<br/>PK ContentID · Kind"]
+    U["auth.UserAccount<br/>PK UserID"]
+    PR["social.PostRevision<br/>PK RevisionID · FK ContentID · FK EditedByUserID<br/>RevisionNo · Body · IsCurrent"]
+    CR["social.CommentRevision<br/>PK RevisionID · FK ContentID<br/>RevisionNo · Body · CommentStatus · IsCurrent"]
+    DD["social.DocumentDetail<br/>PK/FK ContentID<br/>Title · DocumentStatus"]
+    DV["knowledge.DocumentVersion<br/>PK DocumentVersionID · FK ContentID<br/>VersionNo · PlainText ИЛИ FileBytes · IsCurrent<br/>MimeType · SizeBytes · SHA256 · OCRStatus"]
+
+    I -->|"PK ContentID = FK ContentID; Kind POST"| PR
+    I -->|"PK ContentID = FK ContentID; Kind COMMENT"| CR
+    I -->|"PK ContentID = PK/FK ContentID; Kind DOCUMENT"| DD
+    U -->|"PK UserID = FK EditedByUserID"| PR
+    DD -->|"PK ContentID = FK ContentID"| DV
 ~~~
 
-| Таблица | Что храним и как связываем |
-| --- | --- |
-| `assistant.RagSession` | Сеанс пользователя, область `AllAccessible/Community`; необязательный FK на сообщество задаёт узкий поиск. |
-| `assistant.RagTurn` | Очередной вопрос, текст ответа, номер хода и статус `PENDING/COMPLETED/FAILED/NO_SOURCES`; FK на сеанс. |
-| `assistant.RetrievalRun` | Один запуск поиска: режим, параметры, версия правила доступа и модели; FK на ход. |
-| `assistant.RetrievedChunk` | Реально отобранный фрагмент, ранг, выдержка и оценки текста/вектора/графа; составной PK `(RetrievalRunID, ChunkID)`. |
-| `assistant.AnswerCitation` | Цитата с текстом, страницей и позициями. **Составной FK** `(RetrievalRunID, ChunkID)` ведёт к `RetrievedChunk`: нельзя записать ссылку на фрагмент, которого не было в выдаче. Процедура дополнительно сверяет текст цитаты с символами этого фрагмента. |
-| `assistant.TurnFeedback` | Необязательная оценка ответа `1..5` и комментарий пользователя; `TurnID` — PK и FK, поэтому один отзыв на ход. |
+Пост и комментарий получают новую строку редакции после правки; история остаётся. У документов заголовок и состояние обработки лежат в DocumentDetail, а содержимое — в DocumentVersion. Одна версия документа содержит **либо** PlainText, **либо** PDF/DOCX в FileBytes VARBINARY(MAX); ограничение SizeBytes действует и на текст, и на файл, максимум 10 МиБ. Фильтрованные UNIQUE-индексы допускают только одну текущую редакцию каждого материала.
 
-**Что доказывает эта часть модели:** ответ не просто хранит текст. Он сохраняет, какие фрагменты были выбраны и откуда дословно взяты цитаты. Это подтверждает происхождение цитаты, но само по себе не гарантирует смысловую правильность всего ответа. При чтении сохранённого ответа доступ к источникам проверяется снова; после отзыва доступа прежний текст и цитаты не выдаются.
+Поля RevisionID и DocumentVersionID — PK отдельных версий; ContentID привязывает все версии к одному материалу. Для защиты полезно отличать **материал** ContentItem от **его конкретной редакции**.
 
-## 5. Лента и служебные события — 4 таблицы
+## 4. Снимок для поиска и векторы · 4 таблицы
+
+Один SourceRevision указывает **ровно на одну** редакцию: поста, комментария или документа. Его CHECK требует, чтобы из трёх FK был заполнен ровно один. Эти FK составные: вместе с ID редакции они включают ContentID, поэтому снимок нельзя случайно связать с редакцией другого материала.
 
 ~~~mermaid
-flowchart LR
-    U["UserAccount"] --> B["RecommendationBatch: расчёт ленты"]
-    B --> RI["RecommendationItem: ранг, балл, причина"]
-    RI --> I["ContentItem: пост или документ"]
-    SR["SourceRevision"] --> O["IndexOutbox: задание обработки"]
-    U -.->|"необязательный актор"| A["AuditEvent: журнал действия"]
+flowchart TB
+    PR["social.PostRevision<br/>UNIQUE (ContentID, RevisionID)"]
+    CR["social.CommentRevision<br/>UNIQUE (ContentID, RevisionID)"]
+    DV["knowledge.DocumentVersion<br/>UNIQUE (ContentID, DocumentVersionID)"]
+    I["social.ContentItem<br/>PK ContentID"]
+    SR["knowledge.SourceRevision<br/>PK SourceRevisionID · FK ContentID<br/>FK PostRevisionID / CommentRevisionID / DocumentVersionID<br/>IsCurrent · ProcessingStatus · ExtractedText"]
+
+    PR -->|"UNIQUE (ContentID,RevisionID) = FK (ContentID,PostRevisionID)"| SR
+    CR -->|"UNIQUE (ContentID,RevisionID) = FK (ContentID,CommentRevisionID)"| SR
+    DV -->|"UNIQUE (ContentID,DocumentVersionID) = FK (ContentID,DocumentVersionID)"| SR
+    I -->|"PK ContentID = FK ContentID"| SR
 ~~~
 
-| Таблица | Что храним и как связываем |
-| --- | --- |
-| `assistant.RecommendationBatch` | Расчёт ленты для пользователя, время и версия алгоритма; FK на `UserAccount`. |
-| `assistant.RecommendationItem` | Материал внутри расчёта: `ContentID`, уникальный ранг, оценка `0..1`, код и текст причины; составной PK `(BatchID, ContentID)`. В ленту попадают посты и документы, а комментарии служат сигналом интереса. |
-| `ops.IndexOutbox` | Задание `UPSERT/DELETE` для `SourceRevision`: статус, попытки, аренда обработчика и ошибка. Триггер создаёт запись при новой редакции в той же транзакции; тяжёлая обработка выполняется позже. |
-| `ops.AuditEvent` | Журнал действия: тип, объект, время, корреляционный ID, необязательный FK на действовавшего пользователя и JSON-детали. Секреты и полные документы в журнал не записываются. |
+Три стрелки к SourceRevision — **альтернативы**, а не три одновременных источника. После индексации его текст разбивается на фрагменты. Для каждого фрагмента сохраняются текст, страница и позиции символов; отдельная таблица хранит вектор и версию модели.
 
-Оценка ленты — объяснимое правило: **0,30** темы и сущности, **0,25** подписка на автора, **0,20** членство, **0,15** реакции и комментарии, **0,10** свежесть. Это не обученная модель. Перед включением в ленту SQL проверяет текущий статус публикации и право её читать.
+~~~mermaid
+flowchart TB
+    SR["knowledge.SourceRevision<br/>PK SourceRevisionID · ProcessingStatus"]
+    K["knowledge.Chunk · NODE<br/>PK ChunkID · FK SourceRevisionID · $node_id<br/>ChunkText · PageNo · StartOffset · EndOffset"]
+    V["knowledge.ChunkEmbedding<br/>PK (ChunkID, ModelID)<br/>FK ChunkID · FK ModelID · Embedding VECTOR(384)"]
+    M["knowledge.EmbeddingModel<br/>PK ModelID<br/>ModelName · ModelVersion · Dimensions"]
 
-## Один материал проходит через базу
+    SR -->|"PK SourceRevisionID = FK SourceRevisionID"| K
+    K -->|"PK ChunkID = PK/FK ChunkID"| V
+    M -->|"PK ModelID = PK/FK ModelID"| V
+~~~
 
-Пример условный: Анна публикует в закрытом сообществе PDF с фразой «Иван работает в лаборатории Спектр».
+EmbeddingModel фиксирует конкретную версию multilingual-e5-small и размерность 384. ChunkEmbedding может хранить вектор для пары «фрагмент + модель». OCR и создание вектора выполняет внешний обработчик; SQL Server хранит результаты. Поиск использует только текущие готовые снимки и фрагменты. По словам работает Full-Text Search, по близости смысла — VECTOR_DISTANCE.
 
-1. `UserAccount` и `Community` уже существуют; активное `MemberOf` разрешает Анне публикацию. `ContentItem(DOCUMENT)` получает автора через `Authored` и сообщество через `PublishedIn`.
-2. `DocumentDetail` хранит название и статус, `DocumentVersion` — байты PDF, SHA-256 и состояние распознавания. `SourceRevision` указывает именно на эту версию, а `IndexOutbox` ставит задачу обработки.
-3. После извлечения текста обработчик создаёт `Chunk` с текстом, страницей и позициями, `ChunkEmbedding` с вектором и `ChunkOf`, связывающее фрагмент с документом.
-4. Если распознаны сущности «Иван» и «лаборатория Спектр», появятся два `KnowledgeEntity`, рёбра `Mentions` и `EntityRelation(WORKS_AT)` со свидетельством из этого `Chunk`. Это результат извлекателя, а не заранее введённый факт.
-5. При вопросе «Где работает Иван?» поиск может выбрать этот `Chunk`. `RetrievedChunk` фиксирует выбор, а `AnswerCitation` ссылается на него. Ответ покажет источник и страницу только пользователю, которому **сейчас** доступно закрытое сообщество.
-6. Если документ отредактируют или скроют, старая редакция останется в истории, но не попадёт в новый ответ. Сохранённая цитата также не выдаётся после отзыва доступа.
+## 5. Граф знаний и проверяемое свидетельство · 4 таблицы
 
-## Что объяснить на защите
+~~~mermaid
+flowchart TB
+    K["knowledge.Chunk · NODE<br/>PK ChunkID · $node_id<br/>ChunkText · PageNo · StartOffset · EndOffset"]
+    I["social.ContentItem · NODE<br/>PK ContentID · $node_id"]
+    E1["knowledge.KnowledgeEntity · NODE<br/>PK EntityID · $node_id<br/>EntityType · EntityName"]
+    E2["knowledge.KnowledgeEntity: другая сущность<br/>PK EntityID · $node_id"]
+    OF["knowledge.ChunkOf · EDGE<br/>$from_id · $to_id; без PK<br/>UNIQUE $from_id"]
+    ME["knowledge.Mentions · EDGE<br/>PK MentionID · $from_id · $to_id<br/>FK EvidenceChunkID · EvidenceText · StartOffset · EndOffset · Confidence"]
+    ER["knowledge.EntityRelation · EDGE<br/>PK RelationID · $from_id · $to_id<br/>FK EvidenceChunkID · PredicateCode · EvidenceText · Confidence"]
 
-| Вопрос преподавателя | Короткий ответ |
-| --- | --- |
-| Почему одна база, но пять схем? | Схемы группируют предметные области в `SocialNetworkDB`; FK, транзакции и единые правила доступа работают внутри одной базы. |
-| Зачем SQL Graph? | Подписки, членство, авторство, реакции и извлечённые связи естественно выражаются направленными рёбрами. Рёбра можно обходить через `MATCH`, а свойства и свидетельства хранить в их столбцах. |
-| Почему `ContentItem` без автора и сообщества? | Канонические связи находятся в `Authored` и `PublishedIn`; не нужно синхронизировать копии этих связей в столбцах материала. |
-| Зачем отдельные версии и `SourceRevision`? | Версии сохраняют историю; `SourceRevision` фиксирует ровно один снимок для индекса. Поиск использует только текущий снимок. |
-| В чём отличие текста, вектора и графа? | Текст даёт точные слова и цитату, вектор помогает искать близкий смысл, граф даёт явные связи между пользователями и понятиями. |
-| Как исключить выдуманную цитату? | Составной FK требует реально выбранный `RetrievedChunk`, а процедура сверяет цитату с текстом и позициями доступного фрагмента. Это проверка цитаты, а не гарантия правильности всего ответа. |
-| Где проверяются права? | В функциях, представлениях и процедурах SQL: статус аккаунта, видимость сообщества, действующее членство, состояние материала и текущая редакция. Проверка повторяется перед показом сохранённого ответа. |
-| Что делает T-SQL, а что вне базы? | T-SQL хранит данные, ограничения, граф, поиск, очередь и ACL. OCR, embeddings и генерацию ответа выполняют внешние процессы; их результат записывается обратно в SQL. |
+    K -->|"$node_id = $from_id"| OF
+    OF -->|"$to_id = $node_id"| I
+    K -->|"$node_id = $from_id"| ME
+    ME -->|"$to_id = $node_id"| E1
+    K -.->|"PK ChunkID = FK EvidenceChunkID"| ME
+    E1 -->|"$node_id = $from_id"| ER
+    ER -->|"$to_id = $node_id"| E2
+    K -.->|"PK ChunkID = FK EvidenceChunkID"| ER
+~~~
 
-Для точных DDL, индексов и порядка применения см. [скрипты 00–17](../database/README.md). Более подробные ограничения и программные объекты перечислены в [модели данных](../docs/data-model.md).
+KnowledgeEntity хранит извлечённую тему, человека, организацию, событие или место. Похожие имена автоматически не объединяются. Mentions показывает, где сущность упомянута; EntityRelation хранит тип связи, например WORKS_AT, и ссылку на Chunk, в котором найдено свидетельство. У обоих рёбер есть координаты, исходная выдержка, уверенность и версия извлекателя.
+
+Здесь одновременно действуют **два вида связи**: системные Graph-концы показывают, какие узлы соединены, а обычный FK EvidenceChunkID показывает, каким текстом подтверждается утверждение. Без доступа к этому фрагменту нельзя использовать связь в ответе.
+
+## 6. Вопрос, поиск и цитата · 6 таблиц
+
+~~~mermaid
+flowchart TB
+    U["auth.UserAccount<br/>PK UserID"]
+    C["social.Community<br/>PK CommunityID"]
+    S["assistant.RagSession<br/>PK SessionID · FK UserID · FK CommunityID?<br/>Scope"]
+    T["assistant.RagTurn<br/>PK TurnID · FK SessionID<br/>QuestionText · AnswerText · GenerationStatus"]
+    R["assistant.RetrievalRun<br/>PK RetrievalRunID · FK TurnID<br/>RetrievalMode · ModelVersion"]
+    K["knowledge.Chunk<br/>PK ChunkID"]
+    RC["assistant.RetrievedChunk<br/>PK (RetrievalRunID, ChunkID)<br/>FK RetrievalRunID · FK ChunkID<br/>Rank · Snippet · TextScore · VectorScore · GraphScore"]
+    AC["assistant.AnswerCitation<br/>PK CitationID · FK (RetrievalRunID, ChunkID)<br/>QuoteText · PageNo · StartOffset · EndOffset"]
+    F["assistant.TurnFeedback<br/>PK/FK TurnID · FK UserID<br/>Rating · Comment"]
+
+    U -->|"PK UserID = FK UserID"| S
+    C -.->|"PK CommunityID = FK CommunityID, если задан"| S
+    S -->|"PK SessionID = FK SessionID"| T
+    T -->|"PK TurnID = FK TurnID"| R
+    R -->|"PK RetrievalRunID = PK/FK RetrievalRunID"| RC
+    K -->|"PK ChunkID = PK/FK ChunkID"| RC
+    RC -->|"PK (RetrievalRunID,ChunkID) = FK (RetrievalRunID,ChunkID)"| AC
+    T -->|"PK TurnID = PK/FK TurnID"| F
+    U -->|"PK UserID = FK UserID"| F
+~~~
+
+RagSession задаёт пользователя и область поиска: все доступные сообщества или одно выбранное. RagTurn хранит вопрос, ответ и состояние. RetrievalRun фиксирует настройки поиска; RetrievedChunk — **фактически выбранные** фрагменты и их оценки. AnswerCitation ссылается составным FK именно на пару ключей RetrievedChunk. Процедура дополнительно сверяет текст цитаты с символами доступного Chunk и его координатами. Это подтверждает происхождение цитаты, но не гарантирует правильность всех выводов модели.
+
+При чтении сохранённого ответа SQL снова проверяет доступ к источникам. TurnFeedback хранит необязательную оценку 1–5: не более одной на ход.
+
+## 7. Рекомендации и служебные записи · 4 таблицы
+
+~~~mermaid
+flowchart TB
+    U["auth.UserAccount<br/>PK UserID"]
+    B["assistant.RecommendationBatch<br/>PK BatchID · FK UserID<br/>AlgorithmVersion · CreatedAt"]
+    RI["assistant.RecommendationItem<br/>PK (BatchID, ContentID)<br/>FK BatchID · FK ContentID<br/>Rank · Score · ReasonCode · ReasonText"]
+    I["social.ContentItem<br/>PK ContentID"]
+    SR["knowledge.SourceRevision<br/>PK SourceRevisionID"]
+    M["knowledge.EmbeddingModel<br/>PK ModelID"]
+    O["ops.IndexOutbox<br/>PK EventID · FK SourceRevisionID · FK ModelID?<br/>Operation · EventStatus · AttemptCount · LeaseUntil"]
+    A["ops.AuditEvent<br/>PK AuditEventID · FK ActorUserID?<br/>EventType · EntityType · EntityID · CorrelationID · OccurredAt"]
+
+    U -->|"PK UserID = FK UserID"| B
+    B -->|"PK BatchID = PK/FK BatchID"| RI
+    I -->|"PK ContentID = PK/FK ContentID"| RI
+    SR -->|"PK SourceRevisionID = FK SourceRevisionID"| O
+    M -.->|"PK ModelID = FK ModelID, если задан"| O
+    U -.->|"PK UserID = FK ActorUserID, если задан"| A
+~~~
+
+RecommendationBatch — один расчёт ленты для пользователя. RecommendationItem хранит конкретный пост или документ, ранг, оценку 0..1 и причину. Формула учитывает темы/сущности (0,30), подписку на автора (0,25), членство (0,20), реакции и комментарии (0,15), свежесть (0,10). Комментарии служат сигналом интереса, но не являются элементами ленты. Перед выдачей проверяется текущий доступ к материалу.
+
+IndexOutbox — очередь переиндексации после появления SourceRevision: операция UPSERT/DELETE, состояние, число попыток и аренда обработчика. Триггер добавляет задание в транзакции записи, а тяжёлая обработка происходит позже. AuditEvent фиксирует действие, объект, время, корреляционный ID и необязательного пользователя; там не хранятся пароли и полные документы. Пара (EntityType, EntityID) обозначает объект разных типов, поэтому общего FK на одну целевую таблицу у журнала нет.
+
+## Один документ проходит через модель
+
+Допустим, Анна публикует в закрытом сообществе PDF с фразой «Иван работает в лаборатории Спектр».
+
+1. Права на публикацию определяются UserAccount, Community и действующим MemberOf. Создаётся ContentItem вида DOCUMENT; Authored и PublishedIn связывают его с Анной и сообществом.
+2. DocumentDetail хранит заголовок, DocumentVersion — байты PDF. SourceRevision указывает на эту версию, IndexOutbox ставит задачу обработки.
+3. После извлечения текста появляются Chunk с текстом и координатами, ChunkEmbedding с вектором и ChunkOf с указанием материала.
+4. Если извлекатель распознал «Иван» и «Спектр», появляются KnowledgeEntity, Mentions и EntityRelation(WORKS_AT). EvidenceChunkID указывает на фрагмент со словами, из которых выведена связь.
+5. При вопросе «Где работает Иван?» найденный фрагмент фиксируется в RetrievedChunk. AnswerCitation может указать только этот доступный фрагмент и дословную выдержку. Пользователь без доступа к закрытому сообществу не получает ни фрагмент, ни сохранённый ответ.
+6. После редактирования или скрытия документа старые версии остаются для истории, но не участвуют в новом поиске.
+
+## Что говорить на защите
+
+- **Почему одна база и пять схем?** Схемы разделяют предметные области внутри SocialNetworkDB; FK и транзакции работают в одной базе.
+- **Что здесь является источником истины?** Аккаунты, сообщества, материалы, их версии и социальные связи. Снимки поиска, векторы и извлечённый граф — производные данные.
+- **Зачем SQL Graph?** Он хранит направленные социальные и предметные связи с атрибутами. При этом обычные таблицы и FK остаются для версий, ключей и истории.
+- **Что происходит при редактировании?** Создаётся новая редакция и новый SourceRevision; старое содержание не используется для новых ответов.
+- **Чем отличаются текст, вектор и граф?** Текст даёт слова и цитату, вектор — близость смысла, граф — явные связи между объектами.
+- **Как проверяется цитата?** FK требует, чтобы Chunk был в сохранённой выдаче; процедура сверяет цитату с его текстом и позициями и повторно проверяет права.
+- **Что делает SQL, а что вне него?** SQL хранит данные, ограничения, права, поиск и очередь; OCR, embeddings и генерацию ответа выполняют внешние компоненты.
+
+Точные типы, ограничения, индексы и порядок применения находятся в [канонических T-SQL-скриптах](../database/README.md).
