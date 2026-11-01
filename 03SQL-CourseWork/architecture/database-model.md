@@ -11,11 +11,33 @@
 ### Аккаунт, профиль и сообщество
 
 ~~~mermaid
-flowchart TB
-    U["auth.UserAccount<br/>UserID: Int64 (PK)<br/>Login: Str<br/>EmailNormalized: Str<br/>AccountStatus: Str<br/>PasswordHash: Bytes?"]
-    P["auth.UserProfile<br/>UserID: Int64 (PK, FK)<br/>DisplayName: Str<br/>Bio: Str?<br/>ProfileVisibility: Str"]
-    X["auth.ExternalIdentity<br/>FirebaseUID: Str (PK)<br/>UserID: Int64 (FK)"]
-    C["social.Community<br/>CommunityID: Int64 (PK)<br/>OwnerUserID: Int64 (FK)<br/>Slug: Str<br/>CommunityName: Str<br/>Visibility: Str<br/>Status: Str"]
+classDiagram
+    direction TB
+    class U["auth.UserAccount"] {
+        UserID : Int64 PK
+        Login : Str
+        EmailNormalized : Str
+        AccountStatus : Str
+        PasswordHash : Bytes?
+    }
+    class P["auth.UserProfile"] {
+        UserID : Int64 PK FK
+        DisplayName : Str
+        Bio : Str?
+        ProfileVisibility : Str
+    }
+    class X["auth.ExternalIdentity"] {
+        FirebaseUID : Str PK
+        UserID : Int64 FK
+    }
+    class C["social.Community"] {
+        CommunityID : Int64 PK
+        OwnerUserID : Int64 FK
+        Slug : Str
+        CommunityName : Str
+        Visibility : Str
+        Status : Str
+    }
     U --> P
     U --> X
     U --> C
@@ -24,14 +46,46 @@ flowchart TB
 ### Подписка и членство
 
 ~~~mermaid
-flowchart TB
-    U["auth.UserAccount<br/>UserID: Int64 (PK)<br/>Login: Str<br/>EmailNormalized: Str<br/>AccountStatus: Str<br/>PasswordHash: Bytes?"]
-    F["social.Follows<br/>$from_id: NodeRef<br/>$to_id: NodeRef"]
-    U2["auth.UserAccount (другой пользователь)<br/>UserID: Int64 (PK)<br/>Login: Str<br/>EmailNormalized: Str<br/>AccountStatus: Str<br/>PasswordHash: Bytes?"]
-    M["social.MemberOf<br/>MembershipID: Int64 (PK)<br/>$from_id: NodeRef<br/>$to_id: NodeRef<br/>Role: Str<br/>MemberStatus: Str<br/>EndedAt: DateTime?"]
-    C["social.Community<br/>CommunityID: Int64 (PK)<br/>OwnerUserID: Int64 (FK)<br/>Slug: Str<br/>CommunityName: Str<br/>Visibility: Str<br/>Status: Str"]
-    U --> F --> U2
-    U --> M --> C
+classDiagram
+    direction TB
+    class U["auth.UserAccount"] {
+        UserID : Int64 PK
+        Login : Str
+        EmailNormalized : Str
+        AccountStatus : Str
+        PasswordHash : Bytes?
+    }
+    class F["social.Follows"] {
+        $from_id : NodeRef
+        $to_id : NodeRef
+    }
+    class U2["auth.UserAccount (другой пользователь)"] {
+        UserID : Int64 PK
+        Login : Str
+        EmailNormalized : Str
+        AccountStatus : Str
+        PasswordHash : Bytes?
+    }
+    class M["social.MemberOf"] {
+        MembershipID : Int64 PK
+        $from_id : NodeRef
+        $to_id : NodeRef
+        Role : Str
+        MemberStatus : Str
+        EndedAt : DateTime?
+    }
+    class C["social.Community"] {
+        CommunityID : Int64 PK
+        OwnerUserID : Int64 FK
+        Slug : Str
+        CommunityName : Str
+        Visibility : Str
+        Status : Str
+    }
+    U --> F
+    F --> U2
+    U --> M
+    M --> C
 ~~~
 
 ## 2. Публикации
@@ -41,36 +95,120 @@ ContentItem — общая запись поста, комментария ил�
 ### Автор и сообщество
 
 ~~~mermaid
-flowchart TB
-    U["auth.UserAccount<br/>UserID: Int64 (PK)<br/>Login: Str<br/>EmailNormalized: Str<br/>AccountStatus: Str<br/>PasswordHash: Bytes?"]
-    A["social.Authored<br/>$from_id: NodeRef<br/>$to_id: NodeRef"]
-    I["social.ContentItem<br/>ContentID: Int64 (PK)<br/>Kind: Str (POST / COMMENT / DOCUMENT)<br/>ContentStatus: Str<br/>AllowRag: Bool<br/>PublishedAt: DateTime?"]
-    P["social.PublishedIn<br/>$from_id: NodeRef<br/>$to_id: NodeRef"]
-    C["social.Community<br/>CommunityID: Int64 (PK)<br/>OwnerUserID: Int64 (FK)<br/>Slug: Str<br/>CommunityName: Str<br/>Visibility: Str<br/>Status: Str"]
-    U --> A --> I --> P --> C
+classDiagram
+    direction TB
+    class U["auth.UserAccount"] {
+        UserID : Int64 PK
+        Login : Str
+        EmailNormalized : Str
+        AccountStatus : Str
+        PasswordHash : Bytes?
+    }
+    class A["social.Authored"] {
+        $from_id : NodeRef
+        $to_id : NodeRef
+    }
+    class I["social.ContentItem"] {
+        ContentID : Int64 PK
+        Kind : Str
+        ContentStatus : Str
+        AllowRag : Bool
+        PublishedAt : DateTime?
+    }
+    class P["social.PublishedIn"] {
+        $from_id : NodeRef
+        $to_id : NodeRef
+    }
+    class C["social.Community"] {
+        CommunityID : Int64 PK
+        OwnerUserID : Int64 FK
+        Slug : Str
+        CommunityName : Str
+        Visibility : Str
+        Status : Str
+    }
+    U --> A
+    A --> I
+    I --> P
+    P --> C
 ~~~
 
 ### Комментарий и реакция
 
 ~~~mermaid
-flowchart TB
-    CM["social.ContentItem (COMMENT)<br/>ContentID: Int64 (PK)<br/>Kind: Str (POST / COMMENT / DOCUMENT)<br/>ContentStatus: Str<br/>AllowRag: Bool<br/>PublishedAt: DateTime?"]
-    CO["social.CommentOn<br/>$from_id: NodeRef<br/>$to_id: NodeRef"]
-    P["social.ContentItem (POST)<br/>ContentID: Int64 (PK)<br/>Kind: Str (POST / COMMENT / DOCUMENT)<br/>ContentStatus: Str<br/>AllowRag: Bool<br/>PublishedAt: DateTime?"]
-    U["auth.UserAccount<br/>UserID: Int64 (PK)<br/>Login: Str<br/>EmailNormalized: Str<br/>AccountStatus: Str<br/>PasswordHash: Bytes?"]
-    R["social.ReactTo<br/>$from_id: NodeRef<br/>$to_id: NodeRef<br/>ReactionType: Str"]
-    CM --> CO --> P
-    U --> R --> P
+classDiagram
+    direction TB
+    class CM["social.ContentItem (COMMENT)"] {
+        ContentID : Int64 PK
+        Kind : Str
+        ContentStatus : Str
+        AllowRag : Bool
+        PublishedAt : DateTime?
+    }
+    class CO["social.CommentOn"] {
+        $from_id : NodeRef
+        $to_id : NodeRef
+    }
+    class P["social.ContentItem (POST)"] {
+        ContentID : Int64 PK
+        Kind : Str
+        ContentStatus : Str
+        AllowRag : Bool
+        PublishedAt : DateTime?
+    }
+    class U["auth.UserAccount"] {
+        UserID : Int64 PK
+        Login : Str
+        EmailNormalized : Str
+        AccountStatus : Str
+        PasswordHash : Bytes?
+    }
+    class R["social.ReactTo"] {
+        $from_id : NodeRef
+        $to_id : NodeRef
+        ReactionType : Str
+    }
+    CM --> CO
+    CO --> P
+    U --> R
+    R --> P
 ~~~
 
 ### Версии поста и комментария
 
 ~~~mermaid
-flowchart TB
-    P["social.ContentItem (POST)<br/>ContentID: Int64 (PK)<br/>Kind: Str (POST / COMMENT / DOCUMENT)<br/>ContentStatus: Str<br/>AllowRag: Bool<br/>PublishedAt: DateTime?"]
-    PR["social.PostRevision<br/>RevisionID: Int64 (PK)<br/>ContentID: Int64 (FK)<br/>RevisionNo: Int32<br/>Body: Str<br/>EditedByUserID: Int64 (FK)<br/>IsCurrent: Bool"]
-    C["social.ContentItem (COMMENT)<br/>ContentID: Int64 (PK)<br/>Kind: Str (POST / COMMENT / DOCUMENT)<br/>ContentStatus: Str<br/>AllowRag: Bool<br/>PublishedAt: DateTime?"]
-    CR["social.CommentRevision<br/>RevisionID: Int64 (PK)<br/>ContentID: Int64 (FK)<br/>RevisionNo: Int32<br/>Body: Str<br/>CommentStatus: Str<br/>IsCurrent: Bool"]
+classDiagram
+    direction TB
+    class P["social.ContentItem (POST)"] {
+        ContentID : Int64 PK
+        Kind : Str
+        ContentStatus : Str
+        AllowRag : Bool
+        PublishedAt : DateTime?
+    }
+    class PR["social.PostRevision"] {
+        RevisionID : Int64 PK
+        ContentID : Int64 FK
+        RevisionNo : Int32
+        Body : Str
+        EditedByUserID : Int64 FK
+        IsCurrent : Bool
+    }
+    class C["social.ContentItem (COMMENT)"] {
+        ContentID : Int64 PK
+        Kind : Str
+        ContentStatus : Str
+        AllowRag : Bool
+        PublishedAt : DateTime?
+    }
+    class CR["social.CommentRevision"] {
+        RevisionID : Int64 PK
+        ContentID : Int64 FK
+        RevisionNo : Int32
+        Body : Str
+        CommentStatus : Str
+        IsCurrent : Bool
+    }
     P --> PR
     C --> CR
 ~~~
@@ -78,11 +216,33 @@ flowchart TB
 ### Версии документа
 
 ~~~mermaid
-flowchart TB
-    I["social.ContentItem (DOCUMENT)<br/>ContentID: Int64 (PK)<br/>Kind: Str (POST / COMMENT / DOCUMENT)<br/>ContentStatus: Str<br/>AllowRag: Bool<br/>PublishedAt: DateTime?"]
-    D["social.DocumentDetail<br/>ContentID: Int64 (PK, FK)<br/>Title: Str<br/>Description: Str?<br/>DocumentStatus: Str"]
-    V["knowledge.DocumentVersion<br/>DocumentVersionID: Int64 (PK)<br/>ContentID: Int64 (FK)<br/>VersionNo: Int32<br/>MimeType: Str<br/>PlainText: Str?<br/>FileBytes: Bytes?<br/>IsCurrent: Bool<br/>OCRStatus: Str"]
-    I --> D --> V
+classDiagram
+    direction TB
+    class I["social.ContentItem (DOCUMENT)"] {
+        ContentID : Int64 PK
+        Kind : Str
+        ContentStatus : Str
+        AllowRag : Bool
+        PublishedAt : DateTime?
+    }
+    class D["social.DocumentDetail"] {
+        ContentID : Int64 PK FK
+        Title : Str
+        Description : Str?
+        DocumentStatus : Str
+    }
+    class V["knowledge.DocumentVersion"] {
+        DocumentVersionID : Int64 PK
+        ContentID : Int64 FK
+        VersionNo : Int32
+        MimeType : Str
+        PlainText : Str?
+        FileBytes : Bytes?
+        IsCurrent : Bool
+        OCRStatus : Str
+    }
+    I --> D
+    D --> V
 ~~~
 
 ## 3. Поиск и граф знаний
@@ -92,12 +252,53 @@ flowchart TB
 ### От версии к фрагменту
 
 ~~~mermaid
-flowchart TB
-    P["social.PostRevision<br/>RevisionID: Int64 (PK)<br/>ContentID: Int64 (FK)<br/>RevisionNo: Int32<br/>Body: Str<br/>EditedByUserID: Int64 (FK)<br/>IsCurrent: Bool"]
-    C["social.CommentRevision<br/>RevisionID: Int64 (PK)<br/>ContentID: Int64 (FK)<br/>RevisionNo: Int32<br/>Body: Str<br/>CommentStatus: Str<br/>IsCurrent: Bool"]
-    D["knowledge.DocumentVersion<br/>DocumentVersionID: Int64 (PK)<br/>ContentID: Int64 (FK)<br/>VersionNo: Int32<br/>MimeType: Str<br/>PlainText: Str?<br/>FileBytes: Bytes?<br/>IsCurrent: Bool<br/>OCRStatus: Str"]
-    S["knowledge.SourceRevision<br/>SourceRevisionID: Int64 (PK)<br/>ContentID: Int64 (FK)<br/>PostRevisionID: Int64?<br/>CommentRevisionID: Int64?<br/>DocumentVersionID: Int64?<br/>ExtractedText: Str?<br/>ProcessingStatus: Str<br/>IsCurrent: Bool"]
-    K["knowledge.Chunk<br/>ChunkID: Int64 (PK)<br/>SourceRevisionID: Int64 (FK)<br/>ChunkNo: Int32<br/>ChunkText: Str<br/>PageNo: Int32?<br/>StartOffset: Int32<br/>EndOffset: Int32"]
+classDiagram
+    direction TB
+    class P["social.PostRevision"] {
+        RevisionID : Int64 PK
+        ContentID : Int64 FK
+        RevisionNo : Int32
+        Body : Str
+        EditedByUserID : Int64 FK
+        IsCurrent : Bool
+    }
+    class C["social.CommentRevision"] {
+        RevisionID : Int64 PK
+        ContentID : Int64 FK
+        RevisionNo : Int32
+        Body : Str
+        CommentStatus : Str
+        IsCurrent : Bool
+    }
+    class D["knowledge.DocumentVersion"] {
+        DocumentVersionID : Int64 PK
+        ContentID : Int64 FK
+        VersionNo : Int32
+        MimeType : Str
+        PlainText : Str?
+        FileBytes : Bytes?
+        IsCurrent : Bool
+        OCRStatus : Str
+    }
+    class S["knowledge.SourceRevision"] {
+        SourceRevisionID : Int64 PK
+        ContentID : Int64 FK
+        PostRevisionID : Int64?
+        CommentRevisionID : Int64?
+        DocumentVersionID : Int64?
+        ExtractedText : Str?
+        ProcessingStatus : Str
+        IsCurrent : Bool
+    }
+    class K["knowledge.Chunk"] {
+        ChunkID : Int64 PK
+        SourceRevisionID : Int64 FK
+        ChunkNo : Int32
+        ChunkText : Str
+        PageNo : Int32?
+        StartOffset : Int32
+        EndOffset : Int32
+    }
     P --> S
     C --> S
     D --> S
@@ -107,10 +308,29 @@ flowchart TB
 ### Векторы
 
 ~~~mermaid
-flowchart TB
-    K["knowledge.Chunk<br/>ChunkID: Int64 (PK)<br/>SourceRevisionID: Int64 (FK)<br/>ChunkNo: Int32<br/>ChunkText: Str<br/>PageNo: Int32?<br/>StartOffset: Int32<br/>EndOffset: Int32"]
-    E["knowledge.ChunkEmbedding<br/>ChunkID: Int64 (PK, FK)<br/>ModelID: Int32 (PK, FK)<br/>Embedding: Vector[384]"]
-    M["knowledge.EmbeddingModel<br/>ModelID: Int32 (PK)<br/>ModelName: Str<br/>ModelVersion: Str<br/>Dimensions: Int32<br/>IsActive: Bool"]
+classDiagram
+    direction TB
+    class K["knowledge.Chunk"] {
+        ChunkID : Int64 PK
+        SourceRevisionID : Int64 FK
+        ChunkNo : Int32
+        ChunkText : Str
+        PageNo : Int32?
+        StartOffset : Int32
+        EndOffset : Int32
+    }
+    class E["knowledge.ChunkEmbedding"] {
+        ChunkID : Int64 PK FK
+        ModelID : Int32 PK FK
+        Embedding : Vector[384]
+    }
+    class M["knowledge.EmbeddingModel"] {
+        ModelID : Int32 PK
+        ModelName : Str
+        ModelVersion : Str
+        Dimensions : Int32
+        IsActive : Bool
+    }
     K --> E
     M --> E
 ~~~
@@ -118,25 +338,85 @@ flowchart TB
 ### Упоминания в исходном материале
 
 ~~~mermaid
-flowchart TB
-    K["knowledge.Chunk<br/>ChunkID: Int64 (PK)<br/>SourceRevisionID: Int64 (FK)<br/>ChunkNo: Int32<br/>ChunkText: Str<br/>PageNo: Int32?<br/>StartOffset: Int32<br/>EndOffset: Int32"]
-    O["knowledge.ChunkOf<br/>$from_id: NodeRef<br/>$to_id: NodeRef"]
-    I["social.ContentItem<br/>ContentID: Int64 (PK)<br/>Kind: Str (POST / COMMENT / DOCUMENT)<br/>ContentStatus: Str<br/>AllowRag: Bool<br/>PublishedAt: DateTime?"]
-    M["knowledge.Mentions<br/>MentionID: Int64 (PK)<br/>$from_id: NodeRef<br/>$to_id: NodeRef<br/>EvidenceChunkID: Int64 (FK)<br/>EvidenceText: Str<br/>Confidence: Decimal"]
-    E["knowledge.KnowledgeEntity<br/>EntityID: Int64 (PK)<br/>EntityType: Str<br/>EntityName: Str<br/>ExtractorVersion: Str"]
-    K --> O --> I
-    K --> M --> E
+classDiagram
+    direction TB
+    class K["knowledge.Chunk"] {
+        ChunkID : Int64 PK
+        SourceRevisionID : Int64 FK
+        ChunkNo : Int32
+        ChunkText : Str
+        PageNo : Int32?
+        StartOffset : Int32
+        EndOffset : Int32
+    }
+    class O["knowledge.ChunkOf"] {
+        $from_id : NodeRef
+        $to_id : NodeRef
+    }
+    class I["social.ContentItem"] {
+        ContentID : Int64 PK
+        Kind : Str
+        ContentStatus : Str
+        AllowRag : Bool
+        PublishedAt : DateTime?
+    }
+    class M["knowledge.Mentions"] {
+        MentionID : Int64 PK
+        $from_id : NodeRef
+        $to_id : NodeRef
+        EvidenceChunkID : Int64 FK
+        EvidenceText : Str
+        Confidence : Decimal
+    }
+    class E["knowledge.KnowledgeEntity"] {
+        EntityID : Int64 PK
+        EntityType : Str
+        EntityName : Str
+        ExtractorVersion : Str
+    }
+    K --> O
+    O --> I
+    K --> M
+    M --> E
 ~~~
 
 ### Связи сущностей
 
 ~~~mermaid
-flowchart TB
-    E["knowledge.KnowledgeEntity<br/>EntityID: Int64 (PK)<br/>EntityType: Str<br/>EntityName: Str<br/>ExtractorVersion: Str"]
-    R["knowledge.EntityRelation<br/>RelationID: Int64 (PK)<br/>$from_id: NodeRef<br/>$to_id: NodeRef<br/>PredicateCode: Str<br/>EvidenceChunkID: Int64 (FK)<br/>EvidenceText: Str<br/>Confidence: Decimal"]
-    E2["knowledge.KnowledgeEntity (другая сущность)<br/>EntityID: Int64 (PK)<br/>EntityType: Str<br/>EntityName: Str<br/>ExtractorVersion: Str"]
-    K["knowledge.Chunk<br/>ChunkID: Int64 (PK)<br/>SourceRevisionID: Int64 (FK)<br/>ChunkNo: Int32<br/>ChunkText: Str<br/>PageNo: Int32?<br/>StartOffset: Int32<br/>EndOffset: Int32"]
-    E --> R --> E2
+classDiagram
+    direction TB
+    class E["knowledge.KnowledgeEntity"] {
+        EntityID : Int64 PK
+        EntityType : Str
+        EntityName : Str
+        ExtractorVersion : Str
+    }
+    class R["knowledge.EntityRelation"] {
+        RelationID : Int64 PK
+        $from_id : NodeRef
+        $to_id : NodeRef
+        PredicateCode : Str
+        EvidenceChunkID : Int64 FK
+        EvidenceText : Str
+        Confidence : Decimal
+    }
+    class E2["knowledge.KnowledgeEntity (другая сущность)"] {
+        EntityID : Int64 PK
+        EntityType : Str
+        EntityName : Str
+        ExtractorVersion : Str
+    }
+    class K["knowledge.Chunk"] {
+        ChunkID : Int64 PK
+        SourceRevisionID : Int64 FK
+        ChunkNo : Int32
+        ChunkText : Str
+        PageNo : Int32?
+        StartOffset : Int32
+        EndOffset : Int32
+    }
+    E --> R
+    R --> E2
     K --> R
 ~~~
 
@@ -147,28 +427,99 @@ flowchart TB
 ### Диалог и оценка ответа
 
 ~~~mermaid
-flowchart TB
-    U["auth.UserAccount<br/>UserID: Int64 (PK)<br/>Login: Str<br/>EmailNormalized: Str<br/>AccountStatus: Str<br/>PasswordHash: Bytes?"]
-    C["social.Community<br/>CommunityID: Int64 (PK)<br/>OwnerUserID: Int64 (FK)<br/>Slug: Str<br/>CommunityName: Str<br/>Visibility: Str<br/>Status: Str"]
-    S["assistant.RagSession<br/>SessionID: Int64 (PK)<br/>UserID: Int64 (FK)<br/>CommunityID: Int64? (FK)<br/>Scope: Str"]
-    T["assistant.RagTurn<br/>TurnID: Int64 (PK)<br/>SessionID: Int64 (FK)<br/>TurnNo: Int32<br/>QuestionText: Str<br/>AnswerText: Str?<br/>GenerationStatus: Str"]
-    F["assistant.TurnFeedback<br/>TurnID: Int64 (PK, FK)<br/>UserID: Int64 (FK)<br/>Rating: Int32<br/>Comment: Str?"]
+classDiagram
+    direction TB
+    class U["auth.UserAccount"] {
+        UserID : Int64 PK
+        Login : Str
+        EmailNormalized : Str
+        AccountStatus : Str
+        PasswordHash : Bytes?
+    }
+    class C["social.Community"] {
+        CommunityID : Int64 PK
+        OwnerUserID : Int64 FK
+        Slug : Str
+        CommunityName : Str
+        Visibility : Str
+        Status : Str
+    }
+    class S["assistant.RagSession"] {
+        SessionID : Int64 PK
+        UserID : Int64 FK
+        CommunityID : Int64? FK
+        Scope : Str
+    }
+    class T["assistant.RagTurn"] {
+        TurnID : Int64 PK
+        SessionID : Int64 FK
+        TurnNo : Int32
+        QuestionText : Str
+        AnswerText : Str?
+        GenerationStatus : Str
+    }
+    class F["assistant.TurnFeedback"] {
+        TurnID : Int64 PK FK
+        UserID : Int64 FK
+        Rating : Int32
+        Comment : Str?
+    }
     U --> S
     C --> S
-    S --> T --> F
+    S --> T
+    T --> F
     U --> F
 ~~~
 
 ### Поиск и цитирование
 
 ~~~mermaid
-flowchart TB
-    T["assistant.RagTurn<br/>TurnID: Int64 (PK)<br/>SessionID: Int64 (FK)<br/>TurnNo: Int32<br/>QuestionText: Str<br/>AnswerText: Str?<br/>GenerationStatus: Str"]
-    R["assistant.RetrievalRun<br/>RetrievalRunID: Int64 (PK)<br/>TurnID: Int64 (FK)<br/>RetrievalMode: Str<br/>ModelVersion: Str"]
-    K["knowledge.Chunk<br/>ChunkID: Int64 (PK)<br/>SourceRevisionID: Int64 (FK)<br/>ChunkNo: Int32<br/>ChunkText: Str<br/>PageNo: Int32?<br/>StartOffset: Int32<br/>EndOffset: Int32"]
-    F["assistant.RetrievedChunk<br/>RetrievalRunID: Int64 (PK, FK)<br/>ChunkID: Int64 (PK, FK)<br/>Rank: Int32<br/>Snippet: Str<br/>VectorScore: Decimal?<br/>TextScore: Decimal?<br/>GraphScore: Decimal?"]
-    C["assistant.AnswerCitation<br/>CitationID: Int64 (PK)<br/>RetrievalRunID: Int64 (FK)<br/>ChunkID: Int64 (FK)<br/>QuoteText: Str<br/>PageNo: Int32?<br/>StartOffset: Int32<br/>EndOffset: Int32"]
-    T --> R --> F --> C
+classDiagram
+    direction TB
+    class T["assistant.RagTurn"] {
+        TurnID : Int64 PK
+        SessionID : Int64 FK
+        TurnNo : Int32
+        QuestionText : Str
+        AnswerText : Str?
+        GenerationStatus : Str
+    }
+    class R["assistant.RetrievalRun"] {
+        RetrievalRunID : Int64 PK
+        TurnID : Int64 FK
+        RetrievalMode : Str
+        ModelVersion : Str
+    }
+    class K["knowledge.Chunk"] {
+        ChunkID : Int64 PK
+        SourceRevisionID : Int64 FK
+        ChunkNo : Int32
+        ChunkText : Str
+        PageNo : Int32?
+        StartOffset : Int32
+        EndOffset : Int32
+    }
+    class F["assistant.RetrievedChunk"] {
+        RetrievalRunID : Int64 PK FK
+        ChunkID : Int64 PK FK
+        Rank : Int32
+        Snippet : Str
+        VectorScore : Decimal?
+        TextScore : Decimal?
+        GraphScore : Decimal?
+    }
+    class C["assistant.AnswerCitation"] {
+        CitationID : Int64 PK
+        RetrievalRunID : Int64 FK
+        ChunkID : Int64 FK
+        QuoteText : Str
+        PageNo : Int32?
+        StartOffset : Int32
+        EndOffset : Int32
+    }
+    T --> R
+    R --> F
+    F --> C
     K --> F
 ~~~
 
@@ -179,21 +530,71 @@ flowchart TB
 ### Рекомендательная лента
 
 ~~~mermaid
-flowchart TB
-    U["auth.UserAccount<br/>UserID: Int64 (PK)<br/>Login: Str<br/>EmailNormalized: Str<br/>AccountStatus: Str<br/>PasswordHash: Bytes?"]
-    B["assistant.RecommendationBatch<br/>BatchID: Int64 (PK)<br/>UserID: Int64 (FK)<br/>AlgorithmVersion: Str"]
-    I["assistant.RecommendationItem<br/>BatchID: Int64 (PK, FK)<br/>ContentID: Int64 (PK, FK)<br/>Rank: Int32<br/>Score: Decimal<br/>ReasonCode: Str<br/>ReasonText: Str"]
-    C["social.ContentItem<br/>ContentID: Int64 (PK)<br/>Kind: Str (POST / COMMENT / DOCUMENT)<br/>ContentStatus: Str<br/>AllowRag: Bool<br/>PublishedAt: DateTime?"]
-    U --> B --> I --> C
+classDiagram
+    direction TB
+    class U["auth.UserAccount"] {
+        UserID : Int64 PK
+        Login : Str
+        EmailNormalized : Str
+        AccountStatus : Str
+        PasswordHash : Bytes?
+    }
+    class B["assistant.RecommendationBatch"] {
+        BatchID : Int64 PK
+        UserID : Int64 FK
+        AlgorithmVersion : Str
+    }
+    class I["assistant.RecommendationItem"] {
+        BatchID : Int64 PK FK
+        ContentID : Int64 PK FK
+        Rank : Int32
+        Score : Decimal
+        ReasonCode : Str
+        ReasonText : Str
+    }
+    class C["social.ContentItem"] {
+        ContentID : Int64 PK
+        Kind : Str
+        ContentStatus : Str
+        AllowRag : Bool
+        PublishedAt : DateTime?
+    }
+    U --> B
+    B --> I
+    I --> C
 ~~~
 
 ### Индексация
 
 ~~~mermaid
-flowchart TB
-    S["knowledge.SourceRevision<br/>SourceRevisionID: Int64 (PK)<br/>ContentID: Int64 (FK)<br/>PostRevisionID: Int64?<br/>CommentRevisionID: Int64?<br/>DocumentVersionID: Int64?<br/>ExtractedText: Str?<br/>ProcessingStatus: Str<br/>IsCurrent: Bool"]
-    M["knowledge.EmbeddingModel<br/>ModelID: Int32 (PK)<br/>ModelName: Str<br/>ModelVersion: Str<br/>Dimensions: Int32<br/>IsActive: Bool"]
-    O["ops.IndexOutbox<br/>EventID: Int64 (PK)<br/>SourceRevisionID: Int64 (FK)<br/>ModelID: Int32? (FK)<br/>Operation: Str<br/>EventStatus: Str<br/>AttemptCount: Int32<br/>LeaseUntil: DateTime?"]
+classDiagram
+    direction TB
+    class S["knowledge.SourceRevision"] {
+        SourceRevisionID : Int64 PK
+        ContentID : Int64 FK
+        PostRevisionID : Int64?
+        CommentRevisionID : Int64?
+        DocumentVersionID : Int64?
+        ExtractedText : Str?
+        ProcessingStatus : Str
+        IsCurrent : Bool
+    }
+    class M["knowledge.EmbeddingModel"] {
+        ModelID : Int32 PK
+        ModelName : Str
+        ModelVersion : Str
+        Dimensions : Int32
+        IsActive : Bool
+    }
+    class O["ops.IndexOutbox"] {
+        EventID : Int64 PK
+        SourceRevisionID : Int64 FK
+        ModelID : Int32? FK
+        Operation : Str
+        EventStatus : Str
+        AttemptCount : Int32
+        LeaseUntil : DateTime?
+    }
     S --> O
     M --> O
 ~~~
@@ -201,9 +602,23 @@ flowchart TB
 ### Журнал действий
 
 ~~~mermaid
-flowchart TB
-    U["auth.UserAccount<br/>UserID: Int64 (PK)<br/>Login: Str<br/>EmailNormalized: Str<br/>AccountStatus: Str<br/>PasswordHash: Bytes?"]
-    A["ops.AuditEvent<br/>AuditEventID: Int64 (PK)<br/>ActorUserID: Int64? (FK)<br/>EventType: Str<br/>EntityType: Str<br/>EntityID: Int64<br/>CorrelationID: UUID?"]
+classDiagram
+    direction TB
+    class U["auth.UserAccount"] {
+        UserID : Int64 PK
+        Login : Str
+        EmailNormalized : Str
+        AccountStatus : Str
+        PasswordHash : Bytes?
+    }
+    class A["ops.AuditEvent"] {
+        AuditEventID : Int64 PK
+        ActorUserID : Int64? FK
+        EventType : Str
+        EntityType : Str
+        EntityID : Int64
+        CorrelationID : UUID?
+    }
     U --> A
 ~~~
 
