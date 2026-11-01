@@ -32,6 +32,7 @@ Server 2019 и лабораторными работами.
 
 | Каталог | Назначение |
 | --- | --- |
+| [`architecture/`](architecture/README.md) | Компактная карта всей системы: 33 таблицы, полная ER-диаграмма, граф, потоки и маршруты API на одной странице |
 | [`database/`](database/README.md) | Канонические T-SQL-скрипты базы, SQL Graph, ACL, RAG и рекомендаций; в [`database/postgres/`](database/postgres/) — отдельная PostgreSQL-реализация для демонстрации |
 | [`docs/`](docs/architecture.md) | Архитектура, ER-диаграммы и принятые решения |
 | [`api/`](api/README.md) | Контракт HTTP API v1 на OpenAPI 3.1 и граница доверенного backend |
@@ -42,7 +43,8 @@ Server 2019 и лабораторными работами.
 | [`tools/`](tools/) | Локальная проверка HTTP-контракта, preflight Azure MI и применение T-SQL |
 | [`compose.yaml`](compose.yaml) | Локальный запуск Go API, индексатора и приватного E5-сервиса при готовом SQL Server |
 
-Диаграммы потоков и правила доступа находятся в
+Начните с [единой карты архитектуры](architecture/README.md). Развёрнутые
+диаграммы потоков и правила доступа находятся в
 [`docs/architecture.md`](docs/architecture.md), каталог таблиц и ER-связи — в
 [`docs/data-model.md`](docs/data-model.md). Для написания пояснительной записки
 подготовлен [план глав с указанием исходного кода и демонстрационных
