@@ -9,7 +9,7 @@ this script lets us regenerate it when the T-SQL schema changes.
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from xml.sax.saxutils import escape
 
@@ -139,21 +139,23 @@ class Table:
     x: float = 0
     y: float = 0
     lane: int = 0
+    omitted_columns: frozenset[str] = frozenset()
 
     @property
     def display_columns(self) -> list[Column]:
         """Show Graph endpoints without counting them as declared T-SQL columns."""
+        declared = [column for column in self.columns if column.name not in self.omitted_columns]
         if self.kind == "NODE":
-            return [*self.columns, Column("$node_id", "системное", False, system=True)]
+            return [*declared, Column("$node_id", "системное", False, system=True)]
         if self.kind == "EDGE":
             from_role, to_role = GRAPH_ROLES[self.name]
             return [
-                *self.columns,
+                *declared,
                 Column("$edge_id", "системное", False, system=True),
                 Column("$from_id", "системное", False, system=True, hint=from_role),
                 Column("$to_id", "системное", False, system=True, hint=to_role),
             ]
-        return self.columns
+        return declared
 
     @property
     def height(self) -> int:
@@ -457,7 +459,10 @@ def main() -> None:
           f"{len(fks)} FK constraints, {len(graph)} SQL Graph connections")
 
     product_names = {name for lane in PRODUCT_LANES for name in lane}
-    product_tables = {name: table for name, table in tables.items() if name in product_names}
+    product_tables = {
+        name: replace(table, omitted_columns=frozenset({"IsCurrent"}))
+        for name, table in tables.items() if name in product_names
+    }
     product_fks = [fk for fk in fks if fk.source_table in product_names and fk.target_table in product_names]
     product_graph = [link for link in graph if {link.edge_table, link.source_table, link.target_table} <= product_names]
     if any(fk.source_table in product_names and fk.target_table not in product_names for fk in fks):
@@ -470,7 +475,8 @@ def main() -> None:
         encoding="utf-8",
     )
     print(f"{OUTPUT_PRODUCT}: {len(product_tables)} tables, "
-          f"{sum(len(t.columns) for t in product_tables.values())} columns, "
+          f"{sum(len(t.columns) for t in product_tables.values())} declared columns, "
+          f"{sum(col.name in t.omitted_columns for t in product_tables.values() for col in t.columns)} hidden, "
           f"{len(product_fks)} FK constraints, {len(product_graph)} SQL Graph connections")
 
 
