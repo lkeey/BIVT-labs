@@ -107,6 +107,18 @@ CARD_GAP = 48
 LEFT = 55
 TOP = 130
 
+GRAPH_ROLES = {
+    "social.Follows": ("подписчик", "на кого подписан"),
+    "social.MemberOf": ("участник", "сообщество"),
+    "social.Authored": ("автор", "материал"),
+    "social.PublishedIn": ("материал", "сообщество"),
+    "social.CommentOn": ("комментарий", "пост"),
+    "social.ReactTo": ("пользователь", "материал"),
+    "knowledge.ChunkOf": ("фрагмент", "материал"),
+    "knowledge.Mentions": ("фрагмент", "сущность"),
+    "knowledge.EntityRelation": ("сущность 1", "сущность 2"),
+}
+
 
 @dataclass
 class Column:
@@ -115,6 +127,8 @@ class Column:
     nullable: bool
     primary: bool = False
     foreign: bool = False
+    system: bool = False
+    hint: str = ""
 
 
 @dataclass
@@ -127,17 +141,28 @@ class Table:
     lane: int = 0
 
     @property
+    def display_columns(self) -> list[Column]:
+        """Show Graph endpoints without counting them as declared T-SQL columns."""
+        if self.kind == "NODE":
+            return [*self.columns, Column("$node_id", "системное", False, system=True)]
+        if self.kind == "EDGE":
+            from_role, to_role = GRAPH_ROLES[self.name]
+            return [
+                *self.columns,
+                Column("$edge_id", "системное", False, system=True),
+                Column("$from_id", "системное", False, system=True, hint=from_role),
+                Column("$to_id", "системное", False, system=True, hint=to_role),
+            ]
+        return self.columns
+
+    @property
     def height(self) -> int:
-        if not self.columns:
+        if not self.display_columns:
             return HEADER_HEIGHT
-        return HEADER_HEIGHT + ROW_HEIGHT * len(self.columns) + BOTTOM_PAD
+        return HEADER_HEIGHT + ROW_HEIGHT * len(self.display_columns) + BOTTOM_PAD
 
     def column(self, name: str) -> Column:
         return next(col for col in self.columns if col.name == name)
-
-    def primary_column(self) -> Column:
-        return next(col for col in self.columns if col.primary)
-
 
 @dataclass(frozen=True)
 class ForeignKey:
@@ -311,7 +336,7 @@ def port(table: Table, column: str | None, side: str, offset: int = 0) -> tuple[
     if column is None:
         y = table.y + HEADER_HEIGHT / 2
     else:
-        index = next(i for i, col in enumerate(table.columns) if col.name == column)
+        index = next(i for i, col in enumerate(table.display_columns) if col.name == column)
         y = table.y + HEADER_HEIGHT + ROW_HEIGHT * (index + 0.5)
     return x, y + offset
 
@@ -366,6 +391,7 @@ def render(tables: dict[str, Table], fks: list[ForeignKey], graph: list[GraphCon
         '.field-name{font:500 13px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:#283342}',
         '.field-type{font:400 12.5px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;fill:#526277}',
         '.field-flags{font:600 11px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;fill:#6d59a1}',
+        '.field-system{font:400 12px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;fill:#758295}',
         '.fk-link{fill:none;stroke:#66789f;stroke-width:1.6;stroke-opacity:.43;marker-end:url(#fk-arrow)}',
         '.graph-link{fill:none;stroke:#219186;stroke-width:1.7;stroke-dasharray:6 4;stroke-opacity:.55;marker-end:url(#graph-arrow)}',
         '.fk-link:hover,.graph-link:hover{stroke-width:3;stroke-opacity:1}',
@@ -383,13 +409,12 @@ def render(tables: dict[str, Table], fks: list[ForeignKey], graph: list[GraphCon
             serial += 1
     for link in graph:
         edge, source, target = tables[link.edge_table], tables[link.source_table], tables[link.target_table]
-        source_key, target_key = source.primary_column().name, target.primary_column().name
         same_endpoint = source.name == target.name
-        first = route(source, edge, source_key, None, serial, height, 1 if same_endpoint else 0)
-        out.append(f'<path class="graph-link" d="{first}"><title>{escape(source.name + " → " + edge.name)}</title></path>')
+        first = route(source, edge, "$node_id", "$from_id", serial, height, 1 if same_endpoint else 0)
+        out.append(f'<path class="graph-link" d="{first}"><title>{escape(source.name + ".$node_id → " + edge.name + ".$from_id")}</title></path>')
         serial += 1
-        second = route(edge, target, None, target_key, serial, height, 2 if same_endpoint else 0)
-        out.append(f'<path class="graph-link" d="{second}"><title>{escape(edge.name + " → " + target.name)}</title></path>')
+        second = route(edge, target, "$to_id", "$node_id", serial, height, 2 if same_endpoint else 0)
+        out.append(f'<path class="graph-link" d="{second}"><title>{escape(edge.name + ".$to_id → " + target.name + ".$node_id")}</title></path>')
         serial += 1
     out.append("</g>")
     for lane in lanes:
@@ -399,22 +424,22 @@ def render(tables: dict[str, Table], fks: list[ForeignKey], graph: list[GraphCon
             x, y = table.x, table.y
             out.append(f'<g class="table" id="{name}" data-kind="{table.kind}">')
             out.append(f'<rect class="card" x="{x:.0f}" y="{y:.0f}" width="{CARD_WIDTH}" height="{table.height}" rx="9"/>')
-            if table.columns:
+            if table.display_columns:
                 out.append(f'<path d="M {x+9:.0f} {y:.0f} H {x+CARD_WIDTH-9:.0f} Q {x+CARD_WIDTH:.0f} {y:.0f} {x+CARD_WIDTH:.0f} {y+9:.0f} V {y+HEADER_HEIGHT:.0f} H {x:.0f} V {y+9:.0f} Q {x:.0f} {y:.0f} {x+9:.0f} {y:.0f} Z" fill="{fill}"/>')
                 out.append(f'<path d="M {x+1:.0f} {y+HEADER_HEIGHT:.0f} H {x+CARD_WIDTH-1:.0f}" class="header-rule"/>')
-            else:
-                out.append(f'<rect x="{x+1:.0f}" y="{y+1:.0f}" width="{CARD_WIDTH-2}" height="{table.height-2}" rx="8" fill="{fill}"/>')
-                out.append(f'<title>{escape(name)}: ребро SQL Graph без объявленных полей; концы связи хранятся в системных $from_id и $to_id.</title>')
             out.append(f'<rect x="{x:.0f}" y="{y:.0f}" width="4" height="{table.height}" rx="2" fill="{accent}"/>')
             out.append(svg_text(x + CARD_WIDTH / 2, y + 26, name, "title"))
-            for index, column in enumerate(table.columns):
+            for index, column in enumerate(table.display_columns):
                 baseline = y + HEADER_HEIGHT + ROW_HEIGHT * index + 18
                 flags = " ".join(
                     label for label, active in (("PK", column.primary), ("FK", column.foreign), ("NULL", column.nullable))
                     if active
                 )
-                out.append(svg_text(x + 14, baseline, column.name, "field-name"))
-                out.append(svg_text(x + 216, baseline, column.sql_type, "field-type"))
+                field_class = "field-system" if column.system else "field-name"
+                type_class = "field-system" if column.system else "field-type"
+                field_label = column.name + (" · " + column.hint if column.hint else "")
+                out.append(svg_text(x + 14, baseline, field_label, field_class))
+                out.append(svg_text(x + 216, baseline, column.sql_type, type_class))
                 if flags:
                     out.append(svg_text(x + 366, baseline, flags, "field-flags"))
             out.append("</g>")
