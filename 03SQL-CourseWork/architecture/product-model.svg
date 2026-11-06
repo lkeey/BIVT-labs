@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="2520" viewBox="0 0 1200 2520" role="img" aria-label="Продуктовые таблицы социальной сети, их поля и связи">
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="2445" viewBox="0 0 1200 2445" role="img" aria-label="Продуктовые таблицы социальной сети, их поля и связи">
 <defs>
 <marker id="fk-arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M 0 0 L 8 4 L 0 8 z" fill="#66789f"/></marker>
 <marker id="graph-arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M 0 0 L 8 4 L 0 8 z" fill="#219186"/></marker>
@@ -14,15 +14,15 @@
 .graph-link{fill:none;stroke:#219186;stroke-width:1.7;stroke-dasharray:6 4;stroke-opacity:.55;marker-end:url(#graph-arrow)}
 .fk-link:hover,.graph-link:hover{stroke-width:3;stroke-opacity:1}
 </style>
-<rect class="canvas" width="1200" height="2520"/>
+<rect class="canvas" width="1200" height="2445"/>
 <g id="connections">
 <path class="fk-link" d="M 525 479.5 C 563 479.5, 563 182.5, 525 182.5"><title>FK: auth.UserProfile.UserID → auth.UserAccount.UserID</title></path>
 <path class="fk-link" d="M 525 1095.5 C 571 1095.5, 571 182.5, 525 182.5"><title>FK: social.Community.OwnerUserID → auth.UserAccount.UserID</title></path>
 <path class="fk-link" d="M 1145 1317.5 C 1199 1317.5, 1199 182.5, 1145 182.5"><title>FK: social.PostRevision.ContentID → social.ContentItem.ContentID</title></path>
 <path class="fk-link" d="M 675 1417.5 C 600 1417.5, 600 182.5, 525 182.5"><title>FK: social.PostRevision.EditedByUserID → auth.UserAccount.UserID</title></path>
-<path class="fk-link" d="M 1145 1614.5 C 1215 1614.5, 1215 182.5, 1145 182.5"><title>FK: social.CommentRevision.ContentID → social.ContentItem.ContentID</title></path>
-<path class="fk-link" d="M 1145 1861.5 C 1223 1861.5, 1223 182.5, 1145 182.5"><title>FK: social.DocumentDetail.ContentID → social.ContentItem.ContentID</title></path>
-<path class="fk-link" d="M 1145 2083.5 C 1231 2083.5, 1231 1861.5, 1145 1861.5"><title>FK: knowledge.DocumentVersion.ContentID → social.DocumentDetail.ContentID</title></path>
+<path class="fk-link" d="M 1145 1589.5 C 1215 1589.5, 1215 182.5, 1145 182.5"><title>FK: social.CommentRevision.ContentID → social.ContentItem.ContentID</title></path>
+<path class="fk-link" d="M 1145 1811.5 C 1223 1811.5, 1223 182.5, 1145 182.5"><title>FK: social.DocumentDetail.ContentID → social.ContentItem.ContentID</title></path>
+<path class="fk-link" d="M 1145 2033.5 C 1231 2033.5, 1231 1811.5, 1145 1811.5"><title>FK: knowledge.DocumentVersion.ContentID → social.DocumentDetail.ContentID</title></path>
 <path class="fk-link" d="M 525 1714.5 C 619 1714.5, 619 182.5, 525 182.5"><title>FK: assistant.RecommendationBatch.UserID → auth.UserAccount.UserID</title></path>
 <path class="fk-link" d="M 525 1886.5 C 627 1886.5, 627 1689.5, 525 1689.5"><title>FK: assistant.RecommendationItem.BatchID → assistant.RecommendationBatch.BatchID</title></path>
 <path class="fk-link" d="M 525 1911.5 C 595 1911.5, 595 182.5, 675 182.5"><title>FK: assistant.RecommendationItem.ContentID → social.ContentItem.ContentID</title></path>
@@ -293,10 +293,10 @@
 <text class="field-system" x="891" y="1176.0" >системное</text>
 </g>
 <g class="table" id="social.PostRevision" data-kind="TABLE">
-<rect class="card" x="675" y="1240" width="470" height="249" rx="9"/>
+<rect class="card" x="675" y="1240" width="470" height="224" rx="9"/>
 <path d="M 684 1240 H 1136 Q 1145 1240 1145 1249 V 1280 H 675 V 1249 Q 675 1240 684 1240 Z" fill="#edf8f6"/>
 <path d="M 676 1280 H 1144" class="header-rule"/>
-<rect x="675" y="1240" width="4" height="249" rx="2" fill="#25847d"/>
+<rect x="675" y="1240" width="4" height="224" rx="2" fill="#25847d"/>
 <text class="title" x="910" y="1266.0" >social.PostRevision</text>
 <text class="field-name" x="689" y="1298.0" >RevisionID</text>
 <text class="field-type" x="891" y="1298.0" >BIGINT</text>
@@ -313,90 +313,84 @@
 <text class="field-name" x="689" y="1423.0" >EditedByUserID</text>
 <text class="field-type" x="891" y="1423.0" >BIGINT</text>
 <text class="field-flags" x="1041" y="1423.0" >FK</text>
-<text class="field-name" x="689" y="1448.0" >IsCurrent</text>
-<text class="field-type" x="891" y="1448.0" >BIT</text>
-<text class="field-name" x="689" y="1473.0" >ChangedAt</text>
-<text class="field-type" x="891" y="1473.0" >DATETIME2(3)</text>
+<text class="field-name" x="689" y="1448.0" >ChangedAt</text>
+<text class="field-type" x="891" y="1448.0" >DATETIME2(3)</text>
 </g>
 <g class="table" id="social.CommentRevision" data-kind="TABLE">
-<rect class="card" x="675" y="1537" width="470" height="224" rx="9"/>
-<path d="M 684 1537 H 1136 Q 1145 1537 1145 1546 V 1577 H 675 V 1546 Q 675 1537 684 1537 Z" fill="#edf8f6"/>
-<path d="M 676 1577 H 1144" class="header-rule"/>
-<rect x="675" y="1537" width="4" height="224" rx="2" fill="#25847d"/>
-<text class="title" x="910" y="1563.0" >social.CommentRevision</text>
-<text class="field-name" x="689" y="1595.0" >RevisionID</text>
+<rect class="card" x="675" y="1512" width="470" height="199" rx="9"/>
+<path d="M 684 1512 H 1136 Q 1145 1512 1145 1521 V 1552 H 675 V 1521 Q 675 1512 684 1512 Z" fill="#edf8f6"/>
+<path d="M 676 1552 H 1144" class="header-rule"/>
+<rect x="675" y="1512" width="4" height="199" rx="2" fill="#25847d"/>
+<text class="title" x="910" y="1538.0" >social.CommentRevision</text>
+<text class="field-name" x="689" y="1570.0" >RevisionID</text>
+<text class="field-type" x="891" y="1570.0" >BIGINT</text>
+<text class="field-flags" x="1041" y="1570.0" >PK</text>
+<text class="field-name" x="689" y="1595.0" >ContentID</text>
 <text class="field-type" x="891" y="1595.0" >BIGINT</text>
-<text class="field-flags" x="1041" y="1595.0" >PK</text>
-<text class="field-name" x="689" y="1620.0" >ContentID</text>
-<text class="field-type" x="891" y="1620.0" >BIGINT</text>
-<text class="field-flags" x="1041" y="1620.0" >FK</text>
-<text class="field-name" x="689" y="1645.0" >RevisionNo</text>
-<text class="field-type" x="891" y="1645.0" >INT</text>
-<text class="field-name" x="689" y="1670.0" >Body</text>
-<text class="field-type" x="891" y="1670.0" >NVARCHAR(MAX)</text>
-<text class="field-name" x="689" y="1695.0" >CommentStatus</text>
-<text class="field-type" x="891" y="1695.0" >VARCHAR(8)</text>
-<text class="field-name" x="689" y="1720.0" >IsCurrent</text>
-<text class="field-type" x="891" y="1720.0" >BIT</text>
-<text class="field-name" x="689" y="1745.0" >ChangedAt</text>
-<text class="field-type" x="891" y="1745.0" >DATETIME2(3)</text>
+<text class="field-flags" x="1041" y="1595.0" >FK</text>
+<text class="field-name" x="689" y="1620.0" >RevisionNo</text>
+<text class="field-type" x="891" y="1620.0" >INT</text>
+<text class="field-name" x="689" y="1645.0" >Body</text>
+<text class="field-type" x="891" y="1645.0" >NVARCHAR(MAX)</text>
+<text class="field-name" x="689" y="1670.0" >CommentStatus</text>
+<text class="field-type" x="891" y="1670.0" >VARCHAR(8)</text>
+<text class="field-name" x="689" y="1695.0" >ChangedAt</text>
+<text class="field-type" x="891" y="1695.0" >DATETIME2(3)</text>
 </g>
 <g class="table" id="social.DocumentDetail" data-kind="TABLE">
-<rect class="card" x="675" y="1809" width="470" height="149" rx="9"/>
-<path d="M 684 1809 H 1136 Q 1145 1809 1145 1818 V 1849 H 675 V 1818 Q 675 1809 684 1809 Z" fill="#edf8f6"/>
-<path d="M 676 1849 H 1144" class="header-rule"/>
-<rect x="675" y="1809" width="4" height="149" rx="2" fill="#25847d"/>
-<text class="title" x="910" y="1835.0" >social.DocumentDetail</text>
-<text class="field-name" x="689" y="1867.0" >ContentID</text>
-<text class="field-type" x="891" y="1867.0" >BIGINT</text>
-<text class="field-flags" x="1041" y="1867.0" >PK FK</text>
-<text class="field-name" x="689" y="1892.0" >Title</text>
-<text class="field-type" x="891" y="1892.0" >NVARCHAR(250)</text>
-<text class="field-name" x="689" y="1917.0" >Description</text>
-<text class="field-type" x="891" y="1917.0" >NVARCHAR(2000)</text>
-<text class="field-flags" x="1041" y="1917.0" >NULL</text>
-<text class="field-name" x="689" y="1942.0" >DocumentStatus</text>
-<text class="field-type" x="891" y="1942.0" >VARCHAR(12)</text>
+<rect class="card" x="675" y="1759" width="470" height="149" rx="9"/>
+<path d="M 684 1759 H 1136 Q 1145 1759 1145 1768 V 1799 H 675 V 1768 Q 675 1759 684 1759 Z" fill="#edf8f6"/>
+<path d="M 676 1799 H 1144" class="header-rule"/>
+<rect x="675" y="1759" width="4" height="149" rx="2" fill="#25847d"/>
+<text class="title" x="910" y="1785.0" >social.DocumentDetail</text>
+<text class="field-name" x="689" y="1817.0" >ContentID</text>
+<text class="field-type" x="891" y="1817.0" >BIGINT</text>
+<text class="field-flags" x="1041" y="1817.0" >PK FK</text>
+<text class="field-name" x="689" y="1842.0" >Title</text>
+<text class="field-type" x="891" y="1842.0" >NVARCHAR(250)</text>
+<text class="field-name" x="689" y="1867.0" >Description</text>
+<text class="field-type" x="891" y="1867.0" >NVARCHAR(2000)</text>
+<text class="field-flags" x="1041" y="1867.0" >NULL</text>
+<text class="field-name" x="689" y="1892.0" >DocumentStatus</text>
+<text class="field-type" x="891" y="1892.0" >VARCHAR(12)</text>
 </g>
 <g class="table" id="knowledge.DocumentVersion" data-kind="TABLE">
-<rect class="card" x="675" y="2006" width="470" height="399" rx="9"/>
-<path d="M 684 2006 H 1136 Q 1145 2006 1145 2015 V 2046 H 675 V 2015 Q 675 2006 684 2006 Z" fill="#f3f0ff"/>
-<path d="M 676 2046 H 1144" class="header-rule"/>
-<rect x="675" y="2006" width="4" height="399" rx="2" fill="#7653aa"/>
-<text class="title" x="910" y="2032.0" >knowledge.DocumentVersion</text>
-<text class="field-name" x="689" y="2064.0" >DocumentVersionID</text>
-<text class="field-type" x="891" y="2064.0" >BIGINT</text>
-<text class="field-flags" x="1041" y="2064.0" >PK</text>
-<text class="field-name" x="689" y="2089.0" >ContentID</text>
-<text class="field-type" x="891" y="2089.0" >BIGINT</text>
-<text class="field-flags" x="1041" y="2089.0" >FK</text>
-<text class="field-name" x="689" y="2114.0" >VersionNo</text>
-<text class="field-type" x="891" y="2114.0" >INT</text>
-<text class="field-name" x="689" y="2139.0" >FileName</text>
-<text class="field-type" x="891" y="2139.0" >NVARCHAR(260)</text>
+<rect class="card" x="675" y="1956" width="470" height="374" rx="9"/>
+<path d="M 684 1956 H 1136 Q 1145 1956 1145 1965 V 1996 H 675 V 1965 Q 675 1956 684 1956 Z" fill="#f3f0ff"/>
+<path d="M 676 1996 H 1144" class="header-rule"/>
+<rect x="675" y="1956" width="4" height="374" rx="2" fill="#7653aa"/>
+<text class="title" x="910" y="1982.0" >knowledge.DocumentVersion</text>
+<text class="field-name" x="689" y="2014.0" >DocumentVersionID</text>
+<text class="field-type" x="891" y="2014.0" >BIGINT</text>
+<text class="field-flags" x="1041" y="2014.0" >PK</text>
+<text class="field-name" x="689" y="2039.0" >ContentID</text>
+<text class="field-type" x="891" y="2039.0" >BIGINT</text>
+<text class="field-flags" x="1041" y="2039.0" >FK</text>
+<text class="field-name" x="689" y="2064.0" >VersionNo</text>
+<text class="field-type" x="891" y="2064.0" >INT</text>
+<text class="field-name" x="689" y="2089.0" >FileName</text>
+<text class="field-type" x="891" y="2089.0" >NVARCHAR(260)</text>
+<text class="field-flags" x="1041" y="2089.0" >NULL</text>
+<text class="field-name" x="689" y="2114.0" >MimeType</text>
+<text class="field-type" x="891" y="2114.0" >VARCHAR(127)</text>
+<text class="field-name" x="689" y="2139.0" >FileBytes</text>
+<text class="field-type" x="891" y="2139.0" >VARBINARY(MAX)</text>
 <text class="field-flags" x="1041" y="2139.0" >NULL</text>
-<text class="field-name" x="689" y="2164.0" >MimeType</text>
-<text class="field-type" x="891" y="2164.0" >VARCHAR(127)</text>
-<text class="field-name" x="689" y="2189.0" >FileBytes</text>
-<text class="field-type" x="891" y="2189.0" >VARBINARY(MAX)</text>
-<text class="field-flags" x="1041" y="2189.0" >NULL</text>
-<text class="field-name" x="689" y="2214.0" >PlainText</text>
-<text class="field-type" x="891" y="2214.0" >NVARCHAR(MAX)</text>
-<text class="field-flags" x="1041" y="2214.0" >NULL</text>
-<text class="field-name" x="689" y="2239.0" >SizeBytes</text>
-<text class="field-type" x="891" y="2239.0" >BIGINT</text>
-<text class="field-name" x="689" y="2264.0" >SHA256</text>
-<text class="field-type" x="891" y="2264.0" >BINARY(32)</text>
-<text class="field-name" x="689" y="2289.0" >IsCurrent</text>
-<text class="field-type" x="891" y="2289.0" >BIT</text>
-<text class="field-name" x="689" y="2314.0" >UploadStatus</text>
-<text class="field-type" x="891" y="2314.0" >VARCHAR(8)</text>
-<text class="field-name" x="689" y="2339.0" >OCRStatus</text>
-<text class="field-type" x="891" y="2339.0" >VARCHAR(10)</text>
-<text class="field-name" x="689" y="2364.0" >OcrEngineVersion</text>
-<text class="field-type" x="891" y="2364.0" >NVARCHAR(80)</text>
-<text class="field-flags" x="1041" y="2364.0" >NULL</text>
-<text class="field-name" x="689" y="2389.0" >CreatedAt</text>
-<text class="field-type" x="891" y="2389.0" >DATETIME2(3)</text>
+<text class="field-name" x="689" y="2164.0" >PlainText</text>
+<text class="field-type" x="891" y="2164.0" >NVARCHAR(MAX)</text>
+<text class="field-flags" x="1041" y="2164.0" >NULL</text>
+<text class="field-name" x="689" y="2189.0" >SizeBytes</text>
+<text class="field-type" x="891" y="2189.0" >BIGINT</text>
+<text class="field-name" x="689" y="2214.0" >SHA256</text>
+<text class="field-type" x="891" y="2214.0" >BINARY(32)</text>
+<text class="field-name" x="689" y="2239.0" >UploadStatus</text>
+<text class="field-type" x="891" y="2239.0" >VARCHAR(8)</text>
+<text class="field-name" x="689" y="2264.0" >OCRStatus</text>
+<text class="field-type" x="891" y="2264.0" >VARCHAR(10)</text>
+<text class="field-name" x="689" y="2289.0" >OcrEngineVersion</text>
+<text class="field-type" x="891" y="2289.0" >NVARCHAR(80)</text>
+<text class="field-flags" x="1041" y="2289.0" >NULL</text>
+<text class="field-name" x="689" y="2314.0" >CreatedAt</text>
+<text class="field-type" x="891" y="2314.0" >DATETIME2(3)</text>
 </g>
 </svg>
