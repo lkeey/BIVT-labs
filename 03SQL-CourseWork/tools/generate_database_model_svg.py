@@ -101,6 +101,8 @@ PRODUCT_LANES = (
 CARD_WIDTH = 470
 HEADER_HEIGHT = 40
 ROW_HEIGHT = 25
+ALLOWED_LINE_HEIGHT = 14
+MAX_ALLOWED_LINE_CHARS = 72
 BOTTOM_PAD = 9
 LANE_GAP = 150
 CARD_GAP = 48
@@ -129,6 +131,29 @@ class Column:
     foreign: bool = False
     system: bool = False
     hint: str = ""
+    allowed_values: tuple[str, ...] = ()
+
+
+def allowed_lines(column: Column) -> list[str]:
+    """Compact visible value lists for simple CHECK (... IN (...)) domains."""
+    lines: list[str] = []
+    current = ""
+    for value in column.allowed_values:
+        if len(value) > MAX_ALLOWED_LINE_CHARS:
+            raise ValueError(f"Allowed value is too wide: {value}")
+        candidate = f"{current} · {value}" if current else value
+        if len(candidate) > MAX_ALLOWED_LINE_CHARS:
+            lines.append(current)
+            current = value
+        else:
+            current = candidate
+    if current:
+        lines.append(current)
+    return lines
+
+
+def row_height(column: Column) -> int:
+    return ROW_HEIGHT + ALLOWED_LINE_HEIGHT * len(allowed_lines(column))
 
 
 @dataclass
@@ -161,7 +186,7 @@ class Table:
     def height(self) -> int:
         if not self.display_columns:
             return HEADER_HEIGHT
-        return HEADER_HEIGHT + ROW_HEIGHT * len(self.display_columns) + BOTTOM_PAD
+        return HEADER_HEIGHT + sum(row_height(column) for column in self.display_columns) + BOTTOM_PAD
 
     def column(self, name: str) -> Column:
         return next(col for col in self.columns if col.name == name)
@@ -256,6 +281,10 @@ def read_model() -> tuple[dict[str, Table], list[ForeignKey], list[GraphConnecti
         r"([A-Za-z_]\w*\.[A-Za-z_]\w*)\s*\)",
         re.I | re.S,
     )
+    check_values_pattern = re.compile(
+        r"\bCHECK\s*\(\s*(\[[^\]]+\]|[A-Za-z_]\w*)\s+IN\s*\(([^)]*)\)\s*\)",
+        re.I | re.S,
+    )
     for filename in DDL_FILES:
         source = (DATABASE / filename).read_text(encoding="utf-8")
         for match in create_table.finditer(source):
@@ -269,6 +298,13 @@ def read_model() -> tuple[dict[str, Table], list[ForeignKey], list[GraphConnecti
             tables[name] = table
             for item in split_items(source[match.end() : end]):
                 if item.upper().startswith("CONSTRAINT "):
+                    allowed = check_values_pattern.search(item)
+                    if allowed:
+                        values = re.findall(r"N?'((?:''|[^'])*)'", allowed.group(2), re.I)
+                        if values:
+                            table.column(unbracket(allowed.group(1))).allowed_values = tuple(
+                                value.replace("''", "'") for value in values
+                            )
                     pk = re.search(r"\bPRIMARY\s+KEY\s*\(([^)]+)\)", item, re.I | re.S)
                     if pk:
                         # Table-level PKs are applied after all columns are read.
@@ -338,8 +374,14 @@ def port(table: Table, column: str | None, side: str, offset: int = 0) -> tuple[
     if column is None:
         y = table.y + HEADER_HEIGHT / 2
     else:
-        index = next(i for i, col in enumerate(table.display_columns) if col.name == column)
-        y = table.y + HEADER_HEIGHT + ROW_HEIGHT * (index + 0.5)
+        preceding = 0
+        for entry in table.display_columns:
+            if entry.name == column:
+                break
+            preceding += row_height(entry)
+        else:
+            raise ValueError(f"Missing visible field {table.name}.{column}")
+        y = table.y + HEADER_HEIGHT + preceding + ROW_HEIGHT / 2
     return x, y + offset
 
 
@@ -394,6 +436,7 @@ def render(tables: dict[str, Table], fks: list[ForeignKey], graph: list[GraphCon
         '.field-type{font:400 12.5px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;fill:#526277}',
         '.field-flags{font:600 11px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;fill:#6d59a1}',
         '.field-system{font:400 12px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;fill:#758295}',
+        '.allowed-values{font:400 10px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;fill:#68778b}',
         '.fk-link{fill:none;stroke:#66789f;stroke-width:1.6;stroke-opacity:.43;marker-end:url(#fk-arrow)}',
         '.graph-link{fill:none;stroke:#219186;stroke-width:1.7;stroke-dasharray:6 4;stroke-opacity:.55;marker-end:url(#graph-arrow)}',
         '.fk-link:hover,.graph-link:hover{stroke-width:3;stroke-opacity:1}',
@@ -431,8 +474,9 @@ def render(tables: dict[str, Table], fks: list[ForeignKey], graph: list[GraphCon
                 out.append(f'<path d="M {x+1:.0f} {y+HEADER_HEIGHT:.0f} H {x+CARD_WIDTH-1:.0f}" class="header-rule"/>')
             out.append(f'<rect x="{x:.0f}" y="{y:.0f}" width="4" height="{table.height}" rx="2" fill="{accent}"/>')
             out.append(svg_text(x + CARD_WIDTH / 2, y + 26, name, "title"))
-            for index, column in enumerate(table.display_columns):
-                baseline = y + HEADER_HEIGHT + ROW_HEIGHT * index + 18
+            row_top = y + HEADER_HEIGHT
+            for column in table.display_columns:
+                baseline = row_top + 18
                 flags = " ".join(
                     label for label, active in (("PK", column.primary), ("FK", column.foreign), ("NULL", column.nullable))
                     if active
@@ -444,6 +488,10 @@ def render(tables: dict[str, Table], fks: list[ForeignKey], graph: list[GraphCon
                 out.append(svg_text(x + 216, baseline, column.sql_type, type_class))
                 if flags:
                     out.append(svg_text(x + 366, baseline, flags, "field-flags"))
+                for line_no, allowed_line in enumerate(allowed_lines(column)):
+                    out.append(svg_text(x + 14, baseline + ALLOWED_LINE_HEIGHT * (line_no + 1),
+                                        allowed_line, "allowed-values"))
+                row_top += row_height(column)
             out.append("</g>")
     out.append("</svg>")
     return "\n".join(out) + "\n"
