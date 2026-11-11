@@ -2,7 +2,7 @@
 
 **Тема:** информационная поддержка социальной сети. Каноническая реализация — одна база **SocialNetworkDB** на **SQL Server 2025 и T-SQL**. В ней 5 схем и 33 таблицы: 5 узлов SQL Graph, 9 рёбер и 19 обычных таблиц. Отдельная PostgreSQL-копия обслуживает публичную демонстрацию и не синхронизирует данные с SQL Server.
 
-Эта страница даёт общую карту для чтения и защиты. Точные определения находятся в [T-SQL-скриптах](../database/README.md), полный HTTP-контракт — в [OpenAPI](../api/openapi.yaml), подробные правила — в [архитектурном описании](../docs/architecture.md), обсуждение проекта — в [Google Drive](https://docs.google.com/document/d/187AqSxvD9fiTLw3ExvQa6wspBZPqk7LPda7mL57pLCg/edit?usp=drivesdk).
+Эта страница даёт общую карту проекта. Точные определения находятся в [T-SQL-скриптах](../database/README.md), полный HTTP-контракт — в [OpenAPI](../api/openapi.yaml), подробные правила — в [архитектурном описании](../docs/architecture.md), обсуждение проекта — в [Google Drive](https://docs.google.com/document/d/187AqSxvD9fiTLw3ExvQa6wspBZPqk7LPda7mL57pLCg/edit?usp=drivesdk).
 
 ## Система
 
@@ -36,66 +36,7 @@ flowchart LR
 
 ContentItem.Kind различает пост, комментарий и документ. Их редактируемое содержание хранится в отдельных редакциях; SourceRevision привязывает к индексу ровно одну редакцию. Исторические редакции остаются для аудита, а поиск использует только текущие опубликованные материалы.
 
-<details>
-<summary><strong>Полная схема связей всех 33 таблиц</strong> — раскрыть ER-диаграмму</summary>
-
-В именах диаграммы подчёркивание заменяет точку: social_ContentItem = social.ContentItem. Сплошные линии показывают основные внешние ключи; пунктирные линии с пометкой GRAPH показывают концы SQL Graph-рёбер. GRAPH-связь не является обычным FK на бизнес-идентификаторы. Диаграмма показывает структуру, а точные ограничения и кардинальности задают SQL-скрипты.
-
-~~~mermaid
-erDiagram
-    auth_UserAccount ||--o| auth_UserProfile : "профиль"
-    auth_UserAccount ||--o| auth_ExternalIdentity : "Firebase UID"
-    auth_UserAccount ||--o{ social_Community : "владелец"
-    auth_UserAccount ||--o{ social_PostRevision : "редактор"
-    auth_UserAccount ||--o{ assistant_RagSession : "вопросы"
-    auth_UserAccount ||--o{ assistant_RecommendationBatch : "лента"
-    auth_UserAccount ||--o{ assistant_TurnFeedback : "отзыв"
-    auth_UserAccount ||--o{ ops_AuditEvent : "актор"
-
-    social_ContentItem ||--o{ social_PostRevision : "версии поста"
-    social_ContentItem ||--o{ social_CommentRevision : "версии комментария"
-    social_ContentItem ||--o| social_DocumentDetail : "документ"
-    social_ContentItem ||--o{ knowledge_SourceRevision : "источник"
-    social_ContentItem ||--o{ assistant_RecommendationItem : "рекомендован"
-    social_DocumentDetail ||--o{ knowledge_DocumentVersion : "версии файла"
-    social_PostRevision ||--o| knowledge_SourceRevision : "вариант источника"
-    social_CommentRevision ||--o| knowledge_SourceRevision : "вариант источника"
-    knowledge_DocumentVersion ||--o| knowledge_SourceRevision : "вариант источника"
-    knowledge_SourceRevision ||--o{ knowledge_Chunk : "фрагменты"
-    knowledge_SourceRevision ||--o{ ops_IndexOutbox : "индексация"
-    knowledge_Chunk ||--o{ knowledge_ChunkEmbedding : "векторы"
-    knowledge_EmbeddingModel ||--o{ knowledge_ChunkEmbedding : "модель"
-    knowledge_EmbeddingModel ||--o{ ops_IndexOutbox : "модель задания"
-
-    assistant_RagSession ||--o{ assistant_RagTurn : "ходы"
-    assistant_RagTurn ||--o{ assistant_RetrievalRun : "поиски"
-    assistant_RagTurn ||--o| assistant_TurnFeedback : "оценка"
-    assistant_RetrievalRun ||--o{ assistant_RetrievedChunk : "выдача"
-    knowledge_Chunk ||--o{ assistant_RetrievedChunk : "найден"
-    assistant_RetrievedChunk ||--o{ assistant_AnswerCitation : "цитата"
-    assistant_RecommendationBatch ||--o{ assistant_RecommendationItem : "элементы"
-
-    auth_UserAccount ||..o{ social_Follows : "GRAPH от/к"
-    auth_UserAccount ||..o{ social_MemberOf : "GRAPH от"
-    social_Community ||..o{ social_MemberOf : "GRAPH к"
-    auth_UserAccount ||..o{ social_Authored : "GRAPH от"
-    social_ContentItem ||..o{ social_Authored : "GRAPH к"
-    social_ContentItem ||..o{ social_PublishedIn : "GRAPH от"
-    social_Community ||..o{ social_PublishedIn : "GRAPH к"
-    social_ContentItem ||..o{ social_CommentOn : "GRAPH от/к"
-    auth_UserAccount ||..o{ social_ReactTo : "GRAPH от"
-    social_ContentItem ||..o{ social_ReactTo : "GRAPH к"
-    knowledge_Chunk ||..o{ knowledge_ChunkOf : "GRAPH от"
-    social_ContentItem ||..o{ knowledge_ChunkOf : "GRAPH к"
-    knowledge_Chunk ||..o{ knowledge_Mentions : "GRAPH от"
-    knowledge_KnowledgeEntity ||..o{ knowledge_Mentions : "GRAPH к"
-    knowledge_KnowledgeEntity ||..o{ knowledge_EntityRelation : "GRAPH от/к"
-    knowledge_Chunk ||--o{ knowledge_EntityRelation : "свидетельство"
-~~~
-
-У SourceRevision три необязательных FK на PostRevision, CommentRevision и DocumentVersion, но CHECK разрешает ровно один из них. AnswerCitation ссылается на действительно выданный RetrievedChunk того же поиска. Для графовых рёбер точные направления и допустимые типы концов перечислены ниже.
-
-</details>
+Для разбора таблиц откройте [полную и продуктовую схемы базы данных](database-model.md): полная показывает все объявленные поля с типами T-SQL, продуктовая скрывает три `IsCurrent`. Таблицы не повторяются внутри каждой схемы. Здесь остаётся обзор состава базы и системы.
 
 ### Девять рёбер SQL Graph
 

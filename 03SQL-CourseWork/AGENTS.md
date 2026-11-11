@@ -6,7 +6,7 @@
 смешивай эти скрипты с лабораторными из `03SQL/`, где используются SQL Server
 2019 и PostgreSQL 16.
 
-Карта компонентов: `architecture/` — компактная схема всей системы;
+Карта компонентов: `architecture/` — обзор системы и отдельная модель базы;
 `database/` — каноническая модель и процедуры; `api/` —
 OpenAPI-контракт; `backend/` — Go HTTP API и Firebase Auth; `worker/` — Python
 OCR/индексация и сервис query embeddings; `web/` — статический JavaScript-сайт;
