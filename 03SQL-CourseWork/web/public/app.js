@@ -8,7 +8,7 @@ const MAX_FILE_BYTES = Number.isSafeInteger(configuredMaxFileBytes) &&
   configuredMaxFileBytes > 0 && configuredMaxFileBytes <= DEFAULT_MAX_FILE_BYTES
   ? configuredMaxFileBytes : DEFAULT_MAX_FILE_BYTES;
 const MAX_FILE_MIB = MAX_FILE_BYTES / (1024 * 1024);
-const views = ["feed", "communities", "documents", "assistant"];
+const views = ["feed", "communities", "documents"];
 const state = {
   session: null,
   firebaseSignIn: false,
@@ -25,10 +25,6 @@ const state = {
   documentCursor: null,
   documentLoadVersion: 0,
   documentCommunityId: null,
-  ragQueryId: null,
-  ragPollCount: 0,
-  ragPollTimer: null,
-  documentPollTimer: null,
   documentCheckId: null,
   toastTimer: null,
   downloadController: null,
@@ -138,9 +134,6 @@ function clearSession() {
   state.feedLoadVersion += 1;
   api.setTokenProvider(null);
   api.setAccessToken(null);
-  clearTimeout(state.ragPollTimer);
-  clearTimeout(state.documentPollTimer);
-  state.ragQueryId = null;
   state.communities = [];
   state.communityCursor = null;
   state.communityLoadVersion += 1;
@@ -160,7 +153,6 @@ function clearSession() {
   $("connection-status").textContent = "Нет сессии";
   $("connection-status").classList.remove("is-online");
   $("identity-token").value = "";
-  $("rag-form").reset();
   $("document-text-form").reset();
   $("document-file-form").reset();
   $("document-lookup-form").reset();
@@ -169,7 +161,6 @@ function clearSession() {
   $("community-detail").replaceChildren();
   $("document-list").replaceChildren();
   $("document-status").replaceChildren();
-  $("rag-result").replaceChildren();
   if ($("content-dialog").open) $("content-dialog").close();
 }
 
@@ -317,20 +308,15 @@ function renderCommunities() {
 
 function syncCommunitySelectors() {
   const documentSelect = $("document-community");
-  const ragSelect = $("rag-community");
   const currentDocument = state.documentCommunityId || documentSelect.value;
-  const currentRag = ragSelect.value;
   documentSelect.replaceChildren();
-  ragSelect.replaceChildren(new Option("Во всех доступных сообществах", ""));
   if (!state.communities.length) documentSelect.append(new Option("Нет доступных сообществ", ""));
   for (const community of state.communities) {
     documentSelect.append(new Option(community.name, String(community.communityId)));
-    ragSelect.append(new Option(community.name, String(community.communityId)));
   }
   documentSelect.value = state.communities.some((item) => String(item.communityId) === currentDocument)
     ? currentDocument : (state.selectedCommunityId || documentSelect.options[0]?.value || "");
   state.documentCommunityId = documentSelect.value || null;
-  ragSelect.value = state.communities.some((item) => String(item.communityId) === currentRag) ? currentRag : "";
   updateDocumentWriteState();
 }
 
@@ -492,7 +478,7 @@ async function publishPost(form, rawId) {
   try {
     await api.request(`/v1/communities/${safeId(rawId)}/posts`, { method: "POST", json: { body } });
     form.reset();
-    toast("Публикация создана. Поисковый индекс обновится позже.");
+    toast("Публикация создана.");
     await loadPosts(true);
   } catch (error) { report(error); }
   finally { setBusy(form, false); }
@@ -826,14 +812,13 @@ async function submitDocument(event, mode) {
     const result = await api.request(`/v1/communities/${communityId}/documents`, options);
     form.reset();
     $("document-lookup-id").value = String(result.contentId);
-    toast("Документ принят в обработку.");
-    await checkDocument(result.contentId, true);
+    toast("Документ сохранён.");
+    await checkDocument(result.contentId);
   } catch (error) { report(error); }
   finally { setBusy(form, false); updateDocumentWriteState(); }
 }
 
-async function checkDocument(rawId, schedule = false) {
-  clearTimeout(state.documentPollTimer);
+async function checkDocument(rawId) {
   const session = state.session;
   const target = $("document-status");
   target.replaceChildren(textBlock("Проверяем состояние документа…"));
@@ -844,96 +829,16 @@ async function checkDocument(rawId, schedule = false) {
     if (state.session !== session || state.documentCheckId !== id) return;
     target.replaceChildren(renderDocumentStatus(documentItem));
     if (documentItem.processingStatus === "READY") await loadDocuments(true);
-    else if (schedule && documentItem.processingStatus === "PROCESSING") {
-      state.documentPollTimer = setTimeout(() => checkDocument(id, true), 5000);
-    }
   } catch (error) { report(error, target); }
 }
 
 function renderDocumentStatus(item) {
   const card = element("article", "status-card");
   append(card, element("p", "card-kicker", `ДОКУМЕНТ #${item.contentId}`), element("h4", "", item.title));
-  const label = ({ PROCESSING: "Обрабатывается", READY: "Готов к чтению и поиску", FAILED: "Обработка не удалась" })[item.processingStatus] || item.processingStatus;
+  const label = item.processingStatus === "READY" ? "Сохранён" : "Неизвестное состояние";
   card.append(element("p", "", label));
   if (item.processingStatus === "READY") card.append(action("Открыть документ", "text-button", () => openSource("DOCUMENT", item.contentId)));
-  if (item.processingStatus === "PROCESSING") card.append(element("p", "hint", "Статус обновляется каждые 5 секунд, пока открыта эта вкладка."));
   return card;
-}
-
-async function askAssistant(event) {
-  event.preventDefault();
-  const form = event.currentTarget;
-  const question = $("rag-question").value.trim();
-  if (!question) return;
-  const communityId = $("rag-community").value;
-  setBusy(form, true);
-  clearTimeout(state.ragPollTimer);
-  state.ragQueryId = null;
-  state.ragPollCount = 0;
-  $("rag-result").replaceChildren(textBlock("Передаём вопрос помощнику…"));
-  try {
-    requireSession();
-    const payload = communityId ? { question, communityId: safeId(communityId) } : { question };
-    const accepted = await api.request("/v1/rag/queries", { method: "POST", json: payload });
-    state.ragQueryId = safeId(accepted.queryId);
-    await pollAnswer(state.ragQueryId);
-  } catch (error) {
-    if (error.status === 503) {
-      $("rag-result").replaceChildren(textBlock("Модель поиска или ответа сейчас недоступна. Проверьте настройку сервисов и повторите запрос.", "error"));
-    } else report(error, $("rag-result"));
-  }
-  finally { setBusy(form, false); }
-}
-
-async function pollAnswer(queryId) {
-  if (state.ragQueryId !== queryId || !state.session) return;
-  const session = state.session;
-  try {
-    const result = await api.request(`/v1/rag/queries/${queryId}`);
-    if (state.ragQueryId !== queryId || state.session !== session) return;
-    renderAnswer(result);
-    if (result.status === "PENDING") {
-      state.ragPollCount += 1;
-      if (state.ragPollCount < 30) state.ragPollTimer = setTimeout(() => pollAnswer(queryId), 4000);
-      else $("rag-result").append(action("Проверить снова", "button button-outline", () => pollAnswer(queryId)));
-    }
-  } catch (error) {
-    if (state.ragQueryId !== queryId) return;
-    if (error.status === 410) {
-      $("rag-result").replaceChildren(textBlock("Доступ к одному из использованных источников отозван. Сохранённый ответ скрыт."));
-    } else report(error, $("rag-result"));
-  }
-}
-
-function renderAnswer(result) {
-  const target = $("rag-result");
-  target.replaceChildren();
-  const card = element("div", "answer-content");
-  const status = ({ PENDING: "ИЩЕМ ИСТОЧНИКИ", COMPLETED: "ОТВЕТ С ИСТОЧНИКАМИ", NO_SOURCES: "ИСТОЧНИКИ НЕ НАЙДЕНЫ", FAILED: "ОШИБКА ОБРАБОТКИ" })[result.status] || result.status;
-  append(card, element("p", "eyebrow", status), element("h3", "", result.question));
-  if (result.status === "PENDING") card.append(element("p", "muted", "Ищем подходящие фрагменты и проверяем доступ. Страница обновится автоматически."));
-  if (result.status === "COMPLETED" || result.status === "NO_SOURCES") card.append(element("p", "answer-text", result.answer || (result.status === "NO_SOURCES" ? "В доступных материалах нет подходящих источников." : "Ответ пока недоступен.")));
-  if (result.status === "FAILED") card.append(element("p", "inline-error", "Не удалось подготовить ответ. Попробуйте задать вопрос ещё раз."));
-  const citations = Array.isArray(result.citations) ? result.citations : [];
-  if (result.status === "COMPLETED" && !citations.length) {
-    target.replaceChildren(textBlock("Сервер не приложил проверяемые источники. Ответ скрыт.", "error"));
-    return;
-  }
-  if (result.status === "COMPLETED" && citations.length) {
-    const heading = element("h4", "", `Источники · ${citations.length}`);
-    card.append(heading);
-    const list = element("ol", "citation-list");
-    for (const citation of citations) list.append(renderCitation(citation));
-    card.append(list);
-  }
-  target.append(card);
-}
-
-function renderCitation(citation) {
-  const item = element("li", "citation-card");
-  append(item, element("p", "card-kicker", `${citation.kind} · автор #${citation.authorUserId}${citation.pageNo ? ` · стр. ${citation.pageNo}` : ""}`), element("h5", "", citation.title), element("blockquote", "", citation.quote));
-  item.append(action("Открыть источник ↗", "text-button", () => openSource(citation.kind, citation.contentId)));
-  return item;
 }
 
 async function openSource(kind, rawId) {
@@ -1011,7 +916,6 @@ $("more-documents").addEventListener("click", () => loadDocuments(false).catch((
 $("document-text-form").addEventListener("submit", (event) => submitDocument(event, "text"));
 $("document-file-form").addEventListener("submit", (event) => submitDocument(event, "file"));
 $("document-lookup-form").addEventListener("submit", (event) => { event.preventDefault(); checkDocument($("document-lookup-id").value, true).catch((error) => report(error, $("document-status"))); });
-$("rag-form").addEventListener("submit", askAssistant);
 $("dialog-close").addEventListener("click", () => $("content-dialog").close());
 $("content-dialog").addEventListener("close", () => { state.dialogVersion += 1; });
 $("content-dialog").addEventListener("click", (event) => { if (event.target === event.currentTarget) event.currentTarget.close(); });

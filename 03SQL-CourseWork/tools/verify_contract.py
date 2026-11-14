@@ -102,9 +102,8 @@ def main() -> int:
     if registered & planned:
         raise ValueError(f"planned routes are already registered in Go: {sorted(registered & planned)}")
 
-    rag_responses = document["paths"]["/v1/rag/queries"]["post"]["responses"]
-    if "201" not in rag_responses or "503" not in rag_responses:
-        raise ValueError("RAG query must document both completed and unavailable responses")
+    if any("/rag/" in path for path in document["paths"]):
+        raise ValueError("removed AI endpoints must not reappear in the coursework API")
     print(f"OpenAPI contract: {len(documented)} Go routes match; all local references and path parameters resolve")
     return 0
 

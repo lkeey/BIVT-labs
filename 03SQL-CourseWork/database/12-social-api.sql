@@ -1,72 +1,3 @@
-/*
- * Social write API for a trusted backend. Apply after tables, access views and
- * outbox procedures. The owner is Community.OwnerUserID; an OWNER edge is
- * not required. Callers must not have direct DML rights on these tables.
- *
- * Membership changes and publication share the same per-community applock.
- * Legacy BANNED/REJECTED/LEFT rows remain valid for historical data.
- */
-IF EXISTS
-(
-    SELECT 1 FROM sys.check_constraints
-    WHERE parent_object_id = OBJECT_ID(N'social.MemberOf')
-      AND name = N'CK_MemberOf_Status'
-      AND definition NOT LIKE N'%''BLOCKED''%'
-)
-BEGIN
-    BEGIN TRY
-        BEGIN TRANSACTION;
-        ALTER TABLE social.MemberOf DROP CONSTRAINT CK_MemberOf_Status;
-        ALTER TABLE social.MemberOf WITH CHECK ADD CONSTRAINT CK_MemberOf_Status
-            CHECK (MemberStatus IN ('PENDING','ACTIVE','BLOCKED','REJECTED','BANNED','LEFT'));
-        COMMIT TRANSACTION;
-    END TRY
-    BEGIN CATCH
-        IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
-        THROW;
-    END CATCH;
-END;
-GO
-IF NOT EXISTS
-(
-    SELECT 1 FROM sys.check_constraints
-    WHERE parent_object_id = OBJECT_ID(N'social.MemberOf')
-      AND name = N'CK_MemberOf_Status'
-)
-    ALTER TABLE social.MemberOf WITH CHECK ADD CONSTRAINT CK_MemberOf_Status
-        CHECK (MemberStatus IN ('PENDING','ACTIVE','BLOCKED','REJECTED','BANNED','LEFT'));
-GO
-IF EXISTS
-(
-    SELECT 1 FROM sys.check_constraints
-    WHERE parent_object_id = OBJECT_ID(N'social.MemberOf')
-      AND name = N'CK_MemberOf_Role'
-      AND definition NOT LIKE N'%''ADMIN''%'
-)
-BEGIN
-    BEGIN TRY
-        BEGIN TRANSACTION;
-        ALTER TABLE social.MemberOf DROP CONSTRAINT CK_MemberOf_Role;
-        ALTER TABLE social.MemberOf WITH CHECK ADD CONSTRAINT CK_MemberOf_Role
-            CHECK ([Role] IN ('OWNER','ADMIN','MODERATOR','MEMBER'));
-        COMMIT TRANSACTION;
-    END TRY
-    BEGIN CATCH
-        IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
-        THROW;
-    END CATCH;
-END;
-GO
-IF NOT EXISTS
-(
-    SELECT 1 FROM sys.check_constraints
-    WHERE parent_object_id = OBJECT_ID(N'social.MemberOf')
-      AND name = N'CK_MemberOf_Role'
-)
-    ALTER TABLE social.MemberOf WITH CHECK ADD CONSTRAINT CK_MemberOf_Role
-        CHECK ([Role] IN ('OWNER','ADMIN','MODERATOR','MEMBER'));
-GO
-
 /* The unique slug is the natural retry key; ownership is canonical here. */
 CREATE OR ALTER PROCEDURE social.usp_CreateCommunity
     @OwnerUserID bigint,
@@ -171,27 +102,27 @@ BEGIN
         ELSE
         BEGIN
             SELECT @CurrentCount = COUNT_BIG(*)
-            FROM auth.UserAccount AS member,
-                 social.MemberOf AS edge,
-                 social.Community AS community
-            WHERE MATCH(member-(edge)->community)
+            FROM auth.UserAccount AS member
+            JOIN social.MemberOf AS edge ON edge.UserID = member.UserID
+            JOIN social.Community AS community ON community.CommunityID = edge.CommunityID
+            WHERE 1 = 1
               AND member.UserID = @UserID AND community.CommunityID = @CommunityID
               AND edge.EndedAt IS NULL;
             IF @CurrentCount > 1
                 THROW 51153, N'Multiple current memberships require repair.', 1;
             SELECT @MembershipID = edge.MembershipID,
                    @CurrentStatus = edge.MemberStatus, @CurrentRole = edge.[Role]
-            FROM auth.UserAccount AS member,
-                 social.MemberOf AS edge,
-                 social.Community AS community
-            WHERE MATCH(member-(edge)->community)
+            FROM auth.UserAccount AS member
+            JOIN social.MemberOf AS edge ON edge.UserID = member.UserID
+            JOIN social.Community AS community ON community.CommunityID = edge.CommunityID
+            WHERE 1 = 1
               AND member.UserID = @UserID AND community.CommunityID = @CommunityID
               AND edge.EndedAt IS NULL;
 
             IF @CurrentStatus IN ('BLOCKED','BANNED')
                 THROW 51154, N'Blocked users cannot request membership.', 1;
             IF @CurrentRole = 'OWNER'
-                THROW 51183, N'An OWNER edge conflicts with the canonical owner.', 1;
+                THROW 51183, N'An OWNER membership conflicts with the canonical owner.', 1;
             IF @CurrentStatus = 'PENDING' AND @Visibility = 'PUBLIC'
             BEGIN
                 UPDATE social.MemberOf SET MemberStatus = 'ACTIVE'
@@ -214,8 +145,8 @@ BEGIN
                 SET @ResultStatus = CASE WHEN @Visibility = 'PUBLIC' THEN 'ACTIVE'
                                          ELSE 'PENDING' END;
                 SET @ResultRole = 'MEMBER';
-                INSERT INTO social.MemberOf ($from_id,$to_id,MemberStatus,[Role])
-                SELECT member.$node_id, community.$node_id, @ResultStatus, @ResultRole
+                INSERT INTO social.MemberOf (UserID,CommunityID,MemberStatus,[Role])
+                SELECT member.UserID, community.CommunityID, @ResultStatus, @ResultRole
                 FROM auth.UserAccount AS member, social.Community AS community
                 WHERE member.UserID = @UserID AND community.CommunityID = @CommunityID;
                 SET @MembershipID = CONVERT(bigint, SCOPE_IDENTITY());
@@ -282,10 +213,10 @@ BEGIN
         IF @ActorUserID = @OwnerUserID SET @ActorRole = 'OWNER';
         ELSE
             SELECT @ActorRole = edge.[Role]
-            FROM auth.UserAccount AS actor,
-                 social.MemberOf AS edge,
-                 social.Community AS community
-            WHERE MATCH(actor-(edge)->community)
+            FROM auth.UserAccount AS actor
+            JOIN social.MemberOf AS edge ON edge.UserID = actor.UserID
+            JOIN social.Community AS community ON community.CommunityID = edge.CommunityID
+            WHERE 1 = 1
               AND actor.UserID = @ActorUserID AND community.CommunityID = @CommunityID
               AND edge.MemberStatus = 'ACTIVE' AND edge.EndedAt IS NULL
               AND edge.[Role] = 'ADMIN';
@@ -295,20 +226,20 @@ BEGIN
             THROW 51161, N'Admin cannot change self or grant admin role.', 1;
 
         SELECT @CurrentCount = COUNT_BIG(*)
-        FROM auth.UserAccount AS target,
-             social.MemberOf AS edge,
-             social.Community AS community
-        WHERE MATCH(target-(edge)->community)
+        FROM auth.UserAccount AS target
+            JOIN social.MemberOf AS edge ON edge.UserID = target.UserID
+            JOIN social.Community AS community ON community.CommunityID = edge.CommunityID
+            WHERE 1 = 1
           AND target.UserID = @TargetUserID AND community.CommunityID = @CommunityID
           AND edge.EndedAt IS NULL;
         IF @CurrentCount > 1
             THROW 51153, N'Multiple current memberships require repair.', 1;
         SELECT @MembershipID = edge.MembershipID,
                @CurrentStatus = edge.MemberStatus, @CurrentRole = edge.[Role]
-        FROM auth.UserAccount AS target,
-             social.MemberOf AS edge,
-             social.Community AS community
-        WHERE MATCH(target-(edge)->community)
+        FROM auth.UserAccount AS target
+            JOIN social.MemberOf AS edge ON edge.UserID = target.UserID
+            JOIN social.Community AS community ON community.CommunityID = edge.CommunityID
+            WHERE 1 = 1
           AND target.UserID = @TargetUserID AND community.CommunityID = @CommunityID
           AND edge.EndedAt IS NULL;
         IF @ActorRole = 'ADMIN' AND @CurrentRole IN ('OWNER','ADMIN')
@@ -316,8 +247,8 @@ BEGIN
 
         IF @MembershipID IS NULL
         BEGIN
-            INSERT INTO social.MemberOf ($from_id,$to_id,MemberStatus,[Role])
-            SELECT target.$node_id, community.$node_id, @MemberStatus, @Role
+            INSERT INTO social.MemberOf (UserID,CommunityID,MemberStatus,[Role])
+            SELECT target.UserID, community.CommunityID, @MemberStatus, @Role
             FROM auth.UserAccount AS target, social.Community AS community
             WHERE target.UserID = @TargetUserID AND community.CommunityID = @CommunityID;
             SET @MembershipID = CONVERT(bigint, SCOPE_IDENTITY());
@@ -344,7 +275,7 @@ BEGIN
 END;
 GO
 
-/* Leaving ends the current edge; a block survives a user's leave request. */
+/* Leaving ends the current membership; a block survives a user's leave request. */
 CREATE OR ALTER PROCEDURE social.usp_LeaveCommunity
     @UserID bigint,
     @CommunityID bigint
@@ -370,19 +301,19 @@ BEGIN
         IF NOT EXISTS (SELECT 1 FROM auth.UserAccount WHERE UserID = @UserID)
             THROW 51165, N'User not found.', 1;
         SELECT @CurrentCount = COUNT_BIG(*)
-        FROM auth.UserAccount AS member,
-             social.MemberOf AS edge,
-             social.Community AS community
-        WHERE MATCH(member-(edge)->community)
+        FROM auth.UserAccount AS member
+            JOIN social.MemberOf AS edge ON edge.UserID = member.UserID
+            JOIN social.Community AS community ON community.CommunityID = edge.CommunityID
+            WHERE 1 = 1
           AND member.UserID = @UserID AND community.CommunityID = @CommunityID
           AND edge.EndedAt IS NULL;
         IF @CurrentCount > 1
             THROW 51153, N'Multiple current memberships require repair.', 1;
         SELECT @MembershipID = edge.MembershipID, @CurrentStatus = edge.MemberStatus
-        FROM auth.UserAccount AS member,
-             social.MemberOf AS edge,
-             social.Community AS community
-        WHERE MATCH(member-(edge)->community)
+        FROM auth.UserAccount AS member
+            JOIN social.MemberOf AS edge ON edge.UserID = member.UserID
+            JOIN social.Community AS community ON community.CommunityID = edge.CommunityID
+            WHERE 1 = 1
           AND member.UserID = @UserID AND community.CommunityID = @CommunityID
           AND edge.EndedAt IS NULL;
         IF @CurrentStatus IN ('BLOCKED','BANNED')
@@ -437,24 +368,24 @@ BEGIN
         IF @Enabled = 1 AND NOT EXISTS
         (
             SELECT 1 FROM social.Follows AS edge
-            WHERE edge.$from_id = (SELECT follower.$node_id FROM auth.UserAccount AS follower
+            WHERE edge.$from_id = (SELECT follower.$node_id FROM social.UserNode AS follower
                                    WHERE follower.UserID = @FollowerUserID)
-              AND edge.$to_id = (SELECT followed.$node_id FROM auth.UserAccount AS followed
+              AND edge.$to_id = (SELECT followed.$node_id FROM social.UserNode AS followed
                                  WHERE followed.UserID = @FollowedUserID)
         )
         BEGIN
             INSERT INTO social.Follows ($from_id,$to_id)
             SELECT follower.$node_id, followed.$node_id
-            FROM auth.UserAccount AS follower, auth.UserAccount AS followed
+            FROM social.UserNode AS follower, social.UserNode AS followed
             WHERE follower.UserID = @FollowerUserID AND followed.UserID = @FollowedUserID;
             SET @Changed = 1;
         END;
         IF @Enabled = 0
         BEGIN
             DELETE edge FROM social.Follows AS edge
-            WHERE edge.$from_id = (SELECT follower.$node_id FROM auth.UserAccount AS follower
+            WHERE edge.$from_id = (SELECT follower.$node_id FROM social.UserNode AS follower
                                    WHERE follower.UserID = @FollowerUserID)
-              AND edge.$to_id = (SELECT followed.$node_id FROM auth.UserAccount AS followed
+              AND edge.$to_id = (SELECT followed.$node_id FROM social.UserNode AS followed
                                  WHERE followed.UserID = @FollowedUserID);
             IF @@ROWCOUNT > 0 SET @Changed = 1;
         END;
@@ -472,7 +403,7 @@ BEGIN
 END;
 GO
 
-/* NULL reaction removes an edge, including when access was later revoked. */
+/* NULL reaction removes the relational row, even after access is revoked. */
 CREATE OR ALTER PROCEDURE social.usp_SetReaction
     @UserID bigint,
     @ContentID bigint,
@@ -523,23 +454,19 @@ BEGIN
         IF @LockResult < 0 THROW 51174, N'Could not lock reaction pair.', 1;
         SELECT @ExistingType = edge.ReactionType
         FROM social.ReactTo AS edge
-        WHERE edge.$from_id = (SELECT person.$node_id FROM auth.UserAccount AS person
-                               WHERE person.UserID = @UserID)
-          AND edge.$to_id = (SELECT item.$node_id FROM social.ContentItem AS item
-                             WHERE item.ContentID = @ContentID);
+        WHERE UserID = @UserID
+          AND ContentID = @ContentID;
         IF @ReactionType IS NULL AND @ExistingType IS NOT NULL
         BEGIN
             DELETE edge FROM social.ReactTo AS edge
-            WHERE edge.$from_id = (SELECT person.$node_id FROM auth.UserAccount AS person
-                                   WHERE person.UserID = @UserID)
-              AND edge.$to_id = (SELECT item.$node_id FROM social.ContentItem AS item
-                                 WHERE item.ContentID = @ContentID);
+            WHERE UserID = @UserID
+              AND ContentID = @ContentID;
             SET @Changed = 1;
         END
         ELSE IF @ReactionType IS NOT NULL AND @ExistingType IS NULL
         BEGIN
-            INSERT INTO social.ReactTo ($from_id,$to_id,ReactionType)
-            SELECT person.$node_id,item.$node_id,@ReactionType
+            INSERT INTO social.ReactTo (UserID,ContentID,ReactionType)
+            SELECT person.UserID,item.ContentID,@ReactionType
             FROM auth.UserAccount AS person,social.ContentItem AS item
             WHERE person.UserID = @UserID AND item.ContentID = @ContentID;
             SET @Changed = 1;
@@ -547,10 +474,8 @@ BEGIN
         ELSE IF @ReactionType IS NOT NULL AND @ExistingType <> @ReactionType
         BEGIN
             UPDATE social.ReactTo SET ReactionType = @ReactionType
-            WHERE $from_id = (SELECT person.$node_id FROM auth.UserAccount AS person
-                              WHERE person.UserID = @UserID)
-              AND $to_id = (SELECT item.$node_id FROM social.ContentItem AS item
-                            WHERE item.ContentID = @ContentID);
+            WHERE UserID = @UserID
+              AND ContentID = @ContentID;
             SET @Changed = 1;
         END;
         IF @Changed = 1
@@ -567,7 +492,7 @@ BEGIN
 END;
 GO
 
-/* Hiding a post also hides its comments and queues deletion of their indexes. */
+/* Hiding a post also hides its comments. */
 CREATE OR ALTER PROCEDURE social.usp_ModerateContent
     @ActorUserID bigint,
     @ContentID bigint
@@ -577,29 +502,13 @@ BEGIN
     SET XACT_ABORT ON;
     DECLARE @CommunityID bigint, @OwnerUserID bigint, @ActorRole varchar(10),
             @ContentKind varchar(8), @ContentStatus varchar(12), @LockResult int,
-            @LockResource nvarchar(255), @ChangedRows int = 0, @QueuedRows int = 0;
+            @LockResource nvarchar(255), @ChangedRows int = 0;
     DECLARE @Locations TABLE (CommunityID bigint PRIMARY KEY);
     DECLARE @Affected TABLE (ContentID bigint PRIMARY KEY);
     BEGIN TRY
         BEGIN TRANSACTION;
         INSERT INTO @Locations (CommunityID)
-        SELECT community.CommunityID
-        FROM social.ContentItem AS item,
-             social.PublishedIn AS location,
-             social.Community AS community
-        WHERE MATCH(item-(location)->community)
-          AND item.ContentID = @ContentID AND item.Kind IN ('POST','DOCUMENT')
-        UNION
-        SELECT community.CommunityID
-        FROM social.ContentItem AS comment,
-             social.CommentOn AS commentOn,
-             social.ContentItem AS post,
-             social.PublishedIn AS location,
-             social.Community AS community
-        WHERE MATCH(comment-(commentOn)->post)
-          AND MATCH(post-(location)->community)
-          AND comment.ContentID = @ContentID AND comment.Kind = 'COMMENT'
-          AND post.Kind = 'POST';
+        SELECT CommunityID FROM social.ContentItem WHERE ContentID = @ContentID;
         IF (SELECT COUNT(*) FROM @Locations) <> 1
             THROW 51175, N'Content must belong to exactly one community.', 1;
         SELECT @CommunityID = CommunityID FROM @Locations;
@@ -617,10 +526,10 @@ BEGIN
         IF @ActorUserID = @OwnerUserID SET @ActorRole = 'OWNER';
         ELSE
             SELECT @ActorRole = edge.[Role]
-            FROM auth.UserAccount AS actor,
-                 social.MemberOf AS edge,
-                 social.Community AS community
-            WHERE MATCH(actor-(edge)->community)
+            FROM auth.UserAccount AS actor
+            JOIN social.MemberOf AS edge ON edge.UserID = actor.UserID
+            JOIN social.Community AS community ON community.CommunityID = edge.CommunityID
+            WHERE 1 = 1
               AND actor.UserID = @ActorUserID AND community.CommunityID = @CommunityID
               AND edge.MemberStatus = 'ACTIVE' AND edge.EndedAt IS NULL
               AND edge.[Role] IN ('ADMIN','MODERATOR');
@@ -635,19 +544,15 @@ BEGIN
         INSERT INTO @Affected (ContentID) VALUES (@ContentID);
         IF @ContentKind = 'POST'
             INSERT INTO @Affected (ContentID)
-            SELECT comment.ContentID
-            FROM social.ContentItem AS comment,
-                 social.CommentOn AS relation,
-                 social.ContentItem AS post
-            WHERE MATCH(comment-(relation)->post)
-              AND post.ContentID = @ContentID AND comment.Kind = 'COMMENT';
+            SELECT ContentID FROM social.ContentItem
+            WHERE ParentPostID = @ContentID AND Kind = 'COMMENT';
 
-        UPDATE item SET ContentStatus = 'HIDDEN', AllowRag = 0,
+        UPDATE item SET ContentStatus = 'HIDDEN',
                         UpdatedAt = SYSUTCDATETIME()
         FROM social.ContentItem AS item
         JOIN @Affected AS affected ON affected.ContentID = item.ContentID
         WHERE item.ContentStatus IN ('PUBLISHED','HIDDEN')
-          AND (item.ContentStatus <> 'HIDDEN' OR item.AllowRag <> 0);
+          AND item.ContentStatus <> 'HIDDEN';
         SET @ChangedRows = @@ROWCOUNT;
         UPDATE revision SET CommentStatus = 'HIDDEN'
         FROM social.CommentRevision AS revision
@@ -655,25 +560,12 @@ BEGIN
         WHERE revision.IsCurrent = 1 AND revision.CommentStatus = 'VISIBLE';
         SET @ChangedRows = @ChangedRows + @@ROWCOUNT;
 
-        /* HOLDLOCK protects the absent-event check from concurrent moderation. */
-        INSERT INTO ops.IndexOutbox (SourceRevisionID,ModelID,Operation)
-        SELECT source.SourceRevisionID, model.ModelID, 'DELETE'
-        FROM knowledge.SourceRevision AS source
-        JOIN @Affected AS affected ON affected.ContentID = source.ContentID
-        CROSS JOIN knowledge.EmbeddingModel AS model
-        WHERE NOT EXISTS
-        (
-            SELECT 1 FROM ops.IndexOutbox AS queued WITH (UPDLOCK,HOLDLOCK)
-            WHERE queued.SourceRevisionID = source.SourceRevisionID
-              AND queued.ModelID = model.ModelID AND queued.Operation = 'DELETE'
-        );
-        SET @QueuedRows = @@ROWCOUNT;
-        IF @ChangedRows > 0 OR @QueuedRows > 0
+        IF @ChangedRows > 0
             INSERT INTO ops.AuditEvent (ActorUserID,EventType,EntityType,EntityID)
             VALUES (@ActorUserID,'MODERATE_HIDE','CONTENT',@ContentID);
         COMMIT TRANSACTION;
         SELECT @ContentID AS ContentID, CAST('HIDDEN' AS varchar(12)) AS ContentStatus,
-               @ChangedRows AS ChangedRows, @QueuedRows AS QueuedDeleteEvents;
+               @ChangedRows AS ChangedRows;
     END TRY
     BEGIN CATCH
         IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;

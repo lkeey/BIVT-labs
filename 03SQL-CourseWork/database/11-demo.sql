@@ -1,112 +1,64 @@
-/* Optional, repeatable demo data. Run after 00–10 in a disposable course database. */
-SET NOCOUNT ON;
-INSERT INTO auth.UserAccount (Login,EmailNormalized)
-SELECT seed.Login,seed.Email
-FROM (VALUES (N'demo_alice',N'alice@example.invalid'),
-             (N'demo_bob',N'bob@example.invalid'),
-             (N'demo_charlie',N'charlie@example.invalid')) AS seed(Login,Email)
-WHERE NOT EXISTS (SELECT 1 FROM auth.UserAccount AS existing WHERE existing.Login=seed.Login);
-
-INSERT INTO auth.UserProfile (UserID,DisplayName)
-SELECT account.UserID,
-       CASE account.Login WHEN N'demo_alice' THEN N'Алиса'
-                          WHEN N'demo_bob' THEN N'Борис' ELSE N'Чарли' END
-FROM auth.UserAccount AS account
-WHERE account.Login IN (N'demo_alice',N'demo_bob',N'demo_charlie')
-  AND NOT EXISTS (SELECT 1 FROM auth.UserProfile AS existing
-                  WHERE existing.UserID=account.UserID);
-
-DECLARE @Alice bigint=(SELECT UserID FROM auth.UserAccount WHERE Login=N'demo_alice');
-DECLARE @Bob bigint=(SELECT UserID FROM auth.UserAccount WHERE Login=N'demo_bob');
-DECLARE @Charlie bigint=(SELECT UserID FROM auth.UserAccount WHERE Login=N'demo_charlie');
-
-IF NOT EXISTS (SELECT 1 FROM social.Community WHERE CommunityName=N'Демо: закрытая группа')
-    INSERT INTO social.Community (OwnerUserID,Slug,CommunityName,Visibility)
-    VALUES (@Alice,N'demo-private',N'Демо: закрытая группа','PRIVATE');
-IF NOT EXISTS (SELECT 1 FROM social.Community WHERE CommunityName=N'Демо: открытая группа')
-    INSERT INTO social.Community (OwnerUserID,Slug,CommunityName,Visibility)
-    VALUES (@Alice,N'demo-public',N'Демо: открытая группа','PUBLIC');
-DECLARE @Private bigint=(SELECT CommunityID FROM social.Community
-                         WHERE CommunityName=N'Демо: закрытая группа');
-DECLARE @Public bigint=(SELECT CommunityID FROM social.Community
-                        WHERE CommunityName=N'Демо: открытая группа');
-
-IF NOT EXISTS
-   (SELECT 1 FROM auth.UserAccount AS member,social.MemberOf AS edge,social.Community AS community
-    WHERE MATCH(member-(edge)->community)
-      AND member.UserID=@Bob AND community.CommunityID=@Private AND edge.MemberStatus='ACTIVE')
-    INSERT INTO social.MemberOf ($from_id,$to_id,MemberStatus)
-    SELECT member.$node_id,community.$node_id,'ACTIVE'
-    FROM auth.UserAccount AS member,social.Community AS community
-    WHERE member.UserID=@Bob AND community.CommunityID=@Private;
-
-IF NOT EXISTS
-   (SELECT 1 FROM auth.UserAccount AS member,social.MemberOf AS edge,social.Community AS community
-    WHERE MATCH(member-(edge)->community)
-      AND member.UserID=@Charlie AND community.CommunityID=@Private)
-    INSERT INTO social.MemberOf ($from_id,$to_id,MemberStatus)
-    SELECT member.$node_id,community.$node_id,'PENDING'
-    FROM auth.UserAccount AS member,social.Community AS community
-    WHERE member.UserID=@Charlie AND community.CommunityID=@Private;
-
-IF NOT EXISTS
-   (SELECT 1 FROM auth.UserAccount AS follower,social.Follows AS edge,auth.UserAccount AS followed
-    WHERE MATCH(follower-(edge)->followed)
-      AND follower.UserID=@Bob AND followed.UserID=@Alice)
-    INSERT INTO social.Follows ($from_id,$to_id)
-    SELECT follower.$node_id,followed.$node_id
-    FROM auth.UserAccount AS follower,auth.UserAccount AS followed
-    WHERE follower.UserID=@Bob AND followed.UserID=@Alice;
-
-DECLARE @PrivatePost bigint;
-SELECT TOP (1) @PrivatePost=post.ContentID
-FROM social.PostRevision AS post
-WHERE post.Body=N'В закрытой группе обсуждаем методичку по SQL Graph.';
-IF @PrivatePost IS NULL
-BEGIN
-    DECLARE @CreatedPost TABLE (ContentID bigint,SourceRevisionID bigint);
-    INSERT INTO @CreatedPost EXEC social.usp_PublishContent
-        @AuthorUserID=@Alice,@CommunityID=@Private,@Kind='POST',
-        @Body=N'В закрытой группе обсуждаем методичку по SQL Graph.';
-    SELECT @PrivatePost=ContentID FROM @CreatedPost;
-END;
-
-IF NOT EXISTS
-   (SELECT 1 FROM social.CommentRevision
-    WHERE Body=N'Уточнение: каждый извлечённый факт должен иметь источник.')
-    EXEC social.usp_PublishContent
-        @AuthorUserID=@Bob,@CommunityID=@Private,@Kind='COMMENT',
-        @Body=N'Уточнение: каждый извлечённый факт должен иметь источник.',
-        @ParentPostID=@PrivatePost;
-
-IF NOT EXISTS
-   (SELECT 1 FROM social.PostRevision
-    WHERE Body=N'Открытая заметка: RAG цитирует найденные фрагменты.')
-    EXEC social.usp_PublishContent
-        @AuthorUserID=@Alice,@CommunityID=@Public,@Kind='POST',
-        @Body=N'Открытая заметка: RAG цитирует найденные фрагменты.';
-
-/* The worker can extract a person, organization, event, place and two relations. */
-IF NOT EXISTS
-   (SELECT 1 FROM social.PostRevision
-    WHERE Body=N'Иван Петров работает в компании «Яндекс». Конференция «Data Fest» проходит в Москве. Тема: графовые базы данных.')
-    EXEC social.usp_PublishContent
-        @AuthorUserID=@Alice,@CommunityID=@Public,@Kind='POST',
-        @Body=N'Иван Петров работает в компании «Яндекс». Конференция «Data Fest» проходит в Москве. Тема: графовые базы данных.';
-
-IF NOT EXISTS
-   (SELECT 1 FROM social.DocumentDetail WHERE Title=N'Демо: правила доступа')
-    EXEC knowledge.usp_SaveDocumentVersion
-        @AuthorUserID=@Alice,@CommunityID=@Private,
-        @Title=N'Демо: правила доступа',@MimeType='text/plain',
-        @PlainText=N'Закрытые сообщества доступны только владельцу и активным участникам. Ожидающая заявка не открывает доступ.';
-
-/* The app worker must process pending outbox rows before RAG queries. */
-SELECT EventID,SourceRevisionID,Operation,EventStatus
-FROM ops.IndexOutbox ORDER BY EventID;
-
-/* Boris is active; Charlie has only a pending request. */
-SELECT N'active member' AS DemoCase,ContentID,Kind,CommunityID
-FROM social.vAccessibleContent WHERE UserID=@Bob AND CommunityID=@Private;
-SELECT N'pending outsider' AS DemoCase,ContentID,Kind,CommunityID
-FROM social.vAccessibleContent WHERE UserID=@Charlie AND CommunityID=@Private;
+/* Optional synthetic demonstration data. Skip this file in a real installation.
+   Repeated application does not duplicate users, communities or materials.
+   These accounts have no passwords or Firebase credentials. */
+SET XACT_ABORT ON;
+BEGIN TRY
+    BEGIN TRANSACTION;
+    IF NOT EXISTS (SELECT 1 FROM auth.UserAccount WHERE Login = N'demo-author')
+        INSERT INTO auth.UserAccount(Login,EmailNormalized) VALUES (N'demo-author',N'author@example.invalid');
+    IF NOT EXISTS (SELECT 1 FROM auth.UserAccount WHERE Login = N'demo-reader')
+        INSERT INTO auth.UserAccount(Login,EmailNormalized) VALUES (N'demo-reader',N'reader@example.invalid');
+    IF NOT EXISTS (SELECT 1 FROM auth.UserAccount WHERE Login = N'demo-mentor')
+        INSERT INTO auth.UserAccount(Login,EmailNormalized) VALUES (N'demo-mentor',N'mentor@example.invalid');
+    DECLARE @Mentor bigint = (SELECT UserID FROM auth.UserAccount WHERE Login = N'demo-mentor');
+    IF NOT EXISTS (SELECT 1 FROM auth.UserProfile WHERE UserID = @Mentor)
+        INSERT INTO auth.UserProfile(UserID,DisplayName) VALUES (@Mentor,N'Учебный наставник');
+    DECLARE @Author bigint = (SELECT UserID FROM auth.UserAccount WHERE Login = N'demo-author'),
+            @Reader bigint = (SELECT UserID FROM auth.UserAccount WHERE Login = N'demo-reader');
+    IF NOT EXISTS (SELECT 1 FROM auth.UserProfile WHERE UserID = @Author)
+        INSERT INTO auth.UserProfile(UserID,DisplayName) VALUES (@Author,N'Учебный автор');
+    IF NOT EXISTS (SELECT 1 FROM auth.UserProfile WHERE UserID = @Reader)
+        INSERT INTO auth.UserProfile(UserID,DisplayName) VALUES (@Reader,N'Учебный читатель');
+    IF NOT EXISTS (SELECT 1 FROM social.Community WHERE Slug = N'demo-databases')
+        INSERT INTO social.Community(OwnerUserID,Slug,CommunityName,Visibility)
+        VALUES (@Author,N'demo-databases',N'Базы данных','PUBLIC');
+    DECLARE @Community bigint = (SELECT CommunityID FROM social.Community WHERE Slug = N'demo-databases');
+    IF NOT EXISTS (SELECT 1 FROM social.MemberOf WHERE UserID = @Reader AND CommunityID = @Community AND EndedAt IS NULL)
+        INSERT INTO social.MemberOf(UserID,CommunityID,MemberStatus) VALUES (@Reader,@Community,'ACTIVE');
+    IF NOT EXISTS (SELECT 1 FROM social.Follows AS f
+                   WHERE f.$from_id = (SELECT $node_id FROM social.UserNode WHERE UserID = @Reader)
+                     AND f.$to_id = (SELECT $node_id FROM social.UserNode WHERE UserID = @Author))
+        INSERT INTO social.Follows($from_id,$to_id)
+        SELECT reader.$node_id, author.$node_id FROM social.UserNode AS reader, social.UserNode AS author
+        WHERE reader.UserID = @Reader AND author.UserID = @Author;
+    IF NOT EXISTS (SELECT 1 FROM social.Follows AS f
+                   WHERE f.$from_id = (SELECT $node_id FROM social.UserNode WHERE UserID = @Author)
+                     AND f.$to_id = (SELECT $node_id FROM social.UserNode WHERE UserID = @Mentor))
+        INSERT INTO social.Follows($from_id,$to_id)
+        SELECT author.$node_id, mentor.$node_id FROM social.UserNode AS author, social.UserNode AS mentor
+        WHERE author.UserID = @Author AND mentor.UserID = @Mentor;
+    IF NOT EXISTS (SELECT 1 FROM social.ContentItem WHERE AuthorUserID = @Author AND CommunityID = @Community AND Kind = 'POST')
+    BEGIN
+        INSERT INTO social.ContentItem(Kind,AuthorUserID,CommunityID,ContentStatus,PublishedAt)
+        VALUES ('POST',@Author,@Community,'PUBLISHED',SYSUTCDATETIME());
+        DECLARE @Post bigint = CONVERT(bigint,SCOPE_IDENTITY()),
+                @Body nvarchar(max) = N'Реляционная модель: первичные ключи, внешние ключи и нормализация.';
+        INSERT INTO social.PostRevision(ContentID,RevisionNo,Body,ContentHash,EditedByUserID)
+        VALUES (@Post,1,@Body,HASHBYTES('SHA2_256',CONVERT(varbinary(max),@Body)),@Author);
+    END;
+    COMMIT TRANSACTION;
+END TRY
+BEGIN CATCH
+    IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
+    THROW;
+END CATCH;
+GO
+/* A two-hop graph query for a defense demo, not a separate graph data model. */
+SELECT DISTINCT me.UserID AS ReaderID, candidate.UserID AS SuggestedUserID
+FROM social.UserNode AS me, social.Follows AS firstHop, social.UserNode AS friend,
+     social.Follows AS secondHop, social.UserNode AS candidate
+WHERE MATCH(me-(firstHop)->friend-(secondHop)->candidate)
+  AND me.UserID <> candidate.UserID
+  AND NOT EXISTS (SELECT 1 FROM social.Follows AS direct
+                  WHERE direct.$from_id = me.$node_id AND direct.$to_id = candidate.$node_id);
+GO

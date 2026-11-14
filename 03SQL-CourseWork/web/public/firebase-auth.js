@@ -14,6 +14,7 @@ export async function signInWithGoogle(config) {
   }
   const result = await signInWithPopup(auth, new GoogleAuthProvider());
   return {
+    user: { uid: result.user.uid, email: result.user.email },
     token: await result.user.getIdToken(),
     tokenProvider: () => result.user.getIdToken()
   };

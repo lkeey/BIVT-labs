@@ -11,7 +11,6 @@ import (
 	"os/signal"
 	"strconv"
 	"strings"
-	"sync/atomic"
 	"syscall"
 	"time"
 
@@ -24,10 +23,7 @@ type server struct {
 	auth             *firebaseTokenVerifier
 	logger           *slog.Logger
 	origin           string
-	rag              *ragProvider
 	maxDocumentBytes int64
-	// One in-flight RAG generation per API process bounds CPU and model load.
-	ragBusy atomic.Bool
 }
 
 func main() {
@@ -82,11 +78,7 @@ func main() {
 		db.SetMaxIdleConns(6)
 	}
 	db.SetConnMaxLifetime(30 * time.Minute)
-	rag, ragErr := newRagProvider(db.isPostgres())
-	if ragErr != nil {
-		logger.Warn("RAG provider configuration is unavailable", "error", ragErr)
-	}
-	s := &server{db: db, auth: authClient, logger: logger, origin: origin, rag: rag,
+	s := &server{db: db, auth: authClient, logger: logger, origin: origin,
 		maxDocumentBytes: maxDocumentBytes}
 	addr := os.Getenv("ADDR")
 	if addr == "" {
@@ -165,8 +157,6 @@ func (s *server) routes() http.Handler {
 	mux.HandleFunc("GET /api/v1/documents/{documentId}", s.withUser(s.getDocument))
 	mux.HandleFunc("POST /api/v1/documents/{documentId}/versions", s.withUser(s.createDocumentVersion))
 	mux.HandleFunc("GET /api/v1/documents/{documentId}/file", s.withUser(s.getDocumentFile))
-	mux.HandleFunc("GET /api/v1/rag/queries/{queryId}", s.withUser(s.getRagTurn))
-	mux.HandleFunc("POST /api/v1/rag/queries", s.withUser(s.createRagQuery))
 	mux.HandleFunc("GET /api/v1/feed", s.withUser(s.getFeed))
 	return s.withCORS(mux)
 }

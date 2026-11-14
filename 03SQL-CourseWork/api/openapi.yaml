@@ -1,12 +1,10 @@
 openapi: 3.1.0
 info:
   title: SocialNetworkDB API
-  version: 0.2.0
+  version: 0.3.0
   description: |
     Контракт Go API курсовой. Сервер проверяет Firebase ID token и права при
     каждом запросе; браузер никогда не подключается к SQL Server напрямую.
-    RAG использует приватный сервис embeddings и OpenAI-совместимую модель
-    ответа; без их настройки запрос на генерацию возвращает 503.
 servers:
   - url: /api
     description: Относительный путь Go backend; публичный домен задаётся при размещении
@@ -16,7 +14,7 @@ tags:
   - name: Social
   - name: Content
   - name: Documents
-  - name: Assistant
+  - name: Feed
 security:
   - firebaseIdToken: []
 paths:
@@ -269,7 +267,7 @@ paths:
               $ref: '#/components/schemas/TextCreate'
       responses:
         '201':
-          description: Пост опубликован; индексирование поставлено в очередь
+          description: Пост опубликован
           content:
             application/json:
               schema:
@@ -318,9 +316,9 @@ paths:
         '503': { $ref: '#/components/responses/RetryLater' }
     delete:
       tags: [Content]
-      summary: Скрыть свой пост и отозвать его из RAG
+      summary: Скрыть свой пост
       description: Backend вызывает процедуру с ExpectedKind=POST; ID комментария или документа здесь отклоняется.
-      x-sql-operation: assistant.usp_RevokeContentAccess
+      x-sql-operation: social.usp_RevokeContentAccess
       x-implementation-status: implemented
       responses:
         '204': { description: Пост скрыт }
@@ -359,7 +357,7 @@ paths:
               $ref: '#/components/schemas/TextCreate'
       responses:
         '201':
-          description: Комментарий опубликован; индексирование поставлено в очередь
+          description: Комментарий опубликован
           content:
             application/json:
               schema:
@@ -407,9 +405,9 @@ paths:
         '503': { $ref: '#/components/responses/RetryLater' }
     delete:
       tags: [Content]
-      summary: Скрыть свой комментарий и отозвать его из RAG
+      summary: Скрыть свой комментарий
       description: Backend вызывает процедуру с ExpectedKind=COMMENT; ID поста или документа здесь отклоняется.
-      x-sql-operation: assistant.usp_RevokeContentAccess
+      x-sql-operation: social.usp_RevokeContentAccess
       x-implementation-status: implemented
       responses:
         '204': { description: Комментарий скрыт }
@@ -426,7 +424,7 @@ paths:
         Доступно владельцу, администратору или модератору сообщества. Можно
         скрыть пост, комментарий или документ; скрытие поста скрывает также его
         комментарии. Повторный PUT идемпотентен. Материал немедленно исчезает
-        из чтения, ленты и RAG, затем удаляется из производных индексов.
+        из чтения и ленты.
       x-sql-operation: social.usp_ModerateContent
       x-implementation-status: implemented
       responses:
@@ -492,13 +490,13 @@ paths:
       tags: [Documents]
       summary: Загрузить PDF/DOCX или ввести текст
       description: Канонический сервер принимает до 10 MiB; публичный хостинг может задать меньший лимит. MIME и содержимое проверяются сервером.
-      x-sql-operation: knowledge.usp_SaveDocumentVersion
+      x-sql-operation: social.usp_SaveDocumentVersion
       x-implementation-status: implemented
       requestBody:
         $ref: '#/components/requestBodies/DocumentPayload'
       responses:
-        '202':
-          description: Версия сохранена; OCR и индексирование выполняются асинхронно
+        '201':
+          description: Версия сохранена и готова к скачиванию
           content:
             application/json:
               schema:
@@ -514,10 +512,9 @@ paths:
       - $ref: '#/components/parameters/DocumentId'
     get:
       tags: [Documents]
-      summary: Текущая версия документа и состояние обработки
+      summary: Текущая сохранённая версия документа
       description: |
-        Автор видит PROCESSING/FAILED. Остальные получают документ только после
-        READY и при текущем доступе к сообществу.
+        Документ доступен сразу после сохранения, при текущем доступе к сообществу.
       x-implementation-status: implemented
       responses:
         '200':
@@ -534,13 +531,13 @@ paths:
     post:
       tags: [Documents]
       summary: Заменить содержимое своего документа новой версией
-      x-sql-operation: knowledge.usp_SaveDocumentVersion
+      x-sql-operation: social.usp_SaveDocumentVersion
       x-implementation-status: implemented
       requestBody:
         $ref: '#/components/requestBodies/DocumentPayload'
       responses:
-        '202':
-          description: Новая версия сохранена и ожидает обработки
+        '201':
+          description: Новая версия сохранена и готова к скачиванию
           content:
             application/json:
               schema:
@@ -559,11 +556,10 @@ paths:
       tags: [Documents]
       summary: Скачать текущий текст, PDF или DOCX
       description: |
-        knowledge.usp_GetDocumentFile проверяет текущий доступ, опубликованный
+        social.usp_GetDocumentFile проверяет текущий доступ, опубликованный
         статус и READY для актуальной версии перед возвратом FileBytes или PlainText.
-        Автор может видеть статус PROCESSING или FAILED в карточке, но скачать
-        такой файл через этот маршрут нельзя. Текстовый документ выдаётся как UTF-8 text/plain.
-      x-sql-operation: knowledge.usp_GetDocumentFile
+        Текстовый документ выдаётся как UTF-8 text/plain.
+      x-sql-operation: social.usp_GetDocumentFile
       x-implementation-status: implemented
       responses:
         '200':
@@ -581,108 +577,12 @@ paths:
               schema: { type: string }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '404': { $ref: '#/components/responses/NotFound' }
-  /v1/rag/queries:
-    post:
-      tags: [Assistant]
-      summary: Создать ответ на вопрос по доступным источникам
-      description: |
-        Backend проверяет доступность сервиса модели ответа и получает закреплённый
-        embedding до создания SQL-хода. Затем вызывает гибридный поиск,
-        фиксирует доступные фрагменты и передаёт LLM максимум пять источников.
-        Ответ должен содержать ссылки [1]..[N]; в SQL сохраняются только
-        фактически упомянутые цитаты после повторной проверки доступа.
-        Обработка завершается до HTTP-ответа; для долгого запроса прокси
-        нужен таймаут больше 90 секунд. Отсутствующая конфигурация или сбой
-        предварительных проверок дают 503 без создания хода. Если генерация
-        сорвалась позже, backend пытается отметить ход FAILED и HTTP также
-        возвращает 503. При недоступной БД ход может остаться PENDING.
-        Один экземпляр API выполняет не более одного RAG-запроса одновременно.
-        После аутентификации и проверки входных данных занятый экземпляр
-        возвращает 429 без обращения к моделям и создания SQL-хода.
-      x-sql-operations:
-        - assistant.usp_StartRagSession
-        - assistant.usp_StartRagTurn
-        - assistant.usp_SearchRag
-        - assistant.usp_RecordRetrievedChunks
-        - assistant.usp_SaveRagAnswer
-        - assistant.usp_SaveRagNoSources
-        - assistant.usp_FailRagTurn
-      x-implementation-status: implemented
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/RagQuestion'
-      responses:
-        '201':
-          description: Ответ сохранён либо подтверждено отсутствие источников; Location указывает на сохранённый ход
-          headers:
-            Location:
-              schema: { type: string }
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RagCreated'
-        '400': { $ref: '#/components/responses/BadRequest' }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-        '404': { $ref: '#/components/responses/NotFound' }
-        '409': { $ref: '#/components/responses/Conflict' }
-        '429':
-          description: Экземпляр API уже выполняет RAG-запрос; повторите позже
-          headers:
-            Retry-After:
-              description: Рекомендуемая задержка перед повтором в секундах
-              schema: { type: integer, example: 10 }
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Problem'
-        '503':
-          description: Сервис embeddings или модель ответа не настроены либо недоступны
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Problem'
-  /v1/rag/queries/{queryId}:
-    parameters:
-      - $ref: '#/components/parameters/QueryId'
-    get:
-      tags: [Assistant]
-      summary: Состояние запроса, ответ и проверенные цитаты
-      description: |
-        Выдавать только собственный запрос. Перед выдачей завершённого ответа
-        assistant.usp_GetRagTurn возвращает состояние PENDING, COMPLETED,
-        NO_SOURCES или FAILED и проверяет отзыв доступа ко ВСЕМ переданным LLM
-        фрагментам. Только для разрешённого COMPLETED процедура возвращает
-        цитаты через assistant.vAnswerWithCitations. При отзыве доступа к источнику не
-        отдавать ни сохранённый ответ, ни цитаты (410).
-      x-sql-operations:
-        - assistant.usp_GetRagTurn
-        - assistant.vAnswerWithCitations
-      x-implementation-status: implemented
-      responses:
-        '200':
-          description: Текущее состояние; завершённый ответ содержит цитаты
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RagResult'
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '404': { $ref: '#/components/responses/NotFound' }
-        '410':
-          description: Источник ранее сохранённого ответа больше недоступен
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Problem'
   /v1/feed:
     get:
-      tags: [Assistant]
+      tags: [Feed]
       summary: Персональная лента доступных постов и документов
-      description: Результат дополнительно фильтруется vRecommendationFeed при чтении.
-      x-sql-operation: assistant.usp_GenerateRecommendations
+      description: Лента по подпискам, сообществам и времени с проверкой доступа при чтении.
+      x-sql-operation: social.usp_BuildRecommendationFeed
       x-implementation-status: implemented
       parameters:
         - name: limit
@@ -827,11 +727,10 @@ components:
     ContentWrite:
       type: object
       additionalProperties: false
-      required: [contentId, sourceRevisionId, indexStatus]
+      required: [contentId, revisionId]
       properties:
         contentId: { $ref: '#/components/schemas/Id' }
-        sourceRevisionId: { $ref: '#/components/schemas/Id' }
-        indexStatus: { type: string, enum: [PENDING] }
+        revisionId: { $ref: '#/components/schemas/Id' }
     Post:
       type: object
       additionalProperties: false
@@ -855,12 +754,11 @@ components:
     DocumentWrite:
       type: object
       additionalProperties: false
-      required: [contentId, documentVersionId, sourceRevisionId, processingStatus]
+      required: [contentId, documentVersionId, processingStatus]
       properties:
         contentId: { $ref: '#/components/schemas/Id' }
         documentVersionId: { $ref: '#/components/schemas/Id' }
-        sourceRevisionId: { $ref: '#/components/schemas/Id' }
-        processingStatus: { type: string, enum: [PROCESSING] }
+        processingStatus: { type: string, enum: [READY] }
     Document:
       type: object
       additionalProperties: false
@@ -872,50 +770,7 @@ components:
         title: { type: string }
         mimeType: { type: string, enum: [text/plain, application/pdf, application/vnd.openxmlformats-officedocument.wordprocessingml.document] }
         versionNo: { type: integer, minimum: 1 }
-        processingStatus: { type: string, enum: [PROCESSING, READY, FAILED] }
-    RagQuestion:
-      type: object
-      additionalProperties: false
-      required: [question]
-      properties:
-        question: { type: string, minLength: 1, maxLength: 2000 }
-        communityId:
-          description: Если не задано, поиск по всем доступным сообществам.
-          $ref: '#/components/schemas/Id'
-    RagCreated:
-      type: object
-      additionalProperties: false
-      required: [queryId, status]
-      properties:
-        queryId: { $ref: '#/components/schemas/Id' }
-        status: { type: string, enum: [COMPLETED, NO_SOURCES] }
-    RagResult:
-      type: object
-      additionalProperties: false
-      required: [queryId, status, question, citations]
-      properties:
-        queryId: { $ref: '#/components/schemas/Id' }
-        status: { type: string, enum: [PENDING, COMPLETED, NO_SOURCES, FAILED] }
-        question: { type: string }
-        answer: { type: [string, 'null'], description: Только при COMPLETED или NO_SOURCES }
-        citations:
-          type: array
-          items: { $ref: '#/components/schemas/Citation' }
-    Citation:
-      type: object
-      additionalProperties: false
-      required: [citationId, contentId, kind, title, authorUserId, quote, startOffset, endOffset, sourcePath]
-      properties:
-        citationId: { $ref: '#/components/schemas/Id' }
-        contentId: { $ref: '#/components/schemas/Id' }
-        kind: { type: string, enum: [POST, COMMENT, DOCUMENT] }
-        title: { type: string }
-        authorUserId: { $ref: '#/components/schemas/Id' }
-        quote: { type: string }
-        pageNo: { type: [integer, 'null'], minimum: 1 }
-        startOffset: { type: integer, minimum: 0 }
-        endOffset: { type: integer, minimum: 1 }
-        sourcePath: { type: string, description: Относительный API-путь к доступному источнику }
+        processingStatus: { type: string, enum: [READY] }
     FeedItem:
       type: object
       additionalProperties: false
@@ -927,7 +782,7 @@ components:
         communityId: { $ref: '#/components/schemas/Id' }
         authorUserId: { $ref: '#/components/schemas/Id' }
         score: { type: number, minimum: 0, maximum: 1 }
-        reasonCode: { type: string, enum: [RELATED_TOPIC, FOLLOWED_AUTHOR, MEMBER_COMMUNITY, SIMILAR_INTEREST, POPULAR, FRESH] }
+        reasonCode: { type: string, enum: [FOLLOWED_AUTHOR, MEMBER_COMMUNITY, FRESH] }
         reasonText: { type: string }
     CommunityPage:
       type: object
