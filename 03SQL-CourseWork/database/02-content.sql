@@ -49,17 +49,17 @@ BEGIN
         ContentID bigint NOT NULL CONSTRAINT PK_DocumentDetail PRIMARY KEY,
         Title nvarchar(250) NOT NULL,
         Description nvarchar(2000) NULL,
-        DocumentStatus varchar(12) NOT NULL CONSTRAINT DF_DocumentDetail_Status DEFAULT ('PROCESSING'),
+        DocumentStatus varchar(12) NOT NULL CONSTRAINT DF_DocumentDetail_Status DEFAULT ('READY'),
         CONSTRAINT FK_DocumentDetail_Content FOREIGN KEY (ContentID) REFERENCES social.ContentItem(ContentID),
-        CONSTRAINT CK_DocumentDetail_Status CHECK (DocumentStatus IN ('PROCESSING','READY','FAILED'))
+        CONSTRAINT CK_DocumentDetail_Status CHECK (DocumentStatus = 'READY')
     );
 END;
 GO
 
 /* Both uploaded files and directly entered Russian text are supported. */
-IF OBJECT_ID(N'knowledge.DocumentVersion', N'U') IS NULL
+IF OBJECT_ID(N'social.DocumentVersion', N'U') IS NULL
 BEGIN
-    CREATE TABLE knowledge.DocumentVersion
+    CREATE TABLE social.DocumentVersion
     (
         DocumentVersionID bigint IDENTITY(1,1) NOT NULL CONSTRAINT PK_DocumentVersion PRIMARY KEY,
         ContentID bigint NOT NULL,
@@ -72,8 +72,6 @@ BEGIN
         SHA256 binary(32) NOT NULL,
         IsCurrent bit NOT NULL CONSTRAINT DF_DocumentVersion_Current DEFAULT (1),
         UploadStatus varchar(8) NOT NULL CONSTRAINT DF_DocumentVersion_UploadStatus DEFAULT ('STORED'),
-        OCRStatus varchar(10) NOT NULL CONSTRAINT DF_DocumentVersion_OCRStatus DEFAULT ('PENDING'),
-        OcrEngineVersion nvarchar(80) NULL,
         CreatedAt datetime2(3) NOT NULL CONSTRAINT DF_DocumentVersion_CreatedAt DEFAULT (SYSUTCDATETIME()),
         CONSTRAINT FK_DocumentVersion_Content FOREIGN KEY (ContentID) REFERENCES social.DocumentDetail(ContentID),
         CONSTRAINT UQ_DocumentVersion_Number UNIQUE (ContentID, VersionNo),
@@ -87,67 +85,7 @@ BEGIN
         CONSTRAINT CK_DocumentVersion_Size CHECK
             (SizeBytes BETWEEN 1 AND 10485760
              AND SizeBytes = COALESCE(DATALENGTH(FileBytes),DATALENGTH(PlainText))),
-        CONSTRAINT CK_DocumentVersion_UploadStatus CHECK (UploadStatus IN ('STORED','FAILED')),
-        CONSTRAINT CK_DocumentVersion_OCRStatus CHECK (OCRStatus IN ('PENDING','COMPLETED','NOT_NEEDED','FAILED'))
+        CONSTRAINT CK_DocumentVersion_UploadStatus CHECK (UploadStatus IN ('STORED','FAILED'))
     );
-END;
-GO
-
-/* A source revision identifies exactly one source snapshot. Its text is a searchable projection. */
-IF OBJECT_ID(N'knowledge.SourceRevision', N'U') IS NULL
-BEGIN
-    CREATE TABLE knowledge.SourceRevision
-    (
-        SourceRevisionID bigint IDENTITY(1,1) NOT NULL CONSTRAINT PK_SourceRevision PRIMARY KEY,
-        ContentID bigint NOT NULL,
-        PostRevisionID bigint NULL,
-        CommentRevisionID bigint NULL,
-        DocumentVersionID bigint NULL,
-        IsCurrent bit NOT NULL CONSTRAINT DF_SourceRevision_Current DEFAULT (1),
-        ProcessingStatus varchar(10) NOT NULL CONSTRAINT DF_SourceRevision_Status DEFAULT ('PENDING'),
-        ExtractedText nvarchar(max) NULL,
-        TextHash binary(32) NULL,
-        CreatedAt datetime2(3) NOT NULL CONSTRAINT DF_SourceRevision_CreatedAt DEFAULT (SYSUTCDATETIME()),
-        ProcessedAt datetime2(3) NULL,
-        CONSTRAINT FK_SourceRevision_Content FOREIGN KEY (ContentID) REFERENCES social.ContentItem(ContentID),
-        CONSTRAINT FK_SourceRevision_Post FOREIGN KEY (ContentID,PostRevisionID)
-            REFERENCES social.PostRevision(ContentID,RevisionID),
-        CONSTRAINT FK_SourceRevision_Comment FOREIGN KEY (ContentID,CommentRevisionID)
-            REFERENCES social.CommentRevision(ContentID,RevisionID),
-        CONSTRAINT FK_SourceRevision_Document FOREIGN KEY (ContentID,DocumentVersionID)
-            REFERENCES knowledge.DocumentVersion(ContentID,DocumentVersionID),
-        CONSTRAINT CK_SourceRevision_OneSource CHECK
-            ((CASE WHEN PostRevisionID IS NULL THEN 0 ELSE 1 END)
-             + (CASE WHEN CommentRevisionID IS NULL THEN 0 ELSE 1 END)
-             + (CASE WHEN DocumentVersionID IS NULL THEN 0 ELSE 1 END) = 1),
-        CONSTRAINT CK_SourceRevision_Status CHECK (ProcessingStatus IN ('PENDING','READY','FAILED')),
-        CONSTRAINT CK_SourceRevision_Processed CHECK (ProcessingStatus <> 'READY' OR
-            (ExtractedText IS NOT NULL AND TextHash IS NOT NULL AND ProcessedAt IS NOT NULL))
-    );
-END;
-GO
-
-/* Offsets are zero-based in the extracted text; PageNo is the source page when known. */
-IF OBJECT_ID(N'knowledge.Chunk', N'U') IS NULL
-BEGIN
-    CREATE TABLE knowledge.Chunk
-    (
-        ChunkID bigint IDENTITY(1,1) NOT NULL CONSTRAINT PK_Chunk PRIMARY KEY,
-        SourceRevisionID bigint NOT NULL,
-        ChunkNo int NOT NULL,
-        ChunkText nvarchar(max) NOT NULL,
-        PageNo int NULL,
-        StartOffset int NOT NULL,
-        EndOffset int NOT NULL,
-        ChunkHash binary(32) NOT NULL,
-        ChunkStatus varchar(8) NOT NULL CONSTRAINT DF_Chunk_Status DEFAULT ('READY'),
-        CreatedAt datetime2(3) NOT NULL CONSTRAINT DF_Chunk_CreatedAt DEFAULT (SYSUTCDATETIME()),
-        CONSTRAINT FK_Chunk_SourceRevision FOREIGN KEY (SourceRevisionID) REFERENCES knowledge.SourceRevision(SourceRevisionID),
-        CONSTRAINT CK_Chunk_Ordinal CHECK (ChunkNo > 0),
-        CONSTRAINT CK_Chunk_Page CHECK (PageNo IS NULL OR PageNo > 0),
-        CONSTRAINT CK_Chunk_Offsets CHECK (StartOffset >= 0 AND EndOffset > StartOffset),
-        CONSTRAINT CK_Chunk_Text CHECK (DATALENGTH(ChunkText) > 0),
-        CONSTRAINT CK_Chunk_Status CHECK (ChunkStatus IN ('READY','STALE'))
-    ) AS NODE;
 END;
 GO

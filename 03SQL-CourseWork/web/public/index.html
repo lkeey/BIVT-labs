@@ -12,6 +12,7 @@
   <script type="module" src="./app.js"></script>
 </head>
 <body>
+  <p class="hint" style="padding:8px 24px"><a href="firebase-demo.html">Проверить Firebase Authentication отдельно от SQL API</a></p>
   <a class="skip-link" href="#main">Перейти к содержимому</a>
   <header class="site-header">
     <div class="header-inner">
@@ -68,7 +69,6 @@
         <button class="nav-button is-active" data-view="feed" type="button" aria-current="page"><span>01</span> Лента</button>
         <button class="nav-button" data-view="communities" type="button"><span>02</span> Сообщества</button>
         <button class="nav-button" data-view="documents" type="button"><span>03</span> Документы</button>
-        <button class="nav-button" data-view="assistant" type="button"><span>04</span> Спросить</button>
       </nav>
 
       <section id="view-feed" class="workspace-view" aria-labelledby="feed-title">
@@ -104,7 +104,7 @@
       </section>
 
       <section id="view-documents" class="workspace-view" aria-labelledby="documents-title" hidden>
-        <div class="section-heading"><div><p class="eyebrow">МАТЕРИАЛЫ</p><h2 id="documents-title">Документы</h2><p>Текст, PDF и DOCX становятся доступными после обработки. Сканированные PDF распознаются на русском языке.</p></div></div>
+        <div class="section-heading"><div><p class="eyebrow">МАТЕРИАЛЫ</p><h2 id="documents-title">Документы</h2><p>Текст, PDF и DOCX сохраняются в базе и доступны сразу после загрузки. Оригиналы хранятся без распознавания.</p></div></div>
         <div class="document-layout">
           <div class="panel">
             <label class="field" for="document-community"><span>Сообщество</span><select id="document-community"></select></label>
@@ -123,7 +123,7 @@
           </div>
           <div class="panel panel-secondary">
             <h3>Материалы сообщества</h3>
-            <p class="muted">В списке — готовые документы. После загрузки следите за обработкой по ID.</p>
+            <p class="muted">В списке — сохранённые документы. Найти конкретный документ можно по ID.</p>
             <div id="document-list" class="card-list compact-list" aria-live="polite"></div>
             <button id="more-documents" class="button button-quiet" type="button" hidden>Показать ещё</button>
             <form id="document-lookup-form" class="inline-form">
@@ -132,19 +132,6 @@
             </form>
             <div id="document-status" aria-live="polite"></div>
           </div>
-        </div>
-      </section>
-
-      <section id="view-assistant" class="workspace-view" aria-labelledby="assistant-title" hidden>
-        <div class="section-heading"><div><p class="eyebrow">ПОИСК С ИСТОЧНИКАМИ</p><h2 id="assistant-title">Спросите материалы</h2><p>Помощник ищет только в доступных вам материалах и показывает проверяемые цитаты.</p></div></div>
-        <div class="assistant-layout">
-          <form id="rag-form" class="panel stack-form">
-            <p class="hint">Для ответа нужны индексированные материалы, сервис embeddings и модель ответа. Если модели недоступны, сервер вернёт 503.</p>
-            <label class="field" for="rag-question"><span>Ваш вопрос</span><textarea id="rag-question" name="question" maxlength="2000" rows="5" placeholder="Например: какие решения приняли по проекту?" required></textarea></label>
-            <label class="field" for="rag-community"><span>Где искать</span><select id="rag-community"><option value="">Во всех доступных сообществах</option></select></label>
-            <div class="assistant-form-footer"><span class="hint">Ответ может занять некоторое время.</span><button class="button button-primary" type="submit">Найти ответ <span aria-hidden="true">↗</span></button></div>
-          </form>
-          <div id="rag-result" class="answer-panel" aria-live="polite"><div class="answer-placeholder"><span aria-hidden="true">✳</span><h3>Ответ появится здесь</h3><p>Источники и выдержки будут показаны рядом с ним.</p></div></div>
         </div>
       </section>
     </div>

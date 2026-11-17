@@ -77,18 +77,18 @@ func (s *server) publish(w http.ResponseWriter, r *http.Request, p principal, co
 	if !ok {
 		return
 	}
-	var id, sourceRevisionID int64
+	var id, revisionID int64
 	err := s.db.QueryRowContext(r.Context(), "social.usp_PublishContent",
 		sql.Named("AuthorUserID", p.userID), sql.Named("CommunityID", communityID),
 		sql.Named("Kind", mssql.VarChar(kind)), sql.Named("Body", body),
 		sql.Named("ParentPostID", postID), sql.Named("ContentID", contentID),
-	).Scan(&id, &sourceRevisionID)
+	).Scan(&id, &revisionID)
 	if err != nil {
 		s.sqlProblem(w, err)
 		return
 	}
 	writeJSON(w, status, map[string]string{
-		"contentId": idString(id), "sourceRevisionId": idString(sourceRevisionID), "indexStatus": "PENDING",
+		"contentId": idString(id), "revisionId": idString(revisionID),
 	})
 }
 

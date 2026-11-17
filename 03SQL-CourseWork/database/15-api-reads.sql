@@ -21,9 +21,9 @@ BEGIN
            CAST(CASE WHEN EXISTS
            (
                SELECT 1
-               FROM auth.UserAccount AS follower,
+               FROM social.UserNode AS follower,
                     social.Follows AS follows,
-                    auth.UserAccount AS followed
+                    social.UserNode AS followed
                WHERE MATCH(follower-(follows)->followed)
                  AND follower.UserID = @UserID
                  AND followed.UserID = @ProfileUserID
@@ -39,7 +39,7 @@ BEGIN
 END;
 GO
 
-/* A current membership is an edge without EndedAt; owner status is canonical. */
+/* Current membership is a relational row; owner status is canonical. */
 CREATE OR ALTER PROCEDURE social.usp_ListCommunities
     @UserID bigint,
     @AfterCommunityID bigint = NULL,
@@ -61,10 +61,10 @@ BEGIN
                ROW_NUMBER() OVER
                (PARTITION BY member.UserID, community.CommunityID
                 ORDER BY edge.MembershipID DESC) AS RowNo
-        FROM auth.UserAccount AS member,
-             social.MemberOf AS edge,
-             social.Community AS community
-        WHERE MATCH(member-(edge)->community)
+        FROM auth.UserAccount AS member
+            JOIN social.MemberOf AS edge ON edge.UserID = member.UserID
+            JOIN social.Community AS community ON community.CommunityID = edge.CommunityID
+            WHERE 1 = 1
           AND member.UserID = @UserID AND edge.EndedAt IS NULL
     )
     SELECT TOP (@Limit + 1)
@@ -96,10 +96,10 @@ BEGIN
                ROW_NUMBER() OVER
                (PARTITION BY member.UserID, community.CommunityID
                 ORDER BY edge.MembershipID DESC) AS RowNo
-        FROM auth.UserAccount AS member,
-             social.MemberOf AS edge,
-             social.Community AS community
-        WHERE MATCH(member-(edge)->community)
+        FROM auth.UserAccount AS member
+            JOIN social.MemberOf AS edge ON edge.UserID = member.UserID
+            JOIN social.Community AS community ON community.CommunityID = edge.CommunityID
+            WHERE 1 = 1
           AND member.UserID = @UserID
           AND community.CommunityID = @CommunityID
           AND edge.EndedAt IS NULL
@@ -188,10 +188,9 @@ BEGIN
     ;WITH CommentParent AS
     (
         SELECT comment.ContentID AS CommentID, post.ContentID AS PostID
-        FROM social.ContentItem AS comment,
-             social.CommentOn AS commentOn,
-             social.ContentItem AS post
-        WHERE MATCH(comment-(commentOn)->post)
+        FROM social.ContentItem AS comment
+        JOIN social.ContentItem AS post ON post.ContentID = comment.ParentPostID
+        WHERE 1 = 1
           AND post.ContentID = @PostID
           AND comment.Kind = 'COMMENT' AND post.Kind = 'POST'
     )
@@ -218,10 +217,9 @@ BEGIN
     ;WITH CommentParent AS
     (
         SELECT comment.ContentID AS CommentID, post.ContentID AS PostID
-        FROM social.ContentItem AS comment,
-             social.CommentOn AS commentOn,
-             social.ContentItem AS post
-        WHERE MATCH(comment-(commentOn)->post)
+        FROM social.ContentItem AS comment
+        JOIN social.ContentItem AS post ON post.ContentID = comment.ParentPostID
+        WHERE 1 = 1
           AND comment.ContentID = @CommentID
           AND comment.Kind = 'COMMENT' AND post.Kind = 'POST'
     )
@@ -241,7 +239,7 @@ END;
 GO
 
 /* Document list and file download intentionally have different projections. */
-CREATE OR ALTER PROCEDURE knowledge.usp_ListDocuments
+CREATE OR ALTER PROCEDURE social.usp_ListDocuments
     @UserID bigint,
     @CommunityID bigint,
     @AfterContentID bigint = NULL,
@@ -262,7 +260,7 @@ BEGIN
     FROM social.vAccessibleContent AS access
     JOIN social.DocumentDetail AS detail
       ON detail.ContentID = access.ContentID
-    JOIN knowledge.DocumentVersion AS version
+    JOIN social.DocumentVersion AS version
       ON version.ContentID = detail.ContentID AND version.IsCurrent = 1
     WHERE access.UserID = @UserID
       AND access.CommunityID = @CommunityID
@@ -273,33 +271,25 @@ BEGIN
 END;
 GO
 
-/* Authors may inspect processing failures while the community remains readable. */
-CREATE OR ALTER PROCEDURE knowledge.usp_GetDocument
+/* Document metadata is protected by the same live community ACL. */
+CREATE OR ALTER PROCEDURE social.usp_GetDocument
     @UserID bigint,
     @DocumentID bigint
 AS
 BEGIN
     SET NOCOUNT ON;
-    ;WITH DocumentGraph AS
+    ;WITH DocumentLocation AS
     (
-        SELECT item.ContentID, community.CommunityID,
-               author.UserID AS AuthorUserID
-        FROM auth.UserAccount AS author,
-             social.Authored AS authored,
-             social.ContentItem AS item,
-             social.PublishedIn AS publishedIn,
-             social.Community AS community
-        WHERE MATCH(author-(authored)->item)
-          AND MATCH(item-(publishedIn)->community)
-          AND item.ContentID = @DocumentID
-          AND item.Kind = 'DOCUMENT' AND item.ContentStatus = 'PUBLISHED'
+        SELECT ContentID, CommunityID, AuthorUserID
+        FROM social.ContentItem
+        WHERE ContentID = @DocumentID AND Kind = 'DOCUMENT' AND ContentStatus = 'PUBLISHED'
     )
     SELECT graph.ContentID, graph.CommunityID, graph.AuthorUserID,
            detail.Title, version.MimeType, version.VersionNo,
            detail.DocumentStatus AS ProcessingStatus
-    FROM DocumentGraph AS graph
+    FROM DocumentLocation AS graph
     JOIN social.DocumentDetail AS detail ON detail.ContentID = graph.ContentID
-    JOIN knowledge.DocumentVersion AS version
+    JOIN social.DocumentVersion AS version
       ON version.ContentID = graph.ContentID AND version.IsCurrent = 1
     CROSS APPLY auth.fn_UserCanReadCommunity(@UserID, graph.CommunityID) AS readable
     WHERE detail.DocumentStatus = 'READY'

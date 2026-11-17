@@ -1,4 +1,4 @@
-// Public runtime configuration. Never put SQL, OIDC client secrets or LLM keys here.
+// Public runtime configuration. Never put SQL, OIDC client secrets or private keys here.
 window.COURSEWORK_CONFIG = Object.freeze({
   apiBaseUrl: "/api",
   backendReady: false,

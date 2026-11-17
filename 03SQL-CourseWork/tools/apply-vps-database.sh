@@ -11,21 +11,15 @@ if ! command -v sqlcmd >/dev/null 2>&1; then
   exit 1
 fi
 
-scripts=(database/[0-1][0-9]-*.sql)
-if [[ ${#scripts[@]} -ne 18 ]]; then
-  printf 'Expected 18 numbered SQL scripts; found %s.\n' "${#scripts[@]}" >&2
-  exit 1
-fi
-for number in {00..17}; do
-  if [[ "${scripts[10#$number]}" != database/"$number"-*.sql ]]; then
-    printf 'SQL script %s is missing or out of order.\n' "$number" >&2
-    exit 1
-  fi
+scripts=(database/00-create-schemas.sql database/01-social-nodes.sql
+  database/02-content.sql database/03-follow-graph.sql database/04-relational-links.sql
+  database/05-audit.sql database/06-indexes.sql database/07-access-views.sql
+  database/08-publication.sql database/10-recommendations.sql database/11-demo.sql
+  database/12-social-api.sql database/14-authorized-reads.sql database/15-api-reads.sql
+  database/17-auth-and-roles.sql)
+for script in "${scripts[@]}"; do
+  [[ -f "$script" ]] || { printf 'Missing SQL script: %s\n' "$script" >&2; exit 1; }
 done
-if [[ "${scripts[11]}" != database/11-demo.sql ]]; then
-  printf 'Refusing to deploy: script 11 must be the optional demo seed.\n' >&2
-  exit 1
-fi
 
 if [[ -z "${SQLCMDPASSWORD:-}" ]]; then
   if [[ ! -t 0 ]]; then
@@ -46,10 +40,6 @@ IF TRY_CONVERT(int, SERVERPROPERTY('ProductMajorVersion')) <> 17
     THROW 51900, 'SQL Server 2025 (major version 17) is required.', 1;
 IF CONVERT(nvarchar(128), SERVERPROPERTY('Edition')) NOT LIKE N'%Express%'
     THROW 51901, 'SQL Server Express edition is required for this VPS recipe.', 1;
-IF FULLTEXTSERVICEPROPERTY('IsFullTextInstalled') <> 1
-    THROW 51902, 'Install mssql-server-fts before applying the schema.', 1;
-IF NOT EXISTS (SELECT 1 FROM sys.fulltext_languages WHERE lcid = 1049)
-    THROW 51903, 'Russian full-text language (LCID 1049) is required.', 1;
 IF DB_ID(N'SocialNetworkDB') IS NOT NULL
     THROW 51904, 'SocialNetworkDB already exists; inspect it before another deployment.', 1;
 "
@@ -65,4 +55,4 @@ for script in "${scripts[@]}"; do
   sqlcmd -S localhost -d SocialNetworkDB -U sa -Nm -I -b -i "$script"
 done
 
-printf 'All 17 production SQL scripts applied to SocialNetworkDB.\n'
+printf 'All 14 production SQL scripts applied to SocialNetworkDB.\n'

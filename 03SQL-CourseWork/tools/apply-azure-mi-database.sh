@@ -22,16 +22,14 @@ case "$COURSEWORK_SQL_ENDPOINT" in
     ;;
 esac
 
-scripts=(database/[0-1][0-9]-*.sql)
-if [[ ${#scripts[@]} -ne 18 ]]; then
-  printf 'Expected 18 numbered SQL scripts; found %s.\n' "${#scripts[@]}" >&2
-  exit 1
-fi
-for number in {00..17}; do
-  if [[ "${scripts[10#$number]}" != database/"$number"-*.sql ]]; then
-    printf 'SQL script %s is missing or out of order.\n' "$number" >&2
-    exit 1
-  fi
+scripts=(database/00-create-schemas.sql database/01-social-nodes.sql
+  database/02-content.sql database/03-follow-graph.sql database/04-relational-links.sql
+  database/05-audit.sql database/06-indexes.sql database/07-access-views.sql
+  database/08-publication.sql database/10-recommendations.sql database/11-demo.sql
+  database/12-social-api.sql database/14-authorized-reads.sql database/15-api-reads.sql
+  database/17-auth-and-roles.sql)
+for script in "${scripts[@]}"; do
+  [[ -f "$script" ]] || { printf 'Missing SQL script: %s\n' "$script" >&2; exit 1; }
 done
 
 if [[ -z "${SQLCMDPASSWORD:-}" ]]; then
@@ -45,7 +43,7 @@ trap 'unset SQLCMDPASSWORD' EXIT
 # No -C: validate the server certificate.
 sqlcmd -S "$COURSEWORK_SQL_ENDPOINT" -d master \
   -U "$COURSEWORK_SQL_ADMIN" -Nm -I -b \
-  -Q "IF DB_ID(N'SocialNetworkDB') IS NULL CREATE DATABASE SocialNetworkDB;"
+  -Q "IF DB_ID(N'SocialNetworkDB') IS NOT NULL THROW 51904, 'Database exists; use a separate migration.', 1; CREATE DATABASE SocialNetworkDB;"
 
 for script in "${scripts[@]}"; do
   printf 'Applying %s\n' "$script"
@@ -53,4 +51,4 @@ for script in "${scripts[@]}"; do
     -U "$COURSEWORK_SQL_ADMIN" -Nm -I -b -i "$script"
 done
 
-printf 'All 18 SQL scripts applied successfully.\n'
+printf 'All 15 SQL scripts applied successfully.\n'

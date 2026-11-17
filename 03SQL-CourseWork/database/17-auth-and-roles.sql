@@ -73,12 +73,9 @@ BEGIN
 END;
 GO
 
-/* Assign database users to these roles manually. Neither role has table DML. */
+/* Assign the backend database user to this role manually; no direct table DML. */
 IF DATABASE_PRINCIPAL_ID(N'coursework_api') IS NULL
     CREATE ROLE coursework_api AUTHORIZATION dbo;
-GO
-IF DATABASE_PRINCIPAL_ID(N'coursework_worker') IS NULL
-    CREATE ROLE coursework_worker AUTHORIZATION dbo;
 GO
 
 GRANT EXECUTE ON OBJECT::auth.usp_GetOrCreateFirebaseUser TO coursework_api;
@@ -98,27 +95,10 @@ GRANT EXECUTE ON OBJECT::social.usp_ListPosts TO coursework_api;
 GRANT EXECUTE ON OBJECT::social.usp_GetPost TO coursework_api;
 GRANT EXECUTE ON OBJECT::social.usp_ListComments TO coursework_api;
 GRANT EXECUTE ON OBJECT::social.usp_GetComment TO coursework_api;
-GRANT EXECUTE ON OBJECT::knowledge.usp_SaveDocumentVersion TO coursework_api;
-GRANT EXECUTE ON OBJECT::knowledge.usp_ListDocuments TO coursework_api;
-GRANT EXECUTE ON OBJECT::knowledge.usp_GetDocument TO coursework_api;
-GRANT EXECUTE ON OBJECT::knowledge.usp_GetDocumentFile TO coursework_api;
-GRANT EXECUTE ON OBJECT::assistant.usp_StartRagSession TO coursework_api;
-GRANT EXECUTE ON OBJECT::assistant.usp_StartRagTurn TO coursework_api;
-GRANT EXECUTE ON OBJECT::assistant.usp_SearchRag TO coursework_api;
-GRANT EXECUTE ON OBJECT::assistant.usp_RecordRetrievedChunks TO coursework_api;
-GRANT EXECUTE ON OBJECT::assistant.usp_SaveRagAnswer TO coursework_api;
-GRANT EXECUTE ON OBJECT::assistant.usp_SaveRagNoSources TO coursework_api;
-GRANT EXECUTE ON OBJECT::assistant.usp_FailRagTurn TO coursework_api;
-GRANT EXECUTE ON OBJECT::assistant.usp_GetRagTurn TO coursework_api;
-GRANT EXECUTE ON OBJECT::assistant.usp_GenerateRecommendations TO coursework_api;
-GRANT EXECUTE ON OBJECT::assistant.usp_RevokeContentAccess TO coursework_api;
-GO
-
-GRANT EXECUTE ON OBJECT::ops.usp_ClaimIndexOutbox TO coursework_worker;
-GRANT EXECUTE ON OBJECT::ops.usp_GetClaimedIndexSource TO coursework_worker;
-GRANT EXECUTE ON OBJECT::ops.usp_RenewIndexLease TO coursework_worker;
-GRANT EXECUTE ON OBJECT::ops.usp_RequeueExpiredIndexOutbox TO coursework_worker;
-GRANT EXECUTE ON OBJECT::ops.usp_CommitIndexResult TO coursework_worker;
-GRANT EXECUTE ON OBJECT::ops.usp_CommitIndexDeletion TO coursework_worker;
-GRANT EXECUTE ON OBJECT::ops.usp_CompleteIndexOutbox TO coursework_worker;
+GRANT EXECUTE ON OBJECT::social.usp_SaveDocumentVersion TO coursework_api;
+GRANT EXECUTE ON OBJECT::social.usp_ListDocuments TO coursework_api;
+GRANT EXECUTE ON OBJECT::social.usp_GetDocument TO coursework_api;
+GRANT EXECUTE ON OBJECT::social.usp_GetDocumentFile TO coursework_api;
+GRANT EXECUTE ON OBJECT::social.usp_BuildRecommendationFeed TO coursework_api;
+GRANT EXECUTE ON OBJECT::social.usp_RevokeContentAccess TO coursework_api;
 GO

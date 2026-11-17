@@ -16,7 +16,7 @@ type appDB struct {
 	postgres bool
 }
 
-var procedureName = regexp.MustCompile(`^(auth|social|knowledge|assistant|ops)\.usp_[A-Za-z0-9_]+$`)
+var procedureName = regexp.MustCompile(`^(auth|social|ops)\.usp_[A-Za-z0-9_]+$`)
 
 func (d *appDB) isPostgres() bool { return d.postgres }
 

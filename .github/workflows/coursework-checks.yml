@@ -25,6 +25,9 @@ jobs:
       - name: Build API
         working-directory: 03SQL-CourseWork/backend
         run: go build ./...
+      - name: Test API
+        working-directory: 03SQL-CourseWork/backend
+        run: go test ./...
       - name: Vet API
         working-directory: 03SQL-CourseWork/backend
         run: go vet ./...
@@ -43,17 +46,71 @@ jobs:
         run: python -m pip install PyYAML==6.0.3
       - name: Check OpenAPI against Go routes
         run: python 03SQL-CourseWork/tools/verify_contract.py
-      - name: Parse Python worker modules
-        run: |
-          python - <<'PY'
-          import ast
-          from pathlib import Path
-          for path in sorted(Path('03SQL-CourseWork/worker').glob('*.py')):
-              ast.parse(path.read_text(encoding='utf-8'), filename=str(path))
-              print(f'Parsed {path}')
-          PY
       - name: Check browser JavaScript syntax
         run: |
           for file in 03SQL-CourseWork/web/public/*.js; do
             node --check "$file"
           done
+      - name: Check Firebase configuration
+        run: node 03SQL-CourseWork/web/check-config.cjs
+
+  postgres-smoke:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: coursework-test-only
+          POSTGRES_DB: coursework_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready --health-interval 5s
+          --health-timeout 5s --health-retries 15
+    env:
+      PGHOST: localhost
+      PGUSER: postgres
+      PGPASSWORD: coursework-test-only
+      PGDATABASE: coursework_test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply fresh schema and rollback smoke tests
+        run: |
+          for file in 03SQL-CourseWork/database/postgres/[0-9][0-9]-*.sql; do
+            psql -v ON_ERROR_STOP=1 -f "$file"
+          done
+          psql -v ON_ERROR_STOP=1 -f 03SQL-CourseWork/database/postgres/tests/smoke.sql
+
+  sqlserver-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Start disposable SQL Server 2025 Developer
+        run: |
+          docker run -d --name coursework-sql -e ACCEPT_EULA=Y \
+            -e MSSQL_SA_PASSWORD='Coursework-CI-Only-2026!' -e MSSQL_PID=Developer \
+            mcr.microsoft.com/mssql/server:2025-latest
+          for attempt in $(seq 1 60); do
+            if docker exec -e SQLCMDPASSWORD='Coursework-CI-Only-2026!' coursework-sql \
+              /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -C -b -Q 'SELECT 1'; then
+              exit 0
+            fi
+            sleep 2
+          done
+          docker logs coursework-sql
+          exit 1
+      - name: Apply schema, demo and rollback smoke tests
+        run: |
+          docker cp 03SQL-CourseWork/database coursework-sql:/tmp/coursework-database
+          docker exec -e SQLCMDPASSWORD='Coursework-CI-Only-2026!' coursework-sql \
+            /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -C -b -Q 'CREATE DATABASE CourseworkTest'
+          for file in 03SQL-CourseWork/database/[0-9][0-9]-*.sql; do
+            docker exec -e SQLCMDPASSWORD='Coursework-CI-Only-2026!' coursework-sql \
+              /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -C -b -I -d CourseworkTest \
+              -i "/tmp/coursework-database/$(basename "$file")"
+          done
+          docker exec -e SQLCMDPASSWORD='Coursework-CI-Only-2026!' coursework-sql \
+            /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -C -b -I -d CourseworkTest \
+            -i /tmp/coursework-database/tests/smoke.sql
+      - name: Remove disposable container
+        if: always()
+        run: docker rm -f coursework-sql || true

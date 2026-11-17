@@ -64,18 +64,18 @@ LANGUAGE sql STABLE AS $$
  JOIN social.commentrevision r ON r.contentid=a.contentid AND r.iscurrent AND r.commentstatus='VISIBLE'
  WHERE a.kind='COMMENT' AND a.contentid=p_commentid;
 $$;
-CREATE OR REPLACE FUNCTION knowledge.usp_listdocuments(p_userid bigint,p_communityid bigint,p_aftercontentid bigint,p_limit integer)
+CREATE OR REPLACE FUNCTION social.usp_listdocuments(p_userid bigint,p_communityid bigint,p_aftercontentid bigint,p_limit integer)
 RETURNS TABLE(contentid bigint,communityid bigint,authoruserid bigint,title text,mimetype text,
  versionno integer,processingstatus text)
 LANGUAGE sql STABLE AS $$
  SELECT a.contentid,a.communityid,a.authoruserid,d.title::text,v.mimetype::text,v.versionno,d.documentstatus::text
  FROM social.accessible_content(p_userid) a JOIN social.documentdetail d ON d.contentid=a.contentid
- JOIN knowledge.documentversion v ON v.contentid=a.contentid AND v.iscurrent
+ JOIN social.documentversion v ON v.contentid=a.contentid AND v.iscurrent
  WHERE a.kind='DOCUMENT' AND d.documentstatus='READY' AND a.communityid=p_communityid
    AND a.contentid>coalesce(p_aftercontentid,0) AND p_limit BETWEEN 1 AND 50
  ORDER BY a.contentid LIMIT p_limit+1;
 $$;
-CREATE OR REPLACE FUNCTION knowledge.usp_getdocument(p_userid bigint,p_documentid bigint)
+CREATE OR REPLACE FUNCTION social.usp_getdocument(p_userid bigint,p_documentid bigint)
 RETURNS TABLE(contentid bigint,communityid bigint,authoruserid bigint,title text,mimetype text,
  versionno integer,processingstatus text)
 LANGUAGE sql STABLE AS $$
@@ -83,18 +83,18 @@ LANGUAGE sql STABLE AS $$
  FROM social.contentitem i JOIN social.publishedin p ON p.contentid=i.contentid
  JOIN social.authored a ON a.contentid=i.contentid
  JOIN social.documentdetail d ON d.contentid=i.contentid
- JOIN knowledge.documentversion v ON v.contentid=i.contentid AND v.iscurrent
+ JOIN social.documentversion v ON v.contentid=i.contentid AND v.iscurrent
  WHERE i.contentid=p_documentid AND i.kind='DOCUMENT' AND i.contentstatus='PUBLISHED'
    AND auth.can_read_community(p_userid,p.communityid)
    AND (d.documentstatus='READY' OR a.userid=p_userid);
 $$;
-CREATE OR REPLACE FUNCTION knowledge.usp_getdocumentfile(p_userid bigint,p_contentid bigint)
+CREATE OR REPLACE FUNCTION social.usp_getdocumentfile(p_userid bigint,p_contentid bigint)
 RETURNS TABLE(documentversionid bigint,filename text,mimetype text,sizebytes bigint,sha256 bytea,
  filebytes bytea,plaintext text)
 LANGUAGE sql STABLE AS $$
  SELECT v.documentversionid,v.filename::text,v.mimetype::text,v.sizebytes,v.sha256,v.filebytes,v.plaintext
  FROM social.accessible_content(p_userid) a JOIN social.documentdetail d ON d.contentid=a.contentid
- JOIN knowledge.documentversion v ON v.contentid=a.contentid AND v.iscurrent
+ JOIN social.documentversion v ON v.contentid=a.contentid AND v.iscurrent
  WHERE a.contentid=p_contentid AND a.kind='DOCUMENT' AND d.documentstatus='READY' AND v.uploadstatus='STORED';
 $$;
 CREATE OR REPLACE FUNCTION social.usp_listpendingmemberships(p_actoruserid bigint,p_communityid bigint,

@@ -299,7 +299,7 @@ func (s *server) listDocuments(w http.ResponseWriter, r *http.Request, p princip
 	if !ok {
 		return
 	}
-	rows, err := s.db.QueryContext(r.Context(), "knowledge.usp_ListDocuments",
+	rows, err := s.db.QueryContext(r.Context(), "social.usp_ListDocuments",
 		sql.Named("UserID", p.userID), sql.Named("CommunityID", communityID),
 		sql.Named("AfterContentID", after), sql.Named("Limit", limit))
 	if err != nil {
@@ -336,7 +336,7 @@ func (s *server) getDocument(w http.ResponseWriter, r *http.Request, p principal
 		return
 	}
 	item, _, err := scanDocument(func(dest ...any) error {
-		return s.db.QueryRowContext(r.Context(), "knowledge.usp_GetDocument",
+		return s.db.QueryRowContext(r.Context(), "social.usp_GetDocument",
 			sql.Named("UserID", p.userID), sql.Named("DocumentID", id)).Scan(dest...)
 	})
 	if err != nil {
@@ -366,7 +366,7 @@ func (s *server) getFeed(w http.ResponseWriter, r *http.Request, p principal) {
 	if !ok {
 		return
 	}
-	rows, err := s.db.QueryContext(r.Context(), "assistant.usp_GenerateRecommendations",
+	rows, err := s.db.QueryContext(r.Context(), "social.usp_BuildRecommendationFeed",
 		sql.Named("UserID", p.userID), sql.Named("Limit", limit))
 	if err != nil {
 		s.sqlProblem(w, err)

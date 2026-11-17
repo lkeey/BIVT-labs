@@ -230,9 +230,9 @@ func (s *server) revokeContent(w http.ResponseWriter, r *http.Request, p princip
 	if !ok {
 		return
 	}
-	_, err := s.db.ExecContext(r.Context(), "assistant.usp_RevokeContentAccess",
+	_, err := s.db.ExecContext(r.Context(), "social.usp_RevokeContentAccess",
 		sql.Named("ActorUserID", p.userID), sql.Named("ContentID", id),
-		sql.Named("NewStatus", mssql.VarChar("HIDDEN")), sql.Named("AllowRag", false),
+		sql.Named("NewStatus", mssql.VarChar("HIDDEN")),
 		sql.Named("ExpectedKind", mssql.VarChar(kind)),
 	)
 	if err != nil {

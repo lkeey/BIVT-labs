@@ -1,0 +1,10 @@
+<!doctype html>
+<html lang="ru">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Firebase · проверка входа</title><link rel="stylesheet" href="styles.css"><script src="config.js"></script><script type="module" src="firebase-demo.js"></script></head>
+<body><main class="panel" style="max-width:720px;margin:40px auto">
+<p><a href="index.html">← К курсовой</a></p><h1>Firebase Authentication</h1>
+<p>Отдельная проверка настоящего входа через Google. Данные соцсети хранятся в SQL; эта страница проверяет только Firebase и не требует работающего API.</p>
+<p id="project"></p><button id="login" class="button button-primary" type="button">Войти через Google</button> <button id="logout" class="button button-outline" type="button" disabled>Выйти</button>
+<p id="status" role="status">Вход ещё не выполнен.</p><dl id="identity"></dl>
+<p>Токен не выводится на экран и не сохраняется в браузерном хранилище. Перезагрузка завершает локальную сессию. В консоли Firebase владелец проекта может проверить появление пользователя в Authentication → Users.</p>
+</main></body></html>

@@ -180,7 +180,7 @@ func (s *server) createDocumentVersion(w http.ResponseWriter, r *http.Request, p
 		return
 	}
 	item, _, err := scanDocument(func(dest ...any) error {
-		return s.db.QueryRowContext(r.Context(), "knowledge.usp_GetDocument",
+		return s.db.QueryRowContext(r.Context(), "social.usp_GetDocument",
 			sql.Named("UserID", p.userID), sql.Named("DocumentID", id)).Scan(dest...)
 	})
 	if err != nil {
@@ -208,21 +208,21 @@ func (s *server) saveDocument(w http.ResponseWriter, r *http.Request, p principa
 	if len(input.file) > 0 {
 		fileBytes = input.file
 	}
-	var contentID, versionID, revisionID int64
-	err := s.db.QueryRowContext(r.Context(), "knowledge.usp_SaveDocumentVersion",
+	var contentID, versionID int64
+	err := s.db.QueryRowContext(r.Context(), "social.usp_SaveDocumentVersion",
 		sql.Named("AuthorUserID", p.userID), sql.Named("CommunityID", communityID),
 		sql.Named("ContentID", existingContentID),
 		sql.Named("Title", input.title), sql.Named("FileName", input.fileName),
 		sql.Named("MimeType", mssql.VarChar(input.mimeType)),
 		sql.Named("FileBytes", fileBytes), sql.Named("PlainText", plainText),
-	).Scan(&contentID, &versionID, &revisionID)
+	).Scan(&contentID, &versionID)
 	if err != nil {
 		s.sqlProblem(w, err)
 		return
 	}
-	writeJSON(w, http.StatusAccepted, map[string]string{
+	writeJSON(w, http.StatusCreated, map[string]string{
 		"contentId": idString(contentID), "documentVersionId": idString(versionID),
-		"sourceRevisionId": idString(revisionID), "processingStatus": "PROCESSING",
+		"processingStatus": "READY",
 	})
 }
 
@@ -236,7 +236,7 @@ func (s *server) getDocumentFile(w http.ResponseWriter, r *http.Request, p princ
 	var mimeType string
 	var digest, fileBytes []byte
 	var plainText sql.NullString
-	err := s.db.QueryRowContext(r.Context(), "knowledge.usp_GetDocumentFile",
+	err := s.db.QueryRowContext(r.Context(), "social.usp_GetDocumentFile",
 		sql.Named("UserID", p.userID), sql.Named("ContentID", id),
 	).Scan(&versionID, &name, &mimeType, &sizeBytes, &digest, &fileBytes, &plainText)
 	if err != nil {

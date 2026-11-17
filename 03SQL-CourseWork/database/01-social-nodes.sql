@@ -1,4 +1,4 @@
-/* Stable social identities. SQL Graph node IDs are used by the edge tables. */
+/* Relational identities and canonical foreign keys. */
 IF OBJECT_ID(N'auth.UserAccount', N'U') IS NULL
 BEGIN
     CREATE TABLE auth.UserAccount
@@ -13,7 +13,7 @@ BEGIN
         CONSTRAINT UQ_UserAccount_Login UNIQUE (Login),
         CONSTRAINT UQ_UserAccount_Email UNIQUE (EmailNormalized),
         CONSTRAINT CK_UserAccount_Status CHECK (AccountStatus IN ('ACTIVE','BLOCKED','DELETED'))
-    ) AS NODE;
+    );
 END;
 GO
 
@@ -49,11 +49,11 @@ BEGIN
         CONSTRAINT CK_Community_Slug CHECK (Slug NOT LIKE N'%[^a-z0-9-]%' AND LEN(Slug) BETWEEN 3 AND 100),
         CONSTRAINT CK_Community_Visibility CHECK (Visibility IN ('PUBLIC','PRIVATE')),
         CONSTRAINT CK_Community_Status CHECK (Status IN ('ACTIVE','ARCHIVED'))
-    ) AS NODE;
+    );
 END;
 GO
 
-/* Authorship and location are canonical graph edges, not duplicated columns here. */
+/* A comment references a post in the same community through a composite FK. */
 IF OBJECT_ID(N'social.ContentItem', N'U') IS NULL
 BEGIN
     CREATE TABLE social.ContentItem
@@ -61,13 +61,24 @@ BEGIN
         ContentID bigint IDENTITY(1,1) NOT NULL CONSTRAINT PK_ContentItem PRIMARY KEY,
         Kind varchar(8) NOT NULL,
         ContentStatus varchar(12) NOT NULL CONSTRAINT DF_ContentItem_Status DEFAULT ('DRAFT'),
-        AllowRag bit NOT NULL CONSTRAINT DF_ContentItem_AllowRag DEFAULT (1),
+        AuthorUserID bigint NOT NULL,
+        CommunityID bigint NOT NULL,
+        ParentPostID bigint NULL,
+        ParentKind varchar(8) NULL,
+        CONSTRAINT FK_ContentItem_Author FOREIGN KEY (AuthorUserID) REFERENCES auth.UserAccount(UserID),
+        CONSTRAINT FK_ContentItem_Community FOREIGN KEY (CommunityID) REFERENCES social.Community(CommunityID),
+        CONSTRAINT UQ_ContentItem_Parent UNIQUE (ContentID,CommunityID,Kind),
+        CONSTRAINT FK_ContentItem_Parent FOREIGN KEY (ParentPostID,CommunityID,ParentKind)
+            REFERENCES social.ContentItem(ContentID,CommunityID,Kind),
+        CONSTRAINT CK_ContentItem_Parent CHECK
+            ((Kind = 'COMMENT' AND ParentPostID IS NOT NULL AND ParentKind IS NOT NULL AND ParentKind = 'POST')
+             OR (Kind <> 'COMMENT' AND ParentPostID IS NULL AND ParentKind IS NULL)),
         CreatedAt datetime2(3) NOT NULL CONSTRAINT DF_ContentItem_CreatedAt DEFAULT (SYSUTCDATETIME()),
         UpdatedAt datetime2(3) NOT NULL CONSTRAINT DF_ContentItem_UpdatedAt DEFAULT (SYSUTCDATETIME()),
         PublishedAt datetime2(3) NULL,
         CONSTRAINT CK_ContentItem_Kind CHECK (Kind IN ('POST','COMMENT','DOCUMENT')),
         CONSTRAINT CK_ContentItem_Status CHECK (ContentStatus IN ('DRAFT','PUBLISHED','HIDDEN','DELETED')),
         CONSTRAINT CK_ContentItem_PublishedAt CHECK (ContentStatus <> 'PUBLISHED' OR PublishedAt IS NOT NULL)
-    ) AS NODE;
+    );
 END;
 GO
